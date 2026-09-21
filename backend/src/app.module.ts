@@ -1,11 +1,63 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health/health.controller';
+import { CommonModule } from './common/common.module';
+import { CoreModule } from './core/core.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AppValidationPipe } from './common/pipes/validation.pipe';
+import { AuthPlaceholderGuard } from './common/guards/auth-placeholder.guard';
+import { SuspendedGuard } from './common/guards/suspended.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+import { ThrottlerGuard } from '@nestjs/throttler';
+
+const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
 
 @Module({
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        uri: config.get<string>('MONGO_URI') ?? DEFAULT_MONGO_URI,
+      }),
+    }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: (Number(config.get<number>('THROTTLE_TTL', 60)) || 60) * 1000,
+            limit: Number(config.get<number>('THROTTLE_LIMIT', 100)) || 100,
+          },
+        ],
+      }),
+    }),
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      global: true,
+    }),
+    CommonModule,
+    CoreModule,
+  ],
   controllers: [AppController, HealthController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_PIPE, useClass: AppValidationPipe },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    { provide: APP_GUARD, useClass: AuthPlaceholderGuard },
+    { provide: APP_GUARD, useClass: SuspendedGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
