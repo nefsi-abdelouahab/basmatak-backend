@@ -8,6 +8,7 @@ import {
 import { InjectModel, MongooseModule } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { createSchema } from '../../src/common/schema/base.schema';
+import { Public } from '../../src/common/decorators/auth.decorators';
 
 /**
  * Test-only probe module used by e2e tests to exercise core error handling
@@ -29,6 +30,7 @@ class ProbeController {
   ) {}
 
   @Get('docs/:id')
+  @Public()
   async findById(@Param('id') id: string) {
     const doc = await this.model.findById(id).lean().exec();
     if (!doc) {

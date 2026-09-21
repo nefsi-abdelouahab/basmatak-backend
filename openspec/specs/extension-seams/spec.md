@@ -35,10 +35,14 @@ The system SHALL provide a `MediaOwnership` check helper that validates a value 
 - **WHEN** a `mediaId`-shaped value is passed through the helper
 - **THEN** the helper confirms it is valid ObjectId format (real ownership checks are deferred to Session 8)
 
-### Requirement: Auth placeholder guard seam
-The system SHALL provide an `AuthPlaceholderGuard` that sets `req.token` and a `CurrentAccount`-compatible placeholder for controllers, to be replaced by the real JWT strategy in Session 2.
+### Requirement: Registration extras seam
+The system SHALL provide a `RegistrationExtrasService` seam with an inert default in `src/common/seams/`: after a register route creates the `users` row it SHALL call `createExtras(user, registerDto)` so later sessions can own profile creation. The default implementation SHALL store nothing. Session 4 replaces it with a volunteer-profile provider and Session 5 with an organization provider (creating the `organizations` row linked by `organizations.userId`), without changing the auth module's code.
 
-#### Scenario: Placeholder identity available
-- **WHEN** a protected route runs before Session 2
-- **THEN** the guard injects a placeholder account so guards and decorators compile and function deterministically
+#### Scenario: Inert default stores nothing
+- **WHEN** a volunteer or organization registers before Session 4/5 ships its provider
+- **THEN** only the `users` row (and its session/token) is created and the seam call succeeds without side effects
+
+#### Scenario: Owning session swaps the provider
+- **WHEN** Session 4 or Session 5 registers its real `RegistrationExtrasService` provider via Nest DI
+- **THEN** the same register route now creates the profile/organization through the provider without code changes in the auth module
 

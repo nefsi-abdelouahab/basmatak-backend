@@ -14,10 +14,10 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 /** Declares the roles allowed to call a route (e.g. @Roles('admin')). */
 export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 
-/** Injects the current authenticated account (from `req.token`). */
+/** Injects the authenticated account (`req.user = { sub, role, sessionId }`). */
 export const CurrentAccount = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest<{ token?: unknown }>();
-    return request.token;
+    const request = ctx.switchToHttp().getRequest<{ user?: unknown }>();
+    return request.user;
   },
 );
