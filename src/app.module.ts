@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -9,12 +9,14 @@ import { AppService } from './app.service';
 import { HealthController } from './health/health.controller';
 import { CommonModule } from './common/common.module';
 import { CoreModule } from './core/core.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
-import { AuthPlaceholderGuard } from './common/guards/auth-placeholder.guard';
 import { SuspendedGuard } from './common/guards/suspended.guard';
 import { RolesGuard } from './common/guards/roles.guard';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from './auth/guards/email-verified.guard';
 
 const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
 
@@ -48,14 +50,19 @@ const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
     }),
     CommonModule,
     CoreModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController, HealthController],
+  // Global guards execute in the order declared: JWT identity first, then
+  // live status, then the email gate, then roles, then rate limiting.
   providers: [
     AppService,
     { provide: APP_PIPE, useClass: AppValidationPipe },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
-    { provide: APP_GUARD, useClass: AuthPlaceholderGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: SuspendedGuard },
+    { provide: APP_GUARD, useClass: EmailVerifiedGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

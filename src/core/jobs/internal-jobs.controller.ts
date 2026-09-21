@@ -8,6 +8,7 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import { JobsKeyGuard } from './jobs-key.guard';
+import { Public } from '../../common/decorators/auth.decorators';
 
 /**
  * Internal jobs endpoint (inventory §2.21). Reached at
@@ -21,6 +22,7 @@ export class InternalJobsController {
 
   @Post('run')
   @HttpCode(HttpStatus.OK)
+  @Public()
   @UseGuards(JobsKeyGuard)
   @ApiOperation({
     summary: 'Run the registered job handlers (idempotent tick)',
