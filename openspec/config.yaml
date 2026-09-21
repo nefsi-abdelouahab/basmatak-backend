@@ -1,0 +1,36 @@
+schema: spec-driven
+
+# Project context — shown to AI when creating artifacts.
+context: |
+  Stack: NestJS 10 + TypeScript (strict) + MongoDB via Mongoose 8. Tests run on
+  mongodb-memory-server with a single-node replica set. Backend code lives in /backend.
+  Global API prefix: api/v1. IDs are Mongo ObjectId strings. Error envelope:
+  { statusCode, code, message, details? } with UPPER_SNAKE business codes.
+  DTO validation: class-validator with whitelist + forbidNonWhitelisted + transform.
+
+  Source of truth: backend-inventory.md at the repo root. Auth: JWT access + rotated
+  hashed refresh sessions (roles volunteer | organization | admin, plus public guest).
+  One organization = one account (organizations.userId unique). Cursor pagination on
+  list endpoints (limit + cursor, default 20, max 50). Every status change goes through
+  the StatusTransitionService which validates the transition, writes status_histories,
+  and emits a domain event. audit_logs via interceptor for admin + sensitive org/vol
+  mutations. Three multi-document Mongo transactions: accept application, verify
+  submission, withdraw-accepted-application. In-memory throttler and in-process
+  EventEmitter only — free tier: NO Redis, no queues, no push provider, no paid SMS.
+  Notifications are polled from MongoDB by the frontend. External scheduler hits
+  POST /api/v1/internal/jobs/run with X-Jobs-Key; sessions in P1 rely on end-to-end
+  tests calling that endpoint directly. Media never stored in MongoDB (StorageProvider
+  interface, Supabase Storage; dev fallback local). Soft delete via status: deleted.
+  Extension seams: when a session needs a capability owned by a later session it
+  depends on an interface + inert default in src/common/seams/ swapped via DI later.
+
+  Phases: P1 = core loop (sessions 1-12), P2 = trust layer (13-14), P3 = admin/moderation
+  (15-16), 17-21 integration/finalisation. One session = one OpenSpec change. Sessions
+  within a phase run in order only; "depends on" lists are strict. Extend a capability
+  only via MODIFIED deltas; new concepts via ADDED.
+
+rules:
+  proposal:
+    - Keep under 400 words and scoped to the roadmap session
+  tasks:
+    - Chunks must finish within one session

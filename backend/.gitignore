@@ -1,0 +1,28 @@
+# Compiled output
+/dist
+/node_modules
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Local storage provider writes here (STORAGE_PROVIDER=local)
+/storage
+
+# Test / coverage
+/coverage
