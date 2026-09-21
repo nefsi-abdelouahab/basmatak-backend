@@ -1,32 +1,33 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { createTestApp } from './utils/test-db';
 
-describe('AppController (e2e)', () => {
+describe('App (e2e)', () => {
   let app: INestApplication;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api/v1');
-    await app.init();
+  beforeAll(async () => {
+    const handle = await createTestApp();
+    app = handle.app;
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await app.close();
   });
 
-  it('/api/v1/health (GET)', () => {
-    return request(app.getHttpServer())
+  it('/api/v1/health (GET)', async () => {
+    const res = await request(app.getHttpServer())
       .get('/api/v1/health')
-      .expect(200)
-      .expect((res) => {
-        expect(res.body.status).toBe('ok');
-        expect(typeof res.body.version).toBe('string');
-      });
+      .expect(200);
+    expect(res.body.status).toBe('ok');
+    expect(typeof res.body.version).toBe('string');
+  });
+
+  it('unknown route returns the error envelope with 404', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/does-not-exist')
+      .expect(404);
+    expect(res.body.statusCode).toBe(404);
+    expect(typeof res.body.code).toBe('string');
+    expect(typeof res.body.message).toBe('string');
   });
 });
