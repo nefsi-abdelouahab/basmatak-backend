@@ -13,6 +13,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { LocationsModule } from './locations/locations.module';
 import { SkillsModule } from './skills/skills.module';
+import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { VolunteersModule } from './volunteers/volunteers.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -58,6 +59,7 @@ const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
     UsersModule,
     LocationsModule,
     SkillsModule,
+    OpportunitiesModule,
     OrganizationsModule,
     VolunteersModule,
   ],
