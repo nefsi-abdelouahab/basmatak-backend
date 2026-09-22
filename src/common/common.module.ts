@@ -13,12 +13,15 @@ import {
   OrganizationsCollection,
   OrganizationSchema,
 } from '../organizations/schemas/organization.schema';
+import { VolunteerRegistrationExtrasService } from '../volunteers/volunteer-registration-extras.service';
+import { VolunteersModule } from '../volunteers/volunteers.module';
 
 /**
  * Cross-cutting providers: seams (inert defaults until their owning sessions)
  * and the app logger. Guards/filters/pipes are registered at the app level.
- * `REGISTRATION_EXTRAS_SERVICE` is bound to the role-dispatching organization
- * provider (S5); Session 2's volunteer provider discards every other role.
+ * `REGISTRATION_EXTRAS_SERVICE` is the role-dispatching volunteer provider
+ * (S2+S5): it creates the `volunteer_profiles` row for volunteers and hands
+ * every other role to the organization provider.
  */
 @Global()
 @Module({
@@ -26,6 +29,7 @@ import {
     MongooseModule.forFeature([
       { name: OrganizationsCollection, schema: OrganizationSchema },
     ]),
+    VolunteersModule,
   ],
   providers: [
     AppLogger,
@@ -33,9 +37,11 @@ import {
     PortfolioQueryService,
     MediaOwnership,
     InertRegistrationExtrasService,
+    OrganizationRegistrationExtrasService,
+    VolunteerRegistrationExtrasService,
     {
       provide: REGISTRATION_EXTRAS_SERVICE,
-      useClass: OrganizationRegistrationExtrasService,
+      useClass: VolunteerRegistrationExtrasService,
     },
   ],
   exports: [
