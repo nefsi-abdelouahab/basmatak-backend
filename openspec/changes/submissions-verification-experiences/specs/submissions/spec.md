@@ -190,3 +190,51 @@ The system SHALL expose `POST /submissions/:submissionId/start-review` (authenti
 
 - **WHEN** the owning org calls start-review on a `draft` submission
 - **THEN** the request fails `409 INVALID_STATUS_TRANSITION`
+
+### Requirement: Submission approved outcome
+
+The system SHALL write the `approved` terminal state as the outcome of the organization's verify action (Part B `approved` write path deferred from the state machine registration requirement). The `under_review → approved` transition SHALL be written through `StatusTransitionService.assert` inside the verify transaction, together with the submission row update to `approved` and the `verifications`, `volunteer_experiences`, participant-completion, stats, and notification writes. Only a submission currently `submitted` or `under_review` SHALL be verifiable; a submission in any other state (`draft`, `approved`, `rejected`) SHALL fail `409 INVALID_STATUS_TRANSITION` — so an already-`approved` submission can never be double-verified. After the transaction commits, `submission.verified` SHALL be emitted with the updated submission payload (the S9 handler notifies the volunteer; its post-commit insert is dedupe-swallowed because the notification was already written inside the transaction, F4).
+
+#### Scenario: Verify approves a reviewed submission
+
+- **WHEN** the owning org verifies an `under_review` submission
+- **THEN** the submission becomes `approved`, a `status_histories` row records `under_review → approved`, and `submission.verified` is emitted after commit
+
+#### Scenario: Verify on a submitted (not yet reviewed) submission
+
+- **WHEN** the owning org verifies a `submitted` submission without first calling start-review
+- **THEN** the verify transaction still approves it (the whitelist path `submitted → under_review → approved` is traversed within the same transaction) and no separate start-review call is required
+
+#### Scenario: Already approved cannot be double-verified
+
+- **WHEN** the owning org calls verify on an `approved` submission
+- **THEN** the request fails `409 INVALID_STATUS_TRANSITION` and no state or proof rows are written
+
+#### Scenario: Volunteer is notified after approval
+
+- **WHEN** a submission is approved
+- **THEN** the volunteer receives exactly one `submission.verified` notification (in-transaction write; the post-commit handler's row is swallowed by the shared `dedupeKey`)
+
+### Requirement: Submission rejected outcome
+
+The system SHALL write the `rejected` terminal state as the outcome of the organization's reject action (Part B `rejected` write path). The `under_review → rejected` transition SHALL be written through `StatusTransitionService.assert`, together with the submission row update to `rejected` and a `verifications` row of status `rejected` carrying the organization's reason (decision: the reason is retained on the `verifications` rejected row; the `status_histories` schema carries no free-text field — see design). Only a submission currently `submitted` or `under_review` SHALL be rejectable; any other state SHALL fail `409 INVALID_STATUS_TRANSITION`. `submission.rejected` SHALL be emitted so the volunteer is notified. The Part A edit rule then lets the volunteer return the record to `draft` and resubmit (rejected → draft, unlimited); each rejection keeps its `verifications` (rejected) row and reason.
+
+#### Scenario: Reject writes the rejected state and reason
+
+- **WHEN** the owning org rejects a `submitted` or `under_review` submission with a reason
+- **THEN** the submission becomes `rejected`, a `status_histories` row records the transition, a `verifications` row of status `rejected` carries the reason, and `submission.rejected` is emitted
+
+#### Scenario: Reject on a live submission is blocked
+
+- **WHEN** the owning org calls reject on a `submitted` submission that was already rejected once and resubmitted
+- **THEN** the current new submission must first be reviewed (`submitted → under_review`) like any other live submission; reject only acts on `submitted|under_review`
+
+#### Scenario: Volunteer is notified after rejection
+
+- **WHEN** a submission is rejected
+- **THEN** the volunteer receives exactly one `submission.rejected` notification
+
+#### Scenario: Rejected submission can be edited back to draft
+
+- **WHEN** the volunteer PATCHes a `rejected` submission (Part A edit rule)
+- **THEN** it returns to `draft` with a `rejected → draft` history row and can be submitted again, unlimited
