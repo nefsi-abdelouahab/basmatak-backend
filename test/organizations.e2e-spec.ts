@@ -111,6 +111,18 @@ describe('organizations e2e (public pages + verification documents)', () => {
     });
 
     it('patches name/description/logo but never slug or verificationStatus', async () => {
+      const logoUpload = await request(info.app.getHttpServer())
+        .post('/api/v1/media/uploads')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          filename: 'logo.png',
+          mimeType: 'image/png',
+          size: 42000,
+          purpose: 'organization_logo',
+        })
+        .expect(201);
+      const logoMediaId = logoUpload.body.mediaId as string;
+
       await request(info.app.getHttpServer())
         .patch(`${ORGS}/me`)
         .set('Authorization', `Bearer ${token}`)
@@ -118,7 +130,7 @@ describe('organizations e2e (public pages + verification documents)', () => {
           nameAr: 'الجمعية',
           nameFr: "L'association",
           description: 'Water wells and education',
-          logoMediaId: '507f1f77bcf86cd799439011',
+          logoMediaId,
         })
         .expect(200);
 
@@ -127,7 +139,7 @@ describe('organizations e2e (public pages + verification documents)', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
       expect(me.body.nameAr).toBe('الجمعية');
-      expect(me.body.logoMediaId).toBe('507f1f77bcf86cd799439011');
+      expect(me.body.logoMediaId).toBe(logoMediaId);
 
       await request(info.app.getHttpServer())
         .patch(`${ORGS}/me`)
@@ -139,6 +151,30 @@ describe('organizations e2e (public pages + verification documents)', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ verificationStatus: 'verified' })
         .expect(400);
+    });
+
+    it('rejects a logo that is absent, foreign, or wrong-purpose (F9)', async () => {
+      await request(info.app.getHttpServer())
+        .patch(`${ORGS}/me`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ logoMediaId: '507f1f77bcf86cd799439011' })
+        .expect(404);
+      const foreignOwner = await registerOrg('rival@example.com');
+      const foreign = await request(info.app.getHttpServer())
+        .post('/api/v1/media/uploads')
+        .set('Authorization', `Bearer ${foreignOwner}`)
+        .send({
+          filename: 'org-logo.png',
+          mimeType: 'image/png',
+          size: 42000,
+          purpose: 'organization_logo',
+        })
+        .expect(201);
+      await request(info.app.getHttpServer())
+        .patch(`${ORGS}/me`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ logoMediaId: foreign.body.mediaId })
+        .expect(404);
     });
 
     it('returns 401 for anonymous and 404 for a volunteer (no org row)', async () => {
@@ -175,10 +211,22 @@ describe('organizations e2e (public pages + verification documents)', () => {
     it('accepts submission after email verification and reports pending', async () => {
       await verifyLatestEmail();
 
+      const upload = await request(info.app.getHttpServer())
+        .post('/api/v1/media/uploads')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          filename: 'license.pdf',
+          mimeType: 'application/pdf',
+          size: 42000,
+          purpose: 'verification_document',
+        })
+        .expect(201);
+      const document = upload.body.mediaId as string;
+
       const submitted = await request(info.app.getHttpServer())
         .post(`${ORGS}/me/verification`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ documents: ['507f1f77bcf86cd799439011'] })
+        .send({ documents: [document] })
         .expect(201);
       expect(submitted.body.status).toBe('pending');
 
@@ -189,8 +237,35 @@ describe('organizations e2e (public pages + verification documents)', () => {
       expect(status.body.verificationStatus).toBe('pending');
       expect(status.body.latest).toMatchObject({
         status: 'pending',
-        documents: ['507f1f77bcf86cd799439011'],
+        documents: [document],
       });
+    });
+
+    it('rejects an absent, foreign, or wrong-purpose document (F9)', async () => {
+      const wrongPurpose = await request(info.app.getHttpServer())
+        .post('/api/v1/media/uploads')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          filename: 'logo.png',
+          mimeType: 'image/png',
+          size: 42000,
+          purpose: 'organization_logo',
+        })
+        .expect(201);
+
+      const absent = await request(info.app.getHttpServer())
+        .post(`${ORGS}/me/verification`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ documents: ['507f1f77bcf86cd799439011'] })
+        .expect(404);
+      expect(absent.body.code).toBe('MEDIA_NOT_FOUND');
+
+      const wrongPurposeRes = await request(info.app.getHttpServer())
+        .post(`${ORGS}/me/verification`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ documents: [wrongPurpose.body.mediaId] })
+        .expect(409);
+      expect(wrongPurposeRes.body.code).toBe('MEDIA_PURPOSE_MISMATCH');
     });
 
     it('validates documents as ObjectId list (min 1)', async () => {
@@ -234,10 +309,22 @@ describe('organizations e2e (public pages + verification documents)', () => {
         await connection.close();
       }
 
+      const upload = await request(info.app.getHttpServer())
+        .post('/api/v1/media/uploads')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          filename: 'license-v2.pdf',
+          mimeType: 'application/pdf',
+          size: 42000,
+          purpose: 'verification_document',
+        })
+        .expect(201);
+      const document = upload.body.mediaId as string;
+
       const resubmitted = await request(info.app.getHttpServer())
         .post(`${ORGS}/me/verification`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ documents: ['507f1f77bcf86cd799439011'] })
+        .send({ documents: [document] })
         .expect(201);
       expect(resubmitted.body.status).toBe('pending');
 

@@ -29,6 +29,12 @@ import {
   MemoryConnectionHandle,
 } from '../../test/utils/memory-connection';
 import { AccountToken } from '../common/interfaces/account-token.interface';
+import { MediaOwnership } from '../common/seams/media-ownership';
+import {
+  MediaModel,
+  MediaCollection,
+  MediaSchema,
+} from '../media/schemas/media.schema';
 
 describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
   let handle: MemoryConnectionHandle;
@@ -38,6 +44,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
   let verificationModel: Model<OrganizationVerificationModel>;
   let historyModel: Model<StatusHistoryModel>;
   let userModel: Model<UserModel>;
+  let mediaModel: Model<MediaModel>;
   let registry: StatusTransitionRegistry;
 
   beforeAll(async () => {
@@ -55,6 +62,10 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       StatusHistorySchema,
     );
     userModel = handle.connection.model(UsersCollection, UserSchema);
+    mediaModel = handle.connection.model<MediaModel>(
+      MediaCollection,
+      MediaSchema,
+    );
 
     users = new UsersService(userModel);
     registry = new StatusTransitionRegistry();
@@ -69,6 +80,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       verificationModel,
       transitions,
       users,
+      new MediaOwnership(mediaModel),
     );
   });
 
@@ -85,6 +97,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       .deleteMany({});
     await handle.connection.collection(StatusHistoryCollection).deleteMany({});
     await handle.connection.collection(UsersCollection).deleteMany({});
+    await handle.connection.collection(MediaCollection).deleteMany({});
   });
 
   async function createOrgOwner() {
@@ -112,12 +125,28 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
     };
   }
 
+  async function createMedia(
+    ownerId: string,
+    purpose: 'verification_document' | 'organization_logo',
+  ): Promise<string> {
+    const row = await mediaModel.create({
+      ownerId,
+      purpose,
+      visibility: 'private',
+      type: 'file',
+      storageKey: `${purpose}/${ownerId}/probe-${Math.random()}.pdf`,
+    });
+    return row._id.toString();
+  }
+
   describe('submitVerification (F1 machine)', () => {
     it('from pending stores documents and keeps pending (no history)', async () => {
       const { user, org } = await createOrgOwner();
-      const row = await service.submitVerification(accountOf(user), [
-        '507f1f77bcf86cd799439011',
-      ]);
+      const doc = await createMedia(
+        user._id.toString(),
+        'verification_document',
+      );
+      const row = await service.submitVerification(accountOf(user), [doc]);
 
       expect(row.status).toBe('pending');
       const stored = await verificationModel.findById(row._id).exec();
@@ -144,7 +173,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         .exec();
 
       const row = await service.submitVerification(accountOf(user), [
-        '507f1f77bcf86cd799439011',
+        await createMedia(user._id.toString(), 'verification_document'),
       ]);
       expect(row.status).toBe('pending');
 

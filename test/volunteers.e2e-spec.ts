@@ -167,7 +167,18 @@ describe('volunteers e2e — profile, skills, availability, dashboard, privacy (
 
   describe('PATCH /volunteers/me', () => {
     it('updates editable fields', async () => {
-      const avatar = new Types.ObjectId().toString();
+      const uploaded = await request(app.getHttpServer())
+        .post('/api/v1/media/uploads')
+        .set('Authorization', `Bearer ${volunteerToken}`)
+        .send({
+          filename: 'avatar.png',
+          mimeType: 'image/png',
+          size: 42000,
+          purpose: 'avatar',
+        })
+        .expect(201);
+      const avatar = uploaded.body.mediaId as string;
+
       const res = await patch(volunteerToken, '/volunteers/me')
         .send({
           firstName: 'Ali',
@@ -189,6 +200,29 @@ describe('volunteers e2e — profile, skills, availability, dashboard, privacy (
         .findOne({ userId: volunteerUserId })
         .exec();
       expect(stored!.birthDate).toBeInstanceOf(Date);
+    });
+
+    it('rejects an avatar that is absent or owned by someone else (F9)', async () => {
+      const foreignAvatar = await request(app.getHttpServer())
+        .post('/api/v1/media/uploads')
+        .set('Authorization', `Bearer ${otherVolunteerToken}`)
+        .send({
+          filename: 'foreign.png',
+          mimeType: 'image/png',
+          size: 42000,
+          purpose: 'avatar',
+        })
+        .expect(201);
+
+      const absent = await patch(volunteerToken, '/volunteers/me')
+        .send({ avatar: new Types.ObjectId().toString() })
+        .expect(404);
+      expect(absent.body.code).toBe('MEDIA_NOT_FOUND');
+
+      const foreign = await patch(volunteerToken, '/volunteers/me')
+        .send({ avatar: foreignAvatar.body.mediaId })
+        .expect(404);
+      expect(foreign.body.code).toBe('MEDIA_NOT_FOUND');
     });
 
     it('rejects non-whitelisted keys like username or userId', async () => {

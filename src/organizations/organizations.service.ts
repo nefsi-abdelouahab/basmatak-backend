@@ -6,6 +6,7 @@ import { BusinessException } from '../common/exceptions/business.exception';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import { UsersService } from '../users/users.service';
 import { UpdateOrganizationDto } from './dto/organization.dto';
+import { MediaOwnership } from '../common/seams/media-ownership';
 import {
   OrganizationsCollection,
   OrganizationModel,
@@ -32,6 +33,7 @@ export class OrganizationsService {
     private readonly verificationModel: Model<OrganizationVerificationModel>,
     private readonly statusTransitions: StatusTransitionService,
     private readonly users: UsersService,
+    private readonly mediaOwnership: MediaOwnership,
   ) {}
 
   async listPublic(): Promise<OrganizationModel[]> {
@@ -93,6 +95,13 @@ export class OrganizationsService {
     dto: UpdateOrganizationDto,
   ): Promise<OrganizationModel> {
     const organization = await this.getOwn(account);
+    if (dto.logoMediaId !== undefined) {
+      await this.mediaOwnership.assertFor(
+        dto.logoMediaId,
+        account.sub,
+        'organization_logo',
+      );
+    }
     const updated = await this.organizationModel
       .findByIdAndUpdate(
         organization._id,
@@ -134,6 +143,14 @@ export class OrganizationsService {
         'ORG_ALREADY_VERIFIED',
         'This organization is already verified',
         409,
+      );
+    }
+
+    for (const documentId of documents) {
+      await this.mediaOwnership.assertFor(
+        documentId,
+        account.sub,
+        'verification_document',
       );
     }
 
