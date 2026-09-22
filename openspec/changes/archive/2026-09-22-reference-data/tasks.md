@@ -38,4 +38,4 @@
 
 - [x] 6.1 Run `npm run seed:locations` and `npm run seed:skills` locally and confirm counts (58 wilayas; A4 categories + starter skills) and that a second run is stable
 - [x] 6.2 From the repo root run `openspec validate reference-data` and `openspec status --change reference-data` (all artifacts done); then `openspec archive reference-data -y`
-- [ ] 6.3 Commit locally only with message `feat(reference-data): wilayas, municipalities, skill catalog with idempotent seeds`
+- [x] 6.3 Commit locally only with message `feat(reference-data): wilayas, municipalities, skill catalog with idempotent seeds`
