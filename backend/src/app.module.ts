@@ -14,6 +14,7 @@ import { UsersModule } from './users/users.module';
 import { LocationsModule } from './locations/locations.module';
 import { SkillsModule } from './skills/skills.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { VolunteersModule } from './volunteers/volunteers.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 import { SuspendedGuard } from './common/guards/suspended.guard';
@@ -58,6 +59,7 @@ const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
     LocationsModule,
     SkillsModule,
     OrganizationsModule,
+    VolunteersModule,
   ],
   controllers: [AppController, HealthController],
   // Global guards execute in the order declared: JWT identity first, then
