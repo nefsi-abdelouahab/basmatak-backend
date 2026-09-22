@@ -131,6 +131,7 @@ describe('opportunities e2e (task lifecycle, feed, positions, job tick)', () => 
         Array.from({ length: n }, () => ({
           opportunityId: new Types.ObjectId(opportunityId),
           positionId: new Types.ObjectId(positionId),
+          applicationId: new Types.ObjectId(),
           volunteerId: new Types.ObjectId(),
           status: 'accepted',
         })),

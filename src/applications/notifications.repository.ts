@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { Types, ClientSession } from 'mongoose';
 
 export const NOTIFICATIONS_REPOSITORY = 'NOTIFICATIONS_REPOSITORY';
@@ -7,10 +6,10 @@ export const NOTIFICATIONS_REPOSITORY = 'NOTIFICATIONS_REPOSITORY';
  * F4 seam: transactional flows (accept application, withdraw accepted
  * application, verify submission) persist in-app notifications INSIDE the
  * same Mongo transaction, not over the EventEmitter bus. The notifications
- * module (Session 9) owns the `notifications` collection and swaps this
- * provider for a real implementation; until then the default is inert so S7
- * sessions stay order-independent and no collection is created implicitly
- * inside a transaction.
+ * module (Session 9) owns the `notifications` collection and provides the real
+ * `MongoNotificationsRepository` bound to this token; each transactional flow
+ * also emits its post-commit convenience event, whose handler derives the same
+ * dedupe key so it is swallowed (no double-notify).
  */
 export interface TransactionalNotification {
   recipientId: Types.ObjectId;
@@ -23,11 +22,4 @@ export interface NotificationsRepository {
     notification: TransactionalNotification,
     session: ClientSession,
   ): Promise<void>;
-}
-
-@Injectable()
-export class InertNotificationsRepository implements NotificationsRepository {
-  async createInSession(): Promise<void> {
-    /* No-op until Session 9 swaps in the real repository. */
-  }
 }
