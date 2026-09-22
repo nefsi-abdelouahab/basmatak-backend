@@ -734,8 +734,10 @@ describe('applications & participations e2e (S7)', () => {
       ]);
       expect([resA.status, resB.status].sort()).toEqual([200, 409]);
       expect(await readFilledCount(raceOpp._id)).toBe(1);
-      expect(await readApplicationStatus(a)).toBe('accepted');
-      expect(await readApplicationStatus(b)).toBe('pending');
+      const win = resA.status === 200 ? a : b;
+      const lose = resA.status === 200 ? b : a;
+      expect(await readApplicationStatus(win)).toBe('accepted');
+      expect(await readApplicationStatus(lose)).toBe('pending');
     });
   });
 });
