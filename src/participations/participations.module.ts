@@ -36,6 +36,9 @@ export class ParticipationsModule implements OnModuleInit {
   onModuleInit(): void {
     this.registry.register('task_participant', [
       ['accepted', 'active'],
+      // accepted|active → completed: verify (submissions S11 Part B) completes
+      // a participant that was never activated by the S6 startDate job.
+      ['accepted', 'completed'],
       ['active', 'completed'],
       ['accepted', 'withdrawn'],
       ['active', 'withdrawn'],
