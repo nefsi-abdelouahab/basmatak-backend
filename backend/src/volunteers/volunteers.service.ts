@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
+import { MediaOwnership } from '../common/seams/media-ownership';
 import {
   AddVolunteerSkillDto,
   UpdateVolunteerSkillDto,
@@ -60,6 +61,7 @@ export class VolunteersService {
     private readonly availabilityModel: Model<VolunteerAvailabilityModel>,
     @InjectModel(SkillsCollection)
     private readonly skillsCatalogModel: Model<SkillModel>,
+    private readonly mediaOwnership: MediaOwnership,
   ) {}
 
   async requireProfile(userId: string): Promise<VolunteerProfileModel> {
@@ -99,9 +101,11 @@ export class VolunteersService {
       set.location = dto.location;
     }
     if (dto.avatar !== undefined) {
+      await this.mediaOwnership.assertFor(dto.avatar, userId, 'avatar');
       set.avatar = new Types.ObjectId(dto.avatar);
     }
     if (dto.banner !== undefined) {
+      await this.mediaOwnership.assertFor(dto.banner, userId);
       set.banner = new Types.ObjectId(dto.banner);
     }
     const updated = await this.profileModel

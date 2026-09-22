@@ -15,6 +15,7 @@ import {
 } from '../organizations/schemas/organization.schema';
 import { VolunteerRegistrationExtrasService } from '../volunteers/volunteer-registration-extras.service';
 import { VolunteersModule } from '../volunteers/volunteers.module';
+import { MediaCollection, MediaSchema } from '../media/schemas/media.schema';
 
 /**
  * Cross-cutting providers: seams (inert defaults until their owning sessions)
@@ -28,6 +29,7 @@ import { VolunteersModule } from '../volunteers/volunteers.module';
   imports: [
     MongooseModule.forFeature([
       { name: OrganizationsCollection, schema: OrganizationSchema },
+      { name: MediaCollection, schema: MediaSchema },
     ]),
     VolunteersModule,
   ],

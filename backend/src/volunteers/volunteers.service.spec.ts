@@ -30,6 +30,13 @@ import {
 } from './schemas/volunteer-skill.schema';
 import { VolunteerRegistrationExtrasService } from './volunteer-registration-extras.service';
 import { VolunteersService } from './volunteers.service';
+import { MediaOwnership } from '../common/seams/media-ownership';
+import {
+  MediaModel,
+  MediaCollection,
+  MediaSchema,
+} from '../media/schemas/media.schema';
+import { MediaPurpose } from '../media/media.constants';
 import {
   startMemoryConnection,
   stopMemoryConnection,
@@ -45,6 +52,8 @@ describe('VolunteersService', () => {
   let availabilityModel: Model<VolunteerAvailabilityModel>;
   let catalogModel: Model<SkillModel>;
   let orgModel: Model<OrganizationModel>;
+  let mediaModel: Model<MediaModel>;
+  let ownership: MediaOwnership;
 
   let volunteerId: string;
   let activeSkillId: Types.ObjectId;
@@ -69,6 +78,11 @@ describe('VolunteersService', () => {
       OrganizationsCollection,
       OrganizationSchema,
     );
+    mediaModel = handle.connection.model<MediaModel>(
+      MediaCollection,
+      MediaSchema,
+    );
+    ownership = new MediaOwnership(mediaModel);
 
     const orgExtras = new OrganizationRegistrationExtrasService(
       orgModel,
@@ -80,6 +94,7 @@ describe('VolunteersService', () => {
       skillModel,
       availabilityModel,
       catalogModel,
+      ownership,
     );
 
     activeSkillId = new Types.ObjectId();
@@ -123,6 +138,7 @@ describe('VolunteersService', () => {
       .collection(VolunteerAvailabilitiesCollection)
       .deleteMany({});
     await handle.connection.collection(OrganizationsCollection).deleteMany({});
+    await handle.connection.collection(MediaCollection).deleteMany({});
 
     const created = await profileModel.create({
       _id: new Types.ObjectId(),
@@ -131,6 +147,20 @@ describe('VolunteersService', () => {
     });
     volunteerId = created.userId.toString();
   });
+
+  async function createMedia(
+    ownerId: string,
+    purpose: MediaPurpose,
+  ): Promise<string> {
+    const row = await mediaModel.create({
+      ownerId,
+      purpose,
+      visibility: 'private',
+      type: 'file',
+      storageKey: `${purpose}/${ownerId}/probe-${Math.random()}.png`,
+    });
+    return row._id.toString();
+  }
 
   describe('registration seam (S2 dispatch)', () => {
     it('creates a private profile with a slug username for role volunteer', async () => {
@@ -208,7 +238,7 @@ describe('VolunteersService', () => {
 
     it('updateProfile sets the editable fields and rejects a missing profile', async () => {
       const location = { wilayaId: '16', municipalityId: '1601' };
-      const avatar = new Types.ObjectId().toString();
+      const avatar = await createMedia(volunteerId, 'avatar');
       const updated = await service.updateProfile(volunteerId, {
         firstName: 'Ali',
         lastName: 'Ben',
@@ -228,6 +258,35 @@ describe('VolunteersService', () => {
         status: 404,
         code: 'VOLUNTEER_PROFILE_NOT_FOUND',
       });
+    });
+
+    it('rejects absent, foreign, or wrong-purpose avatar/banner media (F9)', async () => {
+      const foreign = await createMedia(
+        new Types.ObjectId().toString(),
+        'avatar',
+      );
+      const doc = await createMedia(volunteerId, 'verification_document');
+
+      await expect(
+        service.updateProfile(volunteerId, {
+          avatar: new Types.ObjectId().toString(),
+        }),
+      ).rejects.toMatchObject({ status: 404, code: 'MEDIA_NOT_FOUND' });
+      await expect(
+        service.updateProfile(volunteerId, { avatar: foreign }),
+      ).rejects.toMatchObject({ status: 404, code: 'MEDIA_NOT_FOUND' });
+      await expect(
+        service.updateProfile(volunteerId, {
+          avatar: doc,
+        }),
+      ).rejects.toMatchObject({ status: 409, code: 'MEDIA_PURPOSE_MISMATCH' });
+      await expect(
+        service.updateProfile(volunteerId, {
+          banner: foreign,
+        }),
+      ).rejects.toMatchObject({ status: 404, code: 'MEDIA_NOT_FOUND' });
+      const updated = await service.updateProfile(volunteerId, { banner: doc });
+      expect(updated.banner!.toString()).toBe(doc);
     });
 
     it('updatePublicSettings flips only the given flags', async () => {
@@ -383,7 +442,7 @@ describe('VolunteersService', () => {
         bio: 'Bénévole',
         birthDate: '1990-05-04',
         location: { wilayaId: '16', municipalityId: '1601' },
-        avatar: new Types.ObjectId().toString(),
+        avatar: await createMedia(volunteerId, 'avatar'),
       });
       await service.addSkill(volunteerId, {
         skillId: activeSkillId.toString(),

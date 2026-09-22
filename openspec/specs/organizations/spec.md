@@ -4,7 +4,7 @@
 TBD - created by archiving change organizations. Update Purpose after archive.
 ## Requirements
 ### Requirement: Organizations collection
-The system SHALL provide an `organizations` collection with `userId` (ObjectId, unique — one organization per account per §9), `slug` (unique), `nameAr`/`nameFr`, `description`, `logoMediaId` (ObjectId-format optional; no existence/ownership check until Session 8 per F9), `verificationStatus` (`pending | verified | rejected`, default `pending`), `status` (`active | suspended | deleted`, default `active`), and a `reliability` placeholder sub-document (populated by Session 13). Indexes SHALL include unique `userId`, unique `slug`, and `(verificationStatus, status)`.
+The system SHALL provide an `organizations` collection with `userId` (ObjectId, unique — one organization per account per §9), `slug` (unique), `nameAr`/`nameFr`, `description`, `logoMediaId` (ObjectId-format optional, validated against `media` via `MediaOwnership.assertFor` with `purpose=organization_logo` — Session 8 retrofit of F9), `verificationStatus` (`pending | verified | rejected`, default `pending`), `status` (`active | suspended | deleted`, default `active`), and a `reliability` placeholder sub-document (populated by Session 13). Indexes SHALL include unique `userId`, unique `slug`, and `(verificationStatus, status)`.
 
 #### Scenario: One organization per account
 - **WHEN** a second `organizations` row is inserted with the same `userId`
@@ -86,7 +86,7 @@ The system SHALL expose `GET /organizations/me` (authenticated, organization rol
 - **THEN** the response is `404` in the error envelope
 
 ### Requirement: Update own organization
-The system SHALL expose `PATCH /organizations/me` (authenticated, organization role) allowing the caller to update editable fields of their own organization. `userId`, `slug`, `verificationStatus`, and `status` SHALL NOT be settable from the body. `slug` SHALL be generated server-side and SHALL never be accepted from the body (A12).
+The system SHALL expose `PATCH /organizations/me` (authenticated, organization role) allowing the caller to update editable fields of their own organization. `userId`, `slug`, `verificationStatus`, and `status` SHALL NOT be settable from the body. `slug` SHALL be generated server-side and SHALL never be accepted from the body (A12). `logoMediaId` SHALL be validated through `MediaOwnership.assertFor` (existence, ownership by the caller's organization, `purpose=organization_logo`, not deleted) — Session 8 retrofit of F9.
 
 #### Scenario: Owner updates editable fields
 - **WHEN** an organization-role account patches `nameAr`, `nameFr`, `description`, or `logoMediaId`
@@ -100,11 +100,15 @@ The system SHALL expose `PATCH /organizations/me` (authenticated, organization r
 - **WHEN** one organization-role account attempts to patch another organization's data through `/organizations/me`
 - **THEN** it can only ever resolve its own row (no cross-organization access)
 
+#### Scenario: Foreign, absent, or deleted logo rejected
+- **WHEN** an organization patches a `logoMediaId` that is not theirs, does not exist, is soft-deleted, or has another purpose
+- **THEN** the request is rejected via `MediaOwnership.assertFor`
+
 ### Requirement: Submit verification documents
-The system SHALL expose `POST /organizations/me/verification` (authenticated, organization role) accepting `documents` as an array of `mediaId`s (ObjectId-format strings; existence/ownership are enforced by Session 8 per F9). Submitting SHALL be allowed only from `verificationStatus=pending` (replaces the document set, status stays `pending`) and from `rejected` (becomes `pending` — F1 resubmission). The call SHALL require the account email to be verified (A10); otherwise the response SHALL be `403` with business code `EMAIL_NOT_VERIFIED`.
+The system SHALL expose `POST /organizations/me/verification` (authenticated, organization role) accepting `documents` as an array of `mediaId`s (validated through `MediaOwnership.assertFor` per document: existence, ownership by the caller's organization, `purpose=verification_document`, not deleted — Session 8 retrofit of F9). Submitting SHALL be allowed only from `verificationStatus=pending` (replaces the document set, status stays `pending`) and from `rejected` (becomes `pending` — F1 resubmission). The call SHALL require the account email to be verified (A10); otherwise the response SHALL be `403` with business code `EMAIL_NOT_VERIFIED`.
 
 #### Scenario: First submission sets pending
-- **WHEN** an organization with `pending` status submits documents (ObjectId-format only)
+- **WHEN** an organization with `pending` status submits valid document mediaIds
 - **THEN** a new `organization_verifications` row is created with the documents and status `pending`
 
 #### Scenario: Re-submission from pending updates documents
@@ -122,6 +126,10 @@ The system SHALL expose `POST /organizations/me/verification` (authenticated, or
 #### Scenario: Verified organization blocked
 - **WHEN** a `verified` organization submits documents
 - **THEN** the response is `409` with business code `ORG_ALREADY_VERIFIED`
+
+#### Scenario: Foreign or absent document rejected
+- **WHEN** any document mediaId is not owned by the organization, does not exist, is soft-deleted, or has a purpose other than `verification_document`
+- **THEN** the request is rejected via `MediaOwnership.assertFor`
 
 ### Requirement: Read own verification status
 The system SHALL expose `GET /organizations/me/verification` (authenticated, organization role) returning the latest `organization_verifications` status and, when the latest row is `rejected`, its `rejectionReason`, alongside the organization's current `verificationStatus`.
