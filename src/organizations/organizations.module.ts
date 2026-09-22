@@ -17,9 +17,10 @@ import {
 /**
  * Organizations feature module (inventory §2.7): the org page, `/me`
  * internals and the verification-document flow. Registers the `organization`
- * verification-status machine (`pending → verified | rejected → pending`) so
- * status histories are written on resubmission; S15 drives `→ verified|rejected`.
- * MongooseModule is exported for S15/S17 reuse.
+ * whitelist: the verification-status machine (`pending → verified | rejected
+ * → pending`) driven by S5/S15, plus the S15 account pairs (`active ↔
+ * suspended`) used by the admin status route — so every change is recorded in
+ * `status_histories`. MongooseModule is exported for S15/S17 reuse.
  */
 @Module({
   imports: [
@@ -44,6 +45,8 @@ export class OrganizationsModule implements OnModuleInit {
       ['pending', 'verified'],
       ['pending', 'rejected'],
       ['rejected', 'pending'],
+      ['active', 'suspended'],
+      ['suspended', 'active'],
     ]);
   }
 }
