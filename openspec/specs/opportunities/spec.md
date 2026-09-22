@@ -62,12 +62,24 @@ The system SHALL expose public `GET /opportunities/:idOrSlug` (resolving either 
 - **WHEN** a guest calls `GET /opportunities/:idOrSlug` for a draft, closed, cancelled, or completed opportunity (or for a nonexistent id/slug)
 - **THEN** the response is `404`
 
-### Requirement: Recommended feed seam
-The system SHALL expose `GET /opportunities/recommended` (authenticated, volunteer role) returning an empty list this session, with the rule-based matching (volunteer skills/location overlap, §2.8) arriving in Session 12. The route SHALL be declared before `GET /opportunities/:idOrSlug` in the controller so `recommended` is not shadowed by the `:idOrSlug` catch-all.
+### Requirement: Recommended feed
+The system SHALL expose `GET /opportunities/recommended` (authenticated, volunteer role) returning a rule-based, cursor-paginated feed (S1 convention, default 20, max 50) computed from the caller's own `volunteer_profiles`/`volunteer_skills` data (the same sources as S4). Only opportunities with `status=published` and at least one position with `filledCount < requiredCount` SHALL be candidates. Candidates SHALL be ranked by a deterministic score combining (a) skill-topic/level overlap between the volunteer's skills and the winning position's `requiredSkills`, (b) location match on `location.wilayaId`, and (c) recency, with stable tie-breaking. The route SHALL be declared before `GET /opportunities/:idOrSlug` in the controller so `recommended` is not shadowed by the `:idOrSlug` catch-all. No ML/search — a plain query per §0.
 
-#### Scenario: Empty recommendation list
-- **WHEN** a volunteer calls `GET /opportunities/recommended` before Session 12
-- **THEN** the response is an empty-but-correct list shape
+#### Scenario: Published open opportunities recommended
+- **WHEN** a volunteer calls `GET /opportunities/recommended` and matching published opportunities with open positions exist
+- **THEN** the response is a cursor-paginated list of those opportunities, ordered deterministically by score
+
+#### Scenario: Non-published and full opportunities excluded
+- **WHEN** an opportunity is `draft`, `closed`, `cancelled`, or `completed`, or has no position with `filledCount < requiredCount`
+- **THEN** it is absent from the recommended feed
+
+#### Scenario: Scored by skills, location and recency
+- **WHEN** a volunteer has higher skill-overlap with one opportunity and a same-wilaya match with another
+- **THEN** the higher-overlap / matched-wilaya opportunities rank above lower-overlap, mismatched-wilaya ones, with ties resolved deterministically so two calls with the same data return the same order
+
+#### Scenario: No skill or location data still returns a feed
+- **WHEN** a volunteer has no `volunteer_skills` or no `location`
+- **THEN** the feed degrades gracefully (the skill/location components contribute nothing) and returns the published open-opportunity set, deterministically ordered
 
 #### Scenario: Route not shadowed
 - **WHEN** a volunteer calls `GET /opportunities/recommended`

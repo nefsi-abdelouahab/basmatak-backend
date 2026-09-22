@@ -18,10 +18,19 @@ import { OrganizationModel } from '../organizations/schemas/organization.schema'
 import { OrganizationsService } from '../organizations/organizations.service';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
 import {
+  VolunteerProfileModel,
+  VolunteerProfilesCollection,
+} from '../volunteers/schemas/volunteer-profile.schema';
+import {
+  VolunteerSkillModel,
+  VolunteerSkillsCollection,
+} from '../volunteers/schemas/volunteer-skill.schema';
+import {
   CreateOpportunityDto,
   CreatePositionDto,
   OpportunityFeedQueryDto,
   OwnOpportunityQueryDto,
+  RecommendedQueryDto,
   UpdateOpportunityDto,
   UpdatePositionDto,
 } from './dto/opportunity.dto';
@@ -40,6 +49,44 @@ function escapeRegex(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+export interface RecommendedScoreInput {
+  /** Union of the open positions' `requiredSkills` for one opportunity. */
+  requiredSkills: string[];
+  volunteerSkillIds: string[];
+  primarySkillIds: string[];
+  wilayaId?: string;
+  opportunityWilayaId?: string;
+}
+
+/**
+ * Deterministic pure recommendation score (design D6): 10 per matched
+ * required skill, +5 when that skill is the volunteer's primary skill, +5 for
+ * a wilaya match. Recency is a tie-breaker in the sort, not part of the score.
+ */
+export function scoreRecommendedOpportunity(
+  input: RecommendedScoreInput,
+): number {
+  const volunteerSet = new Set(input.volunteerSkillIds);
+  const primarySet = new Set(input.primarySkillIds);
+  let score = 0;
+  for (const skillId of input.requiredSkills) {
+    if (volunteerSet.has(skillId)) {
+      score += 10;
+      if (primarySet.has(skillId)) {
+        score += 5;
+      }
+    }
+  }
+  if (
+    input.wilayaId &&
+    input.opportunityWilayaId &&
+    input.wilayaId === input.opportunityWilayaId
+  ) {
+    score += 5;
+  }
+  return score;
+}
+
 /**
  * Opportunities service (inventory §2.8, roadmap S6): draft creation, the
  * `draft → published → in_progress → completed` / `→ closed | cancelled`
@@ -54,6 +101,10 @@ export class OpportunitiesService {
     private readonly opportunityModel: Model<OpportunityModel>,
     @InjectModel(SkillsCollection)
     private readonly skillModel: Model<SkillModel>,
+    @InjectModel(VolunteerProfilesCollection)
+    private readonly volunteerProfileModel: Model<VolunteerProfileModel>,
+    @InjectModel(VolunteerSkillsCollection)
+    private readonly volunteerSkillModel: Model<VolunteerSkillModel>,
     private readonly organizations: OrganizationsService,
     private readonly statusTransitions: StatusTransitionService,
     private readonly publishGate: PublishGateService,
@@ -456,9 +507,88 @@ export class OpportunitiesService {
     return bySlug;
   }
 
-  /** S6 seam — the rule engine arrives in Session 12. */
-  async getRecommended(): Promise<unknown[]> {
-    return [];
+  /**
+   * Rule-based recommended feed (design D6), replacing the S6 empty seam:
+   * caller's `volunteer_skills` + profile location vs published opportunities
+   * with at least one open seat, scored deterministically and cursor-paged
+   * in memory (score desc, `_id` desc). A caller without a profile or skills
+   * degrades gracefully to the full published-open set.
+   */
+  async getRecommended(
+    account: AccountToken,
+    query: RecommendedQueryDto,
+  ): Promise<CursorPage<OpportunityModel>> {
+    const limit = normalizeLimit(query.limit);
+    const volunteerId = new Types.ObjectId(account.sub);
+    const [profile, volunteerSkills] = await Promise.all([
+      this.volunteerProfileModel.findOne({ userId: volunteerId }).lean().exec(),
+      this.volunteerSkillModel.find({ volunteerId }).lean().exec(),
+    ]);
+    const volunteerSkillIds = volunteerSkills.map((skill) =>
+      skill.skillId.toString(),
+    );
+    const primarySkillIds = volunteerSkills
+      .filter((skill) => skill.isPrimary)
+      .map((skill) => skill.skillId.toString());
+    const wilayaId = profile?.location?.wilayaId;
+
+    const candidates = await this.opportunityModel
+      .find({ status: 'published' })
+      .sort({ _id: -1 })
+      .exec();
+    const open = candidates
+      .filter((opportunity) => this.hasOpenSeats(opportunity))
+      .map((opportunity) => ({
+        opportunity,
+        score: scoreRecommendedOpportunity({
+          requiredSkills: this.openRequiredSkills(opportunity),
+          volunteerSkillIds,
+          primarySkillIds,
+          wilayaId,
+          opportunityWilayaId: opportunity.location?.wilayaId,
+        }),
+      }))
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          right.opportunity._id
+            .toString()
+            .localeCompare(left.opportunity._id.toString()),
+      );
+
+    const cursor = decodeCursor(query.cursor);
+    const page = cursor
+      ? open.filter((entry) => entry.opportunity._id.toString() < cursor)
+      : open;
+    const hasMore = page.length > limit;
+    const items = hasMore ? page.slice(0, limit) : page;
+    const lastId =
+      hasMore && items.length > 0
+        ? items[items.length - 1].opportunity._id.toString()
+        : null;
+    return {
+      items: items.map((entry) => entry.opportunity),
+      nextCursor: buildCursor(lastId).cursor,
+      limit,
+    };
+  }
+
+  private hasOpenSeats(opportunity: OpportunityModel): boolean {
+    return opportunity.positions.some(
+      (position) => position.filledCount < position.requiredCount,
+    );
+  }
+
+  private openRequiredSkills(opportunity: OpportunityModel): string[] {
+    const set = new Set<string>();
+    for (const position of opportunity.positions) {
+      if (position.filledCount < position.requiredCount) {
+        for (const skillId of position.requiredSkills) {
+          set.add(skillId.toString());
+        }
+      }
+    }
+    return [...set];
   }
 
   async listOwn(

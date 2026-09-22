@@ -5,6 +5,14 @@ import { SettingsService } from '../core/settings/settings.service';
 import { StatusTransitionRegistry } from '../core/status-transitions/status-transition.registry';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { SkillsModule } from '../skills/skills.module';
+import {
+  VolunteerProfilesCollection,
+  VolunteerProfileSchema,
+} from '../volunteers/schemas/volunteer-profile.schema';
+import {
+  VolunteerSkillsCollection,
+  VolunteerSkillSchema,
+} from '../volunteers/schemas/volunteer-skill.schema';
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { PositionsController } from './positions.controller';
@@ -27,6 +35,8 @@ import { TaskParticipantsAdapter } from './task-participants.adapter';
     SkillsModule,
     MongooseModule.forFeature([
       { name: OpportunitiesCollection, schema: OpportunitySchema },
+      { name: VolunteerProfilesCollection, schema: VolunteerProfileSchema },
+      { name: VolunteerSkillsCollection, schema: VolunteerSkillSchema },
     ]),
   ],
   controllers: [OpportunitiesController, PositionsController],
