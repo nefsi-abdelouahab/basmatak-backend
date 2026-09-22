@@ -107,5 +107,5 @@
 
 - [x] 14.1 From `/backend`: `npm run build`, `npm run lint`, `npm test`, `npm run test:e2e` — all green; record any pre-existing sibling failure
 - [x] 14.2 From the repo root: `openspec validate submissions-verification-experiences` and `openspec status --change submissions-verification-experiences` (shared change — all Part A + Part B artifacts valid; 4/4 artifacts, tasks tracked)
-- [ ] 14.3 `git add` selectively (Part B backend modules, new E2E, extended openspec artifacts **only** under `openspec/changes/submissions-verification-experiences/**`); never `git add -A`; leave `openspec/changes/my-opportunities-page/` untouched; commit `feat(verifications): transactional verify/reject and public experience proof (part B)`
+- [x] 14.3 `git add` selectively (Part B backend modules, new E2E, extended openspec artifacts **only** under `openspec/changes/submissions-verification-experiences/**`); never `git add -A`; leave `openspec/changes/my-opportunities-page/` untouched; commit `feat(verifications): transactional verify/reject and public experience proof (part B)`
 - [x] 14.4 Confirm Part A tasks (sections 1–7) are still marked complete/accurate in the working change before the final archive step (archive itself happens in a later phase per the roadmap runner)
