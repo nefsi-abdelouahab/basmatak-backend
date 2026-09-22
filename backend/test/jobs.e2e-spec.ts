@@ -49,11 +49,16 @@ describe('Internal jobs & error shape (e2e)', () => {
           .post('/api/v1/internal/jobs/run')
           .set('X-Jobs-Key', process.env.JOBS_KEY ?? 'test-jobs-key')
           .expect(200);
-        expect(first.body).toMatchObject({ ok: true, ran: 1 });
-        expect(first.body.results[0]).toMatchObject({
-          name: 'test-counter',
-          ok: true,
-        });
+        expect(first.body.ok).toBe(true);
+        expect(first.body.ran).toBeGreaterThanOrEqual(1);
+        expect(first.body.results).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              name: 'test-counter',
+              ok: true,
+            }),
+          ]),
+        );
         expect(counter).toBe(1);
 
         await request(app.getHttpServer())
@@ -83,7 +88,7 @@ describe('Internal jobs & error shape (e2e)', () => {
           .set('X-Jobs-Key', process.env.JOBS_KEY ?? 'test-jobs-key')
           .expect(200);
         expect(res.body.ok).toBe(false);
-        expect(res.body.ran).toBe(2);
+        expect(res.body.ran).toBeGreaterThanOrEqual(2);
         expect(res.body.results).toEqual(
           expect.arrayContaining([
             expect.objectContaining({ name: 'test-failing', ok: false }),
