@@ -21,6 +21,7 @@ import {
   CreateOpportunityDto,
   OpportunityFeedQueryDto,
   OwnOpportunityQueryDto,
+  RecommendedQueryDto,
   UpdateOpportunityDto,
 } from './dto/opportunity.dto';
 import { OpportunitiesService } from './opportunities.service';
@@ -49,9 +50,14 @@ export class OpportunitiesController {
 
   @Get('opportunities/recommended')
   @Roles('volunteer')
-  @ApiOperation({ summary: 'Recommended feed (empty seam until S12)' })
-  recommended() {
-    return this.opportunities.getRecommended();
+  @ApiOperation({
+    summary: 'Recommended feed for the volunteer (rule-based scoring)',
+  })
+  recommended(
+    @CurrentAccount() account: AccountToken,
+    @Query() query: RecommendedQueryDto,
+  ) {
+    return this.opportunities.getRecommended(account, query);
   }
 
   @Get('opportunities/:idOrSlug')

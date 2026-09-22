@@ -1,10 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
 import { MediaOwnership } from '../common/seams/media-ownership';
+import {
+  PortfolioQueryService,
+  PublicPortfolio,
+} from '../common/seams/portfolio-query.service';
+import { MediaCollection, MediaModel } from '../media/schemas/media.schema';
+import {
+  VolunteerExperiencesCollection,
+  VolunteerExperienceModel,
+} from '../verifications/schemas/volunteer-experience.schema';
+import { CursorPage } from '../common/pagination/paginated.interface';
+import {
+  buildCursor,
+  decodeCursor,
+  MAX_LIMIT,
+  normalizeLimit,
+} from '../common/pagination/pagination.util';
+import { TalentsQueryDto } from './dto/talents.dto';
 import {
   AddVolunteerSkillDto,
   UpdateVolunteerSkillDto,
@@ -29,16 +46,54 @@ import {
   WeeklySchedule,
 } from './schemas/volunteer-availability.schema';
 
-/** Public-read view (S2 seams; consumed by Session 12, inert until then). */
+/** A skill on a public profile / talent card, joined to the catalog (A5-gated). */
+export interface TalentSkill {
+  skillId: string;
+  nameAr: string;
+  nameFr: string;
+  level: number;
+  isPrimary: boolean;
+}
+
+/** Public-safety projection of an enabled volunteer profile (talents feed). */
+export interface TalentCard {
+  username: string;
+  firstName: string | null;
+  bio: string | null;
+  location: { wilayaId: string } | null;
+  skills: TalentSkill[] | null;
+  avatar: string | null;
+}
+
+/** Evidence metadata restricted to `visibility=public` media (A6). */
+export interface PublicExperienceEvidence {
+  mediaId: string;
+  type: string;
+  mimeType: string | null;
+  filename: string | null;
+  url: string | null;
+}
+
+/** Public snapshot of one `volunteer_experiences` row (publicVisibility=public). */
+export interface PublicExperienceCard {
+  id: string;
+  title: string;
+  description: string;
+  duration: number;
+  skills: string[];
+  evidence: PublicExperienceEvidence[];
+}
+
+/** Public-read view (S2 seams; populated by Session 12). */
 export interface PublicVolunteerProfile {
   username: string;
   firstName: string | null;
   avatar: string | null;
   bio: string | null;
   location: VolunteerProfile['location'] | null;
-  skills: unknown[] | null;
-  experiences: unknown[] | null;
-  availability: unknown | null;
+  skills: TalentSkill[] | null;
+  experiences: PublicExperienceCard[] | null;
+  availability: WeeklySchedule | null;
   portfolio: unknown | null;
 }
 
@@ -49,6 +104,11 @@ export interface VolunteerDashboard {
 }
 
 const FILLABLE_COUNT = 7;
+
+/** Escapes regex meta-characters so user input stays a literal match (F11). */
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 @Injectable()
 export class VolunteersService {
@@ -61,7 +121,12 @@ export class VolunteersService {
     private readonly availabilityModel: Model<VolunteerAvailabilityModel>,
     @InjectModel(SkillsCollection)
     private readonly skillsCatalogModel: Model<SkillModel>,
+    @InjectModel(MediaCollection)
+    private readonly mediaModel: Model<MediaModel>,
+    @InjectModel(VolunteerExperiencesCollection)
+    private readonly experienceModel: Model<VolunteerExperienceModel>,
     private readonly mediaOwnership: MediaOwnership,
+    private readonly portfolioQuery: PortfolioQueryService,
   ) {}
 
   async requireProfile(userId: string): Promise<VolunteerProfileModel> {
@@ -326,39 +391,357 @@ export class VolunteersService {
     };
   }
 
+  async findEnabledProfileByUsername(
+    username: string,
+  ): Promise<VolunteerProfileModel | null> {
+    return this.findEnabledProfile(username);
+  }
+
+  /**
+   * A5 public profile resolver (inventory §2.6, roadmap S12): `null` for
+   * unknown/disabled profiles, otherwise sections populated only under their
+   * `show*` flag. Avatar is resolved only when its media is `visibility=public`.
+   */
   async getPublicProfile(
     username: string,
   ): Promise<PublicVolunteerProfile | null> {
+    const profile = await this.findEnabledProfile(username);
+    if (!profile) {
+      return null;
+    }
+    const flags = profile.publicProfile;
+    const userId = profile.userId.toString();
+
+    const [skills, experiences, availability, avatar, portfolio] =
+      await Promise.all([
+        flags.showSkills ? this.loadPublicSkills(userId) : Promise.resolve([]),
+        flags.showExperiences
+          ? this.loadPublicExperiences(userId, MAX_LIMIT).then(
+              (page) => page.items,
+            )
+          : Promise.resolve([]),
+        flags.showAvailability
+          ? this.loadAvailability(userId)
+          : Promise.resolve(emptySchedule()),
+        flags.showAvatar && profile.avatar
+          ? this.resolvePublicAvatar(profile.avatar)
+          : Promise.resolve(null),
+        flags.showPortfolio
+          ? this.portfolioQuery.getPublicPortfolio(username)
+          : Promise.resolve(null),
+      ]);
+
+    return {
+      username: profile.username,
+      firstName: flags.showBiography ? (profile.firstName ?? null) : null,
+      avatar: flags.showAvatar && profile.avatar ? avatar : null,
+      bio: flags.showBiography ? (profile.bio ?? null) : null,
+      location: flags.showLocation ? (profile.location ?? null) : null,
+      skills: flags.showSkills ? skills : null,
+      experiences: flags.showExperiences ? experiences : null,
+      availability: flags.showAvailability ? availability : null,
+      portfolio,
+    };
+  }
+
+  /**
+   * Talents feed over enabled profiles (D2): bounded `q`, skill/category/wilaya
+   * facet filters, S1 cursor paging, public-safety projection only.
+   */
+  async listPublicTalents(
+    query: TalentsQueryDto,
+  ): Promise<CursorPage<TalentCard>> {
+    const limit = normalizeLimit(query.limit);
+    const filter: FilterQuery<VolunteerProfileModel> = {
+      'publicProfile.enabled': true,
+    };
+    if (query.wilayaId) {
+      filter['location.wilayaId'] = query.wilayaId;
+    }
+    const skillUserIds = await this.resolveSkillUserIds(
+      query.skillId,
+      query.categoryId,
+    );
+    if (skillUserIds) {
+      filter.userId = {
+        $in: [...skillUserIds].map((id) => new Types.ObjectId(id)),
+      };
+    }
+    if (query.q) {
+      const pattern = escapeRegex(query.q.trim()).slice(0, 60);
+      if (pattern) {
+        filter.$or = [
+          { username: { $regex: pattern, $options: 'i' } },
+          { firstName: { $regex: pattern, $options: 'i' } },
+          { lastName: { $regex: pattern, $options: 'i' } },
+          { bio: { $regex: pattern, $options: 'i' } },
+        ];
+      }
+    }
+    const cursor = decodeCursor(query.cursor);
+    if (cursor) {
+      filter._id = { $lt: new Types.ObjectId(cursor) };
+    }
+
+    const rows = await this.profileModel
+      .find(filter)
+      .sort({ _id: -1 })
+      .limit(limit + 1)
+      .exec();
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const cards = await this.mapTalentCards(items);
+    const lastId =
+      hasMore && items.length > 0
+        ? items[items.length - 1]._id.toString()
+        : null;
+    return { items: cards, nextCursor: buildCursor(lastId).cursor, limit };
+  }
+
+  /**
+   * Standalone public experience listing (D4): only `publicVisibility=public`
+   * rows, newest-first, S1 cursor paging, evidence restricted to A6 public media.
+   */
+  async getPublicExperiences(
+    volunteerId: string,
+    limit?: string | number,
+    rawCursor?: string,
+  ): Promise<CursorPage<PublicExperienceCard>> {
+    return this.loadPublicExperiences(
+      volunteerId,
+      normalizeLimit(limit),
+      rawCursor,
+    );
+  }
+
+  /** Portfolio served by the unchanged S1 seam (empty `{ items: [] }` until S14). */
+  async getPublicPortfolio(username: string): Promise<PublicPortfolio> {
+    return this.portfolioQuery.getPublicPortfolio(username);
+  }
+
+  /***************************************************************************
+   * Public-read internals (A5/A6)
+   **************************************************************************/
+
+  private async findEnabledProfile(
+    username: string,
+  ): Promise<VolunteerProfileModel | null> {
     const profile = await this.profileModel.findOne({ username }).exec();
     if (!profile || !profile.publicProfile.enabled) {
       return null;
     }
-    const flags = profile.publicProfile;
-    return {
-      username: profile.username,
-      firstName: flags.showBiography ? (profile.firstName ?? null) : null,
-      avatar: flags.showAvatar
-        ? profile.avatar
-          ? profile.avatar.toString()
-          : null
-        : null,
-      bio: flags.showBiography ? (profile.bio ?? null) : null,
-      location: flags.showLocation ? (profile.location ?? null) : null,
-      skills: flags.showSkills ? [] : null,
-      experiences: flags.showExperiences ? [] : null,
-      availability: flags.showAvailability ? null : null,
-      portfolio: flags.showPortfolio ? null : null,
+    return profile;
+  }
+
+  private async loadPublicSkills(userId: string): Promise<TalentSkill[]> {
+    const rows = await this.volunteerSkillModel
+      .find({ volunteerId: userId })
+      .sort({ isPrimary: -1, createdAt: 1 })
+      .exec();
+    if (rows.length === 0) {
+      return [];
+    }
+    const catalog = await this.skillsCatalogModel
+      .find({
+        _id: { $in: rows.map((row) => row.skillId) },
+        active: true,
+      })
+      .exec();
+    const byId = new Map(catalog.map((skill) => [skill._id.toString(), skill]));
+    const skills: TalentSkill[] = [];
+    for (const row of rows) {
+      const skill = byId.get(row.skillId.toString());
+      if (!skill) {
+        continue;
+      }
+      skills.push({
+        skillId: row.skillId.toString(),
+        nameAr: skill.nameAr,
+        nameFr: skill.nameFr,
+        level: row.level,
+        isPrimary: row.isPrimary,
+      });
+    }
+    return skills;
+  }
+
+  private async loadAvailability(userId: string): Promise<WeeklySchedule> {
+    const row = await this.availabilityModel
+      .findOne({ volunteerId: userId })
+      .lean()
+      .exec();
+    return row ? row.schedule : emptySchedule();
+  }
+
+  /** The avatar media id only when its row is live and `visibility=public` (A6). */
+  private async resolvePublicAvatar(
+    mediaId: Types.ObjectId,
+  ): Promise<string | null> {
+    const live = await this.mediaModel
+      .findOne({
+        _id: mediaId,
+        visibility: 'public',
+        deletedAt: { $exists: false },
+      })
+      .exec();
+    return live ? mediaId.toString() : null;
+  }
+
+  private async resolvePublicMediaIds(
+    mediaIds: Types.ObjectId[],
+  ): Promise<Set<string>> {
+    if (mediaIds.length === 0) {
+      return new Set();
+    }
+    const rows = await this.mediaModel
+      .find({
+        _id: { $in: mediaIds },
+        visibility: 'public',
+        deletedAt: { $exists: false },
+      })
+      .exec();
+    return new Set(rows.map((row) => row._id.toString()));
+  }
+
+  private async mapTalentCards(
+    profiles: VolunteerProfileModel[],
+  ): Promise<TalentCard[]> {
+    const avatarIds = profiles
+      .filter((profile) => profile.publicProfile.showAvatar && profile.avatar)
+      .map((profile) => profile.avatar as Types.ObjectId);
+    const publicAvatars = await this.resolvePublicMediaIds(avatarIds);
+
+    const cards: TalentCard[] = [];
+    for (const profile of profiles) {
+      const flags = profile.publicProfile;
+      cards.push({
+        username: profile.username,
+        firstName: flags.showBiography ? (profile.firstName ?? null) : null,
+        bio: flags.showBiography ? (profile.bio ?? null) : null,
+        location:
+          flags.showLocation && profile.location?.wilayaId
+            ? { wilayaId: profile.location.wilayaId }
+            : null,
+        skills: flags.showSkills
+          ? await this.loadPublicSkills(profile.userId.toString())
+          : null,
+        avatar:
+          flags.showAvatar &&
+          profile.avatar &&
+          publicAvatars.has(profile.avatar.toString())
+            ? profile.avatar.toString()
+            : null,
+      });
+    }
+    return cards;
+  }
+
+  /** Skilled-user intersection: both `skillId` and `categoryId` narrow the set. */
+  private async resolveSkillUserIds(
+    skillId: string | undefined,
+    categoryId: string | undefined,
+  ): Promise<Set<string> | null> {
+    const sets: Set<string>[] = [];
+    if (skillId) {
+      sets.push(await this.volunteerSkillUserIds([skillId]));
+    }
+    if (categoryId) {
+      const catalog = await this.skillsCatalogModel
+        .find({ categoryId: new Types.ObjectId(categoryId), active: true })
+        .exec();
+      sets.push(
+        await this.volunteerSkillUserIds(
+          catalog.map((skill) => skill._id.toString()),
+        ),
+      );
+    }
+    if (sets.length === 0) {
+      return null;
+    }
+    let intersection = sets[0];
+    for (const set of sets.slice(1)) {
+      intersection = new Set([...intersection].filter((id) => set.has(id)));
+    }
+    return intersection;
+  }
+
+  private async volunteerSkillUserIds(
+    skillIds: string[],
+  ): Promise<Set<string>> {
+    if (skillIds.length === 0) {
+      return new Set();
+    }
+    const rows = await this.volunteerSkillModel
+      .find({ skillId: { $in: skillIds } })
+      .select('volunteerId')
+      .lean()
+      .exec();
+    return new Set(rows.map((row) => row.volunteerId.toString()));
+  }
+
+  private async loadPublicExperiences(
+    volunteerId: string,
+    limit: number,
+    rawCursor?: string,
+  ): Promise<CursorPage<PublicExperienceCard>> {
+    const cursor = decodeCursor(rawCursor);
+    const filter: FilterQuery<VolunteerExperienceModel> = {
+      volunteerId: new Types.ObjectId(volunteerId),
+      publicVisibility: 'public',
     };
-  }
+    if (cursor) {
+      filter._id = { $lt: new Types.ObjectId(cursor) };
+    }
+    const rows = await this.experienceModel
+      .find(filter)
+      .sort({ _id: -1 })
+      .limit(limit + 1)
+      .exec();
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
 
-  async listPublicTalents(
-    _filters: Record<string, unknown>,
-  ): Promise<unknown[]> {
-    return [];
-  }
+    const evidenceIds = items.flatMap((row) => row.evidenceIds);
+    const publicMedia = evidenceIds.length
+      ? await this.mediaModel
+          .find({
+            _id: { $in: evidenceIds },
+            visibility: 'public',
+            deletedAt: { $exists: false },
+          })
+          .exec()
+      : [];
+    const mediaById = new Map(
+      publicMedia.map((media) => [media._id.toString(), media] as const),
+    );
 
-  async getPublicExperiences(_volunteerId: string): Promise<unknown[]> {
-    return [];
+    const cards: PublicExperienceCard[] = items.map((row) => ({
+      id: row._id.toString(),
+      title: row.title,
+      description: row.description ?? '',
+      duration: row.duration,
+      skills: row.skills.map((skill) => skill.toString()),
+      evidence: row.evidenceIds.flatMap((id) => {
+        const media = mediaById.get(id.toString());
+        if (!media) {
+          return [];
+        }
+        return [
+          {
+            mediaId: media._id.toString(),
+            type: media.type,
+            mimeType: media.mimeType ?? null,
+            filename: media.filename ?? null,
+            url: media.type === 'link' ? (media.url ?? null) : null,
+          },
+        ];
+      }),
+    }));
+
+    const lastId =
+      hasMore && items.length > 0
+        ? items[items.length - 1]._id.toString()
+        : null;
+    return { items: cards, nextCursor: buildCursor(lastId).cursor, limit };
   }
 
   private async clearPrimary(userId: string): Promise<void> {

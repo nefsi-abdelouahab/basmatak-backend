@@ -207,3 +207,14 @@ export class OwnOpportunityQueryDto {
   @IsString()
   limit?: string;
 }
+
+/** Recommended feed query (roadmap S12): S1 cursor paging only. */
+export class RecommendedQueryDto {
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @IsOptional()
+  @IsString()
+  limit?: string;
+}

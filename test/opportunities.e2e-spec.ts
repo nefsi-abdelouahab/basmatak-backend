@@ -613,7 +613,7 @@ describe('opportunities e2e (task lifecycle, feed, positions, job tick)', () => 
       expect(response.body).toHaveProperty('limit');
     });
 
-    it('recommended returns [] for a volunteer and 401 anonymous', async () => {
+    it('recommended returns a cursor page for a volunteer and 401 anonymous', async () => {
       await request(info.app.getHttpServer())
         .get(`${OPPORTUNITIES}/recommended`)
         .expect(401);
@@ -625,7 +625,10 @@ describe('opportunities e2e (task lifecycle, feed, positions, job tick)', () => 
         .get(`${OPPORTUNITIES}/recommended`)
         .set('Authorization', `Bearer ${volunteer.body.accessToken}`)
         .expect(200);
-      expect(recommended.body).toEqual([]);
+      expect(recommended.body).toHaveProperty('items');
+      expect(recommended.body).toHaveProperty('nextCursor');
+      expect(recommended.body).toHaveProperty('limit');
+      expect(Array.isArray(recommended.body.items)).toBe(true);
     });
 
     it('PATCH on a published opportunity is limited and then blocked with accepted participants', async () => {

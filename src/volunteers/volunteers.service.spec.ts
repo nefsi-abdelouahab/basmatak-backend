@@ -37,6 +37,17 @@ import {
   MediaSchema,
 } from '../media/schemas/media.schema';
 import { MediaPurpose } from '../media/media.constants';
+import { PortfolioQueryService } from '../common/seams/portfolio-query.service';
+import {
+  PortfolioItemModel,
+  PortfolioItemsCollection,
+  PortfolioItemSchema,
+} from '../portfolio/schemas/portfolio-item.schema';
+import {
+  VolunteerExperienceModel,
+  VolunteerExperiencesCollection,
+  VolunteerExperienceSchema,
+} from '../verifications/schemas/volunteer-experience.schema';
 import {
   startMemoryConnection,
   stopMemoryConnection,
@@ -53,6 +64,8 @@ describe('VolunteersService', () => {
   let catalogModel: Model<SkillModel>;
   let orgModel: Model<OrganizationModel>;
   let mediaModel: Model<MediaModel>;
+  let portfolioModel: Model<PortfolioItemModel>;
+  let experienceModel: Model<VolunteerExperienceModel>;
   let ownership: MediaOwnership;
 
   let volunteerId: string;
@@ -82,6 +95,14 @@ describe('VolunteersService', () => {
       MediaCollection,
       MediaSchema,
     );
+    experienceModel = handle.connection.model<VolunteerExperienceModel>(
+      VolunteerExperiencesCollection,
+      VolunteerExperienceSchema,
+    );
+    portfolioModel = handle.connection.model<PortfolioItemModel>(
+      PortfolioItemsCollection,
+      PortfolioItemSchema,
+    );
     ownership = new MediaOwnership(mediaModel);
 
     const orgExtras = new OrganizationRegistrationExtrasService(
@@ -94,7 +115,10 @@ describe('VolunteersService', () => {
       skillModel,
       availabilityModel,
       catalogModel,
+      mediaModel,
+      experienceModel,
       ownership,
+      new PortfolioQueryService(profileModel, portfolioModel, mediaModel),
     );
 
     activeSkillId = new Types.ObjectId();
@@ -139,6 +163,10 @@ describe('VolunteersService', () => {
       .deleteMany({});
     await handle.connection.collection(OrganizationsCollection).deleteMany({});
     await handle.connection.collection(MediaCollection).deleteMany({});
+    await handle.connection
+      .collection(VolunteerExperiencesCollection)
+      .deleteMany({});
+    await handle.connection.collection(PortfolioItemsCollection).deleteMany({});
 
     const created = await profileModel.create({
       _id: new Types.ObjectId(),
@@ -476,11 +504,355 @@ describe('VolunteersService', () => {
       expect(profile!.avatar).toBeNull();
       expect(profile!.skills).toBeNull();
       expect(profile!.experiences).toBeNull();
+      expect(profile!.availability).toBeNull();
+      expect(profile!.portfolio).toBeNull();
     });
 
-    it('returns inert empty lists for talents and public experiences', async () => {
-      expect(await service.listPublicTalents({})).toEqual([]);
-      expect(await service.getPublicExperiences(volunteerId)).toEqual([]);
+    it('populates flagged sections from live data (skills, experiences, availability)', async () => {
+      await service.updateProfile(volunteerId, {
+        firstName: 'Ali',
+        location: { wilayaId: '16', municipalityId: '1601' },
+      });
+      await service.addSkill(volunteerId, {
+        skillId: activeSkillId.toString(),
+        level: 4,
+        isPrimary: true,
+      });
+      await service.setAvailability(volunteerId, {
+        ...emptySchedule(),
+        monday: [{ from: '09:00', to: '17:00' }],
+      });
+      await experienceModel.create({
+        _id: new Types.ObjectId(),
+        submissionId: new Types.ObjectId(),
+        volunteerId: new Types.ObjectId(volunteerId),
+        organizationId: new Types.ObjectId(),
+        opportunityId: new Types.ObjectId(),
+        positionId: new Types.ObjectId(),
+        title: 'Well digging',
+        description: 'Helped build a well',
+        skills: [activeSkillId],
+        duration: 6,
+        evidenceIds: [],
+        verificationCode: 'X1',
+        publicVisibility: 'public',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: {
+          enabled: true,
+          showBiography: true,
+          showLocation: true,
+          showSkills: true,
+          showExperiences: true,
+          showAvailability: true,
+        },
+      });
+
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile!.location).toMatchObject({
+        wilayaId: '16',
+        municipalityId: '1601',
+      });
+      expect(profile!.skills).toEqual([
+        expect.objectContaining({
+          skillId: activeSkillId.toString(),
+          nameFr: 'Secourisme',
+          level: 4,
+          isPrimary: true,
+        }),
+      ]);
+      expect(profile!.experiences).toEqual([
+        expect.objectContaining({
+          title: 'Well digging',
+          description: 'Helped build a well',
+          duration: 6,
+          skills: [activeSkillId.toString()],
+        }),
+      ]);
+      expect(profile!.availability).toMatchObject({
+        monday: [{ from: '09:00', to: '17:00' }],
+      });
+    });
+
+    it('omits the avatar when showAvatar is off or the media is private (A6)', async () => {
+      const privateAvatar = await createMedia(volunteerId, 'avatar');
+      await service.updateProfile(volunteerId, { avatar: privateAvatar });
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true, showAvatar: true },
+      });
+      const hidden = await service.getPublicProfile('volunteer-a');
+      expect(hidden!.avatar).toBeNull();
+
+      const publicAvatar = await mediaModel.create({
+        ownerId: new Types.ObjectId(volunteerId),
+        purpose: 'avatar',
+        visibility: 'public',
+        type: 'file',
+        storageKey: `avatar/${volunteerId}/public.png`,
+      });
+      await service.updateProfile(volunteerId, {
+        avatar: publicAvatar._id.toString(),
+      });
+      const shown = await service.getPublicProfile('volunteer-a');
+      expect(shown!.avatar).toBe(publicAvatar._id.toString());
+    });
+
+    it('returns the S14-upgraded portfolio seam as { items: [] } when empty', async () => {
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true, showPortfolio: true },
+      });
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile!.portfolio).toEqual({ items: [] });
+    });
+  });
+
+  describe('talents feed', () => {
+    async function seedSecondVolunteer(
+      enabled: boolean,
+      username = 'volunteer-b',
+    ): Promise<{ userId: string }> {
+      const userId = new Types.ObjectId();
+      await profileModel.create({
+        _id: new Types.ObjectId(),
+        userId,
+        username,
+        firstName: 'Bilal',
+        location: { wilayaId: '31' },
+      });
+      await service.updatePublicSettings(userId.toString(), {
+        publicProfile: { enabled, showBiography: true, showLocation: true },
+      });
+      return { userId: userId.toString() };
+    }
+
+    it('lists enabled profiles newest-first and hides disabled ones', async () => {
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true },
+      });
+      await seedSecondVolunteer(true);
+      await seedSecondVolunteer(false, 'volunteer-c');
+
+      const page = await service.listPublicTalents({});
+      expect(page.limit).toBe(20);
+      expect(page.items.map((card) => card.username)).toEqual([
+        'volunteer-b',
+        'volunteer-a',
+      ]);
+      expect(page.nextCursor).toBeNull();
+    });
+
+    it('filters by q over username/firstName/lastName/bio (case-insensitive)', async () => {
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true },
+      });
+      const second = await seedSecondVolunteer(true);
+
+      const byName = await service.listPublicTalents({ q: 'bilal' });
+      expect(byName.items.map((card) => card.username)).toEqual([
+        'volunteer-b',
+      ]);
+      const byUser = await service.listPublicTalents({ q: 'VOLUNTEER-A' });
+      expect(byUser.items.map((card) => card.username)).toEqual([
+        'volunteer-a',
+      ]);
+      const none = await service.listPublicTalents({ q: 'zzz' });
+      expect(none.items).toEqual([]);
+      const byId = await service.listPublicTalents({ q: second.userId });
+      expect(byId.items).toEqual([]);
+    });
+
+    it('filters by skillId and categoryId via volunteer_skills + catalog', async () => {
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true },
+      });
+      await service.addSkill(volunteerId, {
+        skillId: activeSkillId.toString(),
+        level: 3,
+      });
+      await seedSecondVolunteer(true);
+
+      const bySkill = await service.listPublicTalents({
+        skillId: activeSkillId.toString(),
+      });
+      expect(bySkill.items.map((card) => card.username)).toEqual([
+        'volunteer-a',
+      ]);
+      const byUnknownSkill = await service.listPublicTalents({
+        skillId: new Types.ObjectId().toString(),
+      });
+      expect(byUnknownSkill.items).toEqual([]);
+      const byCategory = await service.listPublicTalents({
+        categoryId: (await catalogModel
+          .findById(activeSkillId)
+          .exec())!.categoryId.toString(),
+      });
+      expect(byCategory.items.map((card) => card.username)).toEqual([
+        'volunteer-a',
+      ]);
+      const byEmptyCategory = await service.listPublicTalents({
+        categoryId: new Types.ObjectId().toString(),
+      });
+      expect(byEmptyCategory.items).toEqual([]);
+    });
+
+    it('filters by wilayaId', async () => {
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true },
+      });
+      await seedSecondVolunteer(true);
+      await service.updateProfile(volunteerId, {
+        location: { wilayaId: '16', municipalityId: '1601' },
+      });
+
+      const algiers = await service.listPublicTalents({ wilayaId: '16' });
+      expect(algiers.items.map((card) => card.username)).toEqual([
+        'volunteer-a',
+      ]);
+    });
+
+    it('clamps the limit to 50 and pages by cursor', async () => {
+      for (let i = 0; i < 5; i += 1) {
+        const userId = new Types.ObjectId();
+        await profileModel.create({
+          _id: new Types.ObjectId(),
+          userId,
+          username: `volunteer-${i}`,
+        });
+        await service.updatePublicSettings(userId.toString(), {
+          publicProfile: { enabled: true },
+        });
+      }
+      const page = await service.listPublicTalents({
+        limit: '1000',
+        cursor: undefined,
+      });
+      expect(page.limit).toBe(50);
+
+      const first = await service.listPublicTalents({ limit: '1' });
+      expect(first.items).toHaveLength(1);
+      const second = await service.listPublicTalents({
+        limit: '1',
+        cursor: first.nextCursor ?? undefined,
+      });
+      expect(second.items).toHaveLength(1);
+      expect(second.items[0].username).not.toBe(first.items[0].username);
+    });
+
+    it('respects show* flags in each talent card', async () => {
+      await service.updateProfile(volunteerId, {
+        firstName: 'Ali',
+        bio: 'Medic volunteer',
+        location: { wilayaId: '16', municipalityId: '1601' },
+      });
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: {
+          enabled: true,
+          showBiography: true,
+          showLocation: true,
+          showSkills: true,
+        },
+      });
+      await service.addSkill(volunteerId, {
+        skillId: activeSkillId.toString(),
+        level: 2,
+      });
+
+      const page = await service.listPublicTalents({});
+      const card = page.items[0];
+      expect(card).toMatchObject({
+        username: 'volunteer-a',
+        firstName: 'Ali',
+        bio: 'Medic volunteer',
+        location: { wilayaId: '16' },
+        avatar: null,
+      });
+      expect(card.skills).toEqual([
+        expect.objectContaining({ skillId: activeSkillId.toString() }),
+      ]);
+      expect(JSON.stringify(card)).not.toContain('municipalityId');
+    });
+  });
+
+  describe('public experiences', () => {
+    async function seedExperience(
+      title: string,
+      publicVisibility: 'public' | 'private',
+      evidenceIds: Types.ObjectId[] = [],
+    ): Promise<string> {
+      const row = await experienceModel.create({
+        _id: new Types.ObjectId(),
+        submissionId: new Types.ObjectId(),
+        volunteerId: new Types.ObjectId(volunteerId),
+        organizationId: new Types.ObjectId(),
+        opportunityId: new Types.ObjectId(),
+        positionId: new Types.ObjectId(),
+        title,
+        description: `${title} detail`,
+        skills: [activeSkillId],
+        duration: 4,
+        evidenceIds,
+        verificationCode: `${title.toUpperCase()}_CODE`,
+        publicVisibility,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return row._id.toString();
+    }
+
+    it('lists only public-visibility rows newest-first with S1 paging', async () => {
+      const first = await seedExperience('Old public', 'public');
+      const second = await seedExperience('New public', 'public');
+      await seedExperience('Hidden private', 'private');
+
+      const page = await service.getPublicExperiences(volunteerId, '10');
+      expect(page.limit).toBe(10);
+      expect(page.items.map((card) => card.title)).toEqual([
+        'New public',
+        'Old public',
+      ]);
+      expect(page.items[0].id).toBe(second);
+      expect(page.items[1].id).toBe(first);
+      expect(page.nextCursor).toBeNull();
+    });
+
+    it('restricts evidence metadata to public media (A6)', async () => {
+      const publicMedia = await mediaModel.create({
+        ownerId: new Types.ObjectId(volunteerId),
+        purpose: 'submission_evidence',
+        visibility: 'public',
+        type: 'link',
+        url: 'https://youtube.com/watch?v=abc',
+      });
+      const privateMedia = await mediaModel.create({
+        ownerId: new Types.ObjectId(volunteerId),
+        purpose: 'submission_evidence',
+        visibility: 'private',
+        type: 'file',
+        storageKey: `submission_evidence/${volunteerId}/secret.png`,
+      });
+      await seedExperience('Evidenced', 'public', [
+        publicMedia._id,
+        privateMedia._id,
+      ]);
+
+      const page = await service.getPublicExperiences(volunteerId);
+      expect(page.items[0].evidence).toEqual([
+        {
+          mediaId: publicMedia._id.toString(),
+          type: 'link',
+          mimeType: null,
+          filename: null,
+          url: 'https://youtube.com/watch?v=abc',
+        },
+      ]);
+    });
+
+    it('returns an empty page when the volunteer has no public rows', async () => {
+      const page = await service.getPublicExperiences(volunteerId);
+      expect(page.items).toEqual([]);
+      expect(page.nextCursor).toBeNull();
     });
   });
 });
