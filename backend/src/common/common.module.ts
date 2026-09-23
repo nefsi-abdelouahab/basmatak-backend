@@ -16,6 +16,10 @@ import {
 import { VolunteerRegistrationExtrasService } from '../volunteers/volunteer-registration-extras.service';
 import { VolunteersModule } from '../volunteers/volunteers.module';
 import { MediaCollection, MediaSchema } from '../media/schemas/media.schema';
+import {
+  PortfolioItemSchema,
+  PortfolioItemsCollection,
+} from '../portfolio/schemas/portfolio-item.schema';
 
 /**
  * Cross-cutting providers: seams (inert defaults until their owning sessions)
@@ -30,6 +34,7 @@ import { MediaCollection, MediaSchema } from '../media/schemas/media.schema';
     MongooseModule.forFeature([
       { name: OrganizationsCollection, schema: OrganizationSchema },
       { name: MediaCollection, schema: MediaSchema },
+      { name: PortfolioItemsCollection, schema: PortfolioItemSchema },
     ]),
     VolunteersModule,
   ],
