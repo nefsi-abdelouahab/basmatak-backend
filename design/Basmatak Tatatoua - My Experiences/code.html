@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_dashboard" name="shell-type"/>
+<title>Submit Contribution — Basmatak Tatatoua</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: "#6D28D9",
+              hover: "#5B21B6",
+              light: "#F5F3FF",
+              muted: "#EDE9FE"
+            },
+            surface: {
+              page: "#F8FAFC",
+              card: "#FFFFFF",
+              subtle: "#F1F5F9"
+            },
+            line: "#E2E8F0",
+            primary: "#111827",
+            secondary: "#64748B",
+            tertiary: "#94A3B8"
+          },
+          fontFamily: {
+            sans: ["Inter", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #F8FAFC;
+        color: #111827;
+        font-family: 'Inter', sans-serif;
+      }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-surface-page antialiased text-primary selection:bg-brand-light selection:text-brand">
+<!-- TOP NAVIGATION HEADER -->
+<header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface-card border-b border-line px-6 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<!-- Brand Logo -->
+<a class="flex items-center gap-2.5 text-primary hover:opacity-90 transition-opacity" href="#">
+<img alt="Basmatak Tatatoua Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UbgOt7J25in6Q_p0OM_N_GokC9S75tZEJd3pn7saoZXTMqh-t7mjsEVdzBIANGYivhyYFXxMH8itSzMAU-3a4g7jIMNRAmiwX87f09zk5CAopgT-67PrCF0qzp7w1ogAIwSeuGeCWVpvGX95RvQIx9q4nALNJdOGC1BrCbFsrD7Ww6kjkylRsMXrK3dAHGzjSDnpY3ksUKR7XzGc2GrLkvFRN8Bew89R0fwLREdXjkFDVvvEi2kBFhNA"/>
+<span class="font-semibold text-base tracking-tight text-primary">Basmatak Tatatoua</span>
+</a>
+<!-- Global Search -->
+<div class="relative hidden md:block w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-lg pointer-events-none">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface-subtle border border-line rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all" placeholder="Search opportunities, people, organizations..." type="text"/>
+</div>
+</div>
+<!-- Center Navigation Links -->
+<nav class="hidden lg:flex items-center gap-7">
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Home</a>
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Opportunities</a>
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Discover Talents</a>
+</nav>
+<!-- Right Controls -->
+<div class="flex items-center gap-4">
+<button aria-label="Notifications" class="p-2 text-secondary hover:text-primary rounded-lg transition-colors relative" type="button">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="absolute top-2 right-2 w-1.5 h-1.5 bg-brand rounded-full"></span>
+</button>
+<div class="h-6 w-px bg-line"></div>
+<!-- User Profile -->
+<div class="flex items-center gap-2.5 cursor-pointer">
+<img alt="Abdelouahab Nefsi" class="w-8 h-8 rounded-full object-cover ring-1 ring-line" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/>
+<div class="hidden sm:flex flex-col text-left">
+<span class="text-xs font-semibold text-primary leading-tight">Abdelouahab Nefsi</span>
+<span class="text-[11px] text-secondary leading-tight">Volunteer Contributor</span>
+</div>
+</div>
+</div>
+</header>
+<!-- LEFT FIXED SIDEBAR (~240px) -->
+<aside class="fixed left-0 top-16 bottom-0 w-60 bg-surface-card border-r border-line z-40 flex flex-col justify-between py-6 px-4 overflow-y-auto">
+<div class="flex flex-col gap-6">
+<!-- Volunteer Space -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Volunteer Space</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">assignment</span>
+<span>My Applications</span>
+</a>
+<!-- Active link: My Participations -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-brand bg-brand-light transition-colors" href="#">
+<span class="material-symbols-outlined text-lg text-brand">task_alt</span>
+<span>My Participations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">history_edu</span>
+<span>My Experiences</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">folder_shared</span>
+<span>My Portfolio</span>
+</a>
+</nav>
+</div>
+<!-- Discover -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Discover</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">explore</span>
+<span>Opportunities</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">group</span>
+<span>Discover Talents</span>
+</a>
+</nav>
+</div>
+<!-- Account -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Account</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Sidebar footer profile context -->
+<div class="pt-4 border-t border-line flex items-center gap-2.5 px-2">
+<span class="material-symbols-outlined text-secondary text-base">verified_user</span>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-primary">Identity Confirmed</span>
+<span class="text-[11px] text-tertiary">National Civic Registry</span>
+</div>
+</div>
+</aside>
+<!-- MAIN VIEWPORT CONTAINER -->
+<div class="pl-60 min-h-screen flex flex-col justify-between pt-16">
+<main class="w-full flex-1"><div class="flex flex-col w-full">
+<div class="max-w-[1180px] w-full mx-auto px-6 py-8">
+<!-- PAGE HEADER -->
+<header class="pb-8">
+<div class="flex items-center gap-2 text-secondary font-label-sm text-label-sm mb-3 tracking-wide">
+<span class="hover:text-primary transition-colors cursor-pointer">Volunteer Space</span>
+<span class="text-tertiary">/</span>
+<span class="text-primary font-medium">My Experiences</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">My Experiences</h1>
+<p class="font-body-md text-body-md text-secondary mt-1">Your verified volunteer contributions and authenticated institutional experience.</p>
+</div>
+<a class="inline-flex items-center gap-1.5 font-label-md text-label-md text-brand hover:text-brand-hover transition-colors" href="#">
+<span>View public profile</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+</header>
+<!-- HORIZONTAL FILTER & SORT -->
+<div class="pt-4 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<nav aria-label="Experience filters" class="flex items-center gap-6 overflow-x-auto pb-1 sm:pb-0">
+<button class="font-label-md text-label-md text-brand font-semibold whitespace-nowrap relative py-1 focus:outline-none" type="button">
+          All (6)
+          <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-brand rounded-full"></span>
+</button>
+<button class="font-label-md text-label-md text-secondary hover:text-primary whitespace-nowrap py-1 transition-colors focus:outline-none" type="button">
+          Photography
+        </button>
+<button class="font-label-md text-label-md text-secondary hover:text-primary whitespace-nowrap py-1 transition-colors focus:outline-none" type="button">
+          Cultural Preservation
+        </button>
+<button class="font-label-md text-label-md text-secondary hover:text-primary whitespace-nowrap py-1 transition-colors focus:outline-none" type="button">
+          Environmental &amp; GIS
+        </button>
+<button class="font-label-md text-label-md text-secondary hover:text-primary whitespace-nowrap py-1 transition-colors focus:outline-none" type="button">
+          Audio &amp; Vernacular
+        </button>
+<button class="font-label-md text-label-md text-secondary hover:text-primary whitespace-nowrap py-1 transition-colors focus:outline-none" type="button">
+          Education
+        </button>
+</nav>
+<div class="flex items-center gap-2 self-end sm:self-auto text-secondary font-label-sm text-label-sm">
+<span>Sort by:</span>
+<button class="font-label-sm text-label-sm text-primary font-medium hover:text-brand flex items-center gap-1" type="button">
+<span>Most recent</span>
+<span class="material-symbols-outlined text-base">expand_more</span>
+</button>
+</div>
+</div>
+<!-- MAIN TWO-COLUMN EDITORIAL LAYOUT -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+<!-- PRIMARY CHRONICLE STREAM (~760px wide) -->
+<section class="lg:col-span-8 flex flex-col gap-14">
+<!-- FEATURED HERO EXPERIENCE -->
+<article class="bg-surface-card rounded-xl shadow-sm p-6 sm:p-8 flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Featured Field Project</span>
+<h2 class="font-headline-md text-headline-md text-primary tracking-tight">Cultural Event Media Coverage &amp; Archival Documentation</h2>
+<div class="flex flex-wrap items-center gap-x-2 gap-y-1 font-body-sm text-body-sm text-secondary">
+<a class="text-primary font-medium hover:text-brand transition-colors" href="#">Timimoun Cultural Association</a>
+<span class="text-tertiary">·</span>
+<span>Lead Photographer</span>
+<span class="text-tertiary">·</span>
+<span>September 2026</span>
+<span class="text-tertiary">·</span>
+<span>Timimoun Old Ksar, Adrar</span>
+</div>
+</div>
+<!-- Cinematographic Visual Showcase -->
+<div class="w-full aspect-[16/9] rounded-lg overflow-hidden bg-surface-subtle">
+<img class="w-full h-full object-cover" data-alt="Young female photographer wearing a neutral vest and olive headscarf focusing her DSLR camera on an elder craftsman sculpting traditional terracotta pottery in an earthen archway workshop in Adrar Algeria, natural golden sunlight filtering in." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrHk3gWziVfgRA_y0cKpy8EJrs_T-h29mFyMsk_3KS12jERNh8j6zDMuHDk1ZgXlfCITqz2juzSFzJhfgRc6hCrgteFZxXX93KB4uBKMEtK96OryCmzT2AKdVWbNYGvQZcDvnuODWksv2h2VBHyIoU3iLbHvj0dEdRJpgaYOwwsEWlEglE2ICNPPdPSBPcCoRfunMVqgxTRC1TLnlzg5kWKCqr7yA_NuTF45MFBevBhAnspYtfr48"/>
+</div>
+<p class="font-body-md text-body-md text-primary leading-relaxed">
+            Documented the nighttime outdoor poetic recitations of Ahellil oral traditions across Timimoun Old Ksar. Delivered 20 archival master uncompressed TIFFs with full IPTC metadata and a curated contact sheet.
+          </p>
+<!-- Deliverables and Skills typography row -->
+<div class="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 font-body-sm text-body-sm text-secondary">
+<div class="flex items-center gap-2 text-primary font-medium">
+<span class="material-symbols-outlined text-lg text-secondary">photo_camera</span>
+<span>Photography</span>
+</div>
+<div class="flex items-center gap-2 text-primary font-medium">
+<span class="material-symbols-outlined text-lg text-secondary">description</span>
+<span>Archival Metadata</span>
+</div>
+<div class="flex items-center gap-2 text-primary font-medium">
+<span class="material-symbols-outlined text-lg text-secondary">folder_open</span>
+<span>20 High-Res TIFFs + Field Notes</span>
+</div>
+</div>
+<!-- Institutional Verification Attribution -->
+<div class="pt-4 flex items-center gap-2 font-body-sm text-body-sm text-secondary">
+<span class="material-symbols-outlined text-base text-brand">verified</span>
+<span>Verified by Timimoun Cultural Association on September 28, 2026</span>
+<span class="text-tertiary">·</span>
+<span class="font-mono text-tertiary">Record #VXP-8F32K</span>
+</div>
+<!-- Action Footnotes -->
+<div class="pt-2 flex flex-wrap items-center gap-6 font-label-md text-label-md">
+<a class="text-brand hover:text-brand-hover font-medium flex items-center gap-1 transition-colors" href="#">
+<span>View full verification details</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+<a class="text-secondary hover:text-primary flex items-center gap-1.5 transition-colors" href="#">
+<span class="material-symbols-outlined text-base">download</span>
+<span>Download attestation (PDF)</span>
+</a>
+</div>
+</article>
+<!-- CHRONOLOGICAL EXPERIENCE LIST -->
+<div class="flex flex-col gap-12">
+<!-- ITEM 1: Oasis Irrigation Foggara Spatial Topographic Survey -->
+<article class="flex flex-col gap-5 pt-2">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-baseline justify-between gap-4">
+<h3 class="font-title-lg text-title-lg text-primary tracking-tight">Oasis Irrigation Foggara Spatial Topographic Survey</h3>
+<a class="hidden sm:inline-flex items-center gap-1 font-label-sm text-label-sm text-brand hover:text-brand-hover transition-colors" href="#">
+<span>View organization</span>
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+<div class="flex flex-wrap items-center gap-x-2 gap-y-1 font-body-sm text-body-sm text-secondary">
+<span class="text-primary font-medium">Algerian Green Development</span>
+<span class="text-tertiary">·</span>
+<span>GIS Data Collector &amp; Field Surveyor</span>
+<span class="text-tertiary">·</span>
+<span>April 2026</span>
+<span class="text-tertiary">·</span>
+<span>Gourara Basin</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-primary leading-relaxed">
+              Conducted field GPS mapping across 14 traditional underground foggara irrigation channels. Synthesized spatial vector coordinates to assist municipal water preservation efforts.
+            </p>
+<!-- Media Evidence Gallery -->
+<div class="grid grid-cols-3 gap-3">
+<div class="flex flex-col gap-1.5">
+<div class="aspect-[4/3] rounded-lg overflow-hidden bg-surface-subtle">
+<img class="w-full h-full object-cover" data-alt="Group of four young adult volunteers in earth-toned t-shirts reviewing paper geographic charts and handheld satellite equipment at a wooden table in an earthen desert courtyard in Timimoun." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1tr9IzzW9X1QFPcj184tt_rQ3NYoTM0t6mCPkEFhcRNB_uXt8QWGBubf0wWq8YoOGOfq9wdcK8XfLthkt0EUxm7dIV2U6JNsNjrmFcr9hmhjVSPNcRIx8uc_2wWm27WQI9WelkwKBOd8FrD6KNSk4gSaiw8KkFY8xbSVdvr4hDa3zUIbq4H2tEhBgM0XDUnE42ZrYpSh_AYrKHTIG14ljf2D844kWLdmhqEr10zRRKOQDHSGk8RY"/>
+</div>
+<span class="font-label-xs text-label-xs text-secondary truncate">foggara_survey_waypoint_04.jpg</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="aspect-[4/3] rounded-lg overflow-hidden bg-surface-subtle">
+<img class="w-full h-full object-cover" data-alt="Sunlit whitewashed street in a North African historic district with enthusiastic young civic volunteers walking in line carrying restoration tools and architectural documentation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUuMaUW3Jprt-PwCSNqNAEpm2vKVuaBbKBa2D49MA1kAxu7a_o3ShY1iricjy69qDGnUk1wuE5H3m-krpx5Zl61BM_G53sc65FTFjTHc7LrX90l_KTZqBj9aZwbSczOuBV9BmDOTi6veARMFNr0aMKY9Y4FqX49UultRFTkzyxQbD0H8y2SjQjNf5vfEawrhVh3GwGcxIZZcX4l7bCopi9QS6SjCxLbWnjknyt-zUytRihbFDzhgI"/>
+</div>
+<span class="font-label-xs text-label-xs text-secondary truncate">field_team_adrar.jpg</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<div class="aspect-[4/3] rounded-lg bg-surface-subtle flex flex-col items-center justify-center text-secondary gap-2 p-3 text-center">
+<span class="material-symbols-outlined text-2xl text-secondary">picture_as_pdf</span>
+<span class="font-label-xs text-label-xs text-primary font-medium line-clamp-2">foggara_flow_documentation.pdf</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary">Technical Survey</span>
+</div>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">
+<span class="text-tertiary">Demonstrated competencies:</span>
+<span class="text-primary font-medium ml-1">GIS Data Collection · Environmental Fieldwork · Topographic Mapping</span>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-secondary">
+<span class="material-symbols-outlined text-base text-brand">verified</span>
+<span>Verified by Algerian Green Development</span>
+<span class="text-tertiary">·</span>
+<span class="font-mono text-tertiary">Institutional Record #DZ-GRN-9912</span>
+</div>
+<div class="flex items-center gap-6 font-label-md text-label-md pt-1">
+<a class="text-brand hover:text-brand-hover font-medium" href="#">View details</a>
+<a class="text-secondary hover:text-primary flex items-center gap-1.5" href="#">
+<span class="material-symbols-outlined text-base">download</span>
+<span>Download attestation (PDF)</span>
+</a>
+</div>
+</article>
+<!-- Subtle spacing divider -->
+<div class="h-px bg-surface-subtle w-full"></div>
+<!-- ITEM 2: Bilingual Oral Poetry & Vernacular Audio Archiving -->
+<article class="flex flex-col gap-5">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-baseline justify-between gap-4">
+<h3 class="font-title-lg text-title-lg text-primary tracking-tight">Bilingual Oral Poetry &amp; Vernacular Audio Archiving</h3>
+<a class="hidden sm:inline-flex items-center gap-1 font-label-sm text-label-sm text-brand hover:text-brand-hover transition-colors" href="#">
+<span>View organization</span>
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+<div class="flex flex-wrap items-center gap-x-2 gap-y-1 font-body-sm text-body-sm text-secondary">
+<span class="text-primary font-medium">Gourara Heritage Trust</span>
+<span class="text-tertiary">·</span>
+<span>Sound Recordist &amp; Audio Digitizer</span>
+<span class="text-tertiary">·</span>
+<span>February 2026</span>
+<span class="text-tertiary">·</span>
+<span>Adrar &amp; Remote</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-primary leading-relaxed">
+              Preserved and digitized 6 reel-to-reel audio recordings of vernacular Zenati poetry and community elders' oral histories with bilingual time-coded transcripts.
+            </p>
+<!-- Editorial Inline Audio Player -->
+<div class="bg-surface-card rounded-lg shadow-sm p-4 flex flex-col gap-3">
+<div class="flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<button aria-label="Play recording sample" class="w-9 h-9 rounded-full bg-brand hover:bg-brand-hover text-surface-container-lowest flex items-center justify-center transition-colors focus:outline-none" type="button">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+</button>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-primary font-medium truncate max-w-[260px] sm:max-w-md">ahellil_poetry_session_master_24bit.wav</span>
+<span class="font-label-xs text-label-xs text-secondary">Broadcast WAV · 48 kHz / 24-bit PCM</span>
+</div>
+</div>
+<span class="font-mono font-label-xs text-label-xs text-secondary">14:20 / 48:00</span>
+</div>
+<!-- Graphic Waveform Simulation -->
+<div class="h-6 flex items-center gap-0.5 px-1 bg-surface-subtle rounded w-full">
+<span class="h-2 w-1 bg-brand rounded-full"></span>
+<span class="h-3 w-1 bg-brand rounded-full"></span>
+<span class="h-5 w-1 bg-brand rounded-full"></span>
+<span class="h-4 w-1 bg-brand rounded-full"></span>
+<span class="h-2 w-1 bg-brand rounded-full"></span>
+<span class="h-4 w-1 bg-brand rounded-full"></span>
+<span class="h-5 w-1 bg-brand rounded-full"></span>
+<span class="h-3 w-1 bg-brand rounded-full"></span>
+<span class="h-2 w-1 bg-brand rounded-full"></span>
+<span class="h-4 w-1 bg-brand rounded-full"></span>
+<span class="h-6 w-1 bg-brand rounded-full"></span>
+<span class="h-3 w-1 bg-brand rounded-full"></span>
+<span class="h-2 w-1 bg-brand rounded-full"></span>
+<span class="h-5 w-1 bg-brand rounded-full"></span>
+<span class="h-4 w-1 bg-brand rounded-full"></span>
+<span class="h-3 w-1 bg-brand/40 rounded-full"></span>
+<span class="h-2 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-4 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-5 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-3 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-2 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-4 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-3 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-2 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-5 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-4 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-2 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-3 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-4 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-2 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-3 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-1 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-3 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-4 w-1 bg-secondary/30 rounded-full"></span>
+<span class="h-2 w-1 bg-secondary/30 rounded-full"></span>
+</div>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">
+<span class="text-tertiary">Demonstrated competencies:</span>
+<span class="text-primary font-medium ml-1">Audio Digitization · Sound Recording · Vernacular Dialect Archiving</span>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-secondary">
+<span class="material-symbols-outlined text-base text-brand">verified</span>
+<span>Verified by Gourara Heritage Trust</span>
+<span class="text-tertiary">·</span>
+<span class="font-mono text-tertiary">Institutional Record #GHT-CIVIC-4401</span>
+</div>
+<div class="flex items-center gap-6 font-label-md text-label-md pt-1">
+<a class="text-brand hover:text-brand-hover font-medium" href="#">View details</a>
+<a class="text-secondary hover:text-primary flex items-center gap-1.5" href="#">
+<span class="material-symbols-outlined text-base">download</span>
+<span>Download attestation (PDF)</span>
+</a>
+</div>
+</article>
+<!-- Subtle spacing divider -->
+<div class="h-px bg-surface-subtle w-full"></div>
+<!-- ITEM 3: Historic Architecture Photogrammetry & Facade Restoration -->
+<article class="flex flex-col gap-5">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-baseline justify-between gap-4">
+<h3 class="font-title-lg text-title-lg text-primary tracking-tight">Historic Architecture Photogrammetry &amp; Facade Restoration</h3>
+<a class="hidden sm:inline-flex items-center gap-1 font-label-sm text-label-sm text-brand hover:text-brand-hover transition-colors" href="#">
+<span>View organization</span>
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+<div class="flex flex-wrap items-center gap-x-2 gap-y-1 font-body-sm text-body-sm text-secondary">
+<span class="text-primary font-medium">Casbah Heritage Association</span>
+<span class="text-tertiary">·</span>
+<span>Photogrammetry Assistant</span>
+<span class="text-tertiary">·</span>
+<span>November 2025</span>
+<span class="text-tertiary">·</span>
+<span>Algiers Casbah</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-primary leading-relaxed">
+              Assisted lead conservators in capturing 180 high-overlap photographs of vernacular earthen and stone masonry facades for structural 3D model generation.
+            </p>
+<!-- Media Evidence Images -->
+<div class="grid grid-cols-2 gap-4">
+<div class="aspect-[16/10] rounded-lg overflow-hidden bg-surface-subtle">
+<img class="w-full h-full object-cover" data-alt="Volunteers in custom printed Casbah Renaissance t-shirts walking along historic cobbled street flanked by aged whitewashed walls and blue carved wooden shutters in Algiers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSqQbqEqVmo9g0IZcGTXcTThmp09vsdtYbh7mdnInOiuXfP64mbzb1I-VC84rGN3YWL_jrzexRy0rD9PKiS2DlGfeSlDROCALEvnk1ZcgfQ32UcWNYRUqqw2aJOxdHM7jAtgJ3OBVLBDOyPjs3-aA9_GK7WsMyaj_IZyIOReYUGzobREm5G5piErxiLJkVQldLkYyGKXLrm01auHJhKFVfcZCy70qRTbEoQZCQ_NnjlcHcpCRmRnU"/>
+</div>
+<div class="aspect-[16/10] rounded-lg overflow-hidden bg-surface-subtle">
+<img class="w-full h-full object-cover" data-alt="Young civic contributors in traditional mudbrick village of Timimoun gathered around rustic wooden table analyzing old archival sepia photographs and historical manuscripts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApNgrlPmFP8t5ilebVVlqwm2xHbp15jwOzImwp6B4T7J9GiNlyDJ5TsS1B39CkmcFgf9kHilb0seMJceUgPzQTIDnOg82aAygXpLmlewqcmue45l6Za1Ii_LebTGnOZQ6Tw2VbAgfIbpHZP53dZbGSH2xyzY1KcrLJvZzik4tA-mq4IC0VC80gk8PPmHnF0A3rNp8iE4heYh4h6M7OQz6Q-T5Cvk5QeeIkqCaHLaPJWzyvvrFkW0Q"/>
+</div>
+</div>
+<div class="font-body-sm text-body-sm text-secondary">
+<span class="text-tertiary">Demonstrated competencies:</span>
+<span class="text-primary font-medium ml-1">Photogrammetry · Architectural Documentation · Field Survey</span>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-secondary">
+<span class="material-symbols-outlined text-base text-brand">verified</span>
+<span>Verified by Casbah Heritage Association</span>
+<span class="text-tertiary">·</span>
+<span class="font-mono text-tertiary">Institutional Record #CSB-2025-ARCH-09</span>
+</div>
+<div class="flex items-center gap-6 font-label-md text-label-md pt-1">
+<a class="text-brand hover:text-brand-hover font-medium" href="#">View details</a>
+<a class="text-secondary hover:text-primary flex items-center gap-1.5" href="#">
+<span class="material-symbols-outlined text-base">download</span>
+<span>Download attestation (PDF)</span>
+</a>
+</div>
+</article>
+</div>
+</section>
+<!-- CONTEXTUAL RIGHT SIDEBAR (~300px wide) -->
+<aside class="lg:col-span-4 flex flex-col gap-8">
+<!-- Experience Overview Summary -->
+<div class="bg-surface-card rounded-xl shadow-sm p-6 flex flex-col gap-5">
+<h4 class="font-title-sm text-title-sm text-primary uppercase tracking-wider text-label-xs font-semibold">Civic Engagement Overview</h4>
+<div class="flex flex-col divide-y divide-surface-subtle">
+<div class="py-3 flex items-center justify-between first:pt-0">
+<span class="font-body-md text-body-md text-secondary">Verified experiences</span>
+<span class="font-headline-md text-headline-md text-primary">6</span>
+</div>
+<div class="py-3 flex items-center justify-between">
+<span class="font-body-md text-body-md text-secondary">Civic skills demonstrated</span>
+<span class="font-headline-md text-headline-md text-primary">8</span>
+</div>
+<div class="py-3 flex items-center justify-between">
+<span class="font-body-md text-body-md text-secondary">Documented volunteer hours</span>
+<span class="font-headline-md text-headline-md text-primary">48</span>
+</div>
+<div class="py-3 flex items-center justify-between last:pb-0">
+<span class="font-body-md text-body-md text-secondary">Audited by registered NGOs</span>
+<span class="font-headline-md text-headline-md text-brand">100%</span>
+</div>
+</div>
+</div>
+<!-- Institutional Verification Standard -->
+<div class="bg-surface-card rounded-xl shadow-sm p-6 flex flex-col gap-3">
+<div class="flex items-center gap-2 text-primary font-title-sm text-title-sm">
+<span class="material-symbols-outlined text-lg text-secondary">policy</span>
+<span>About Verified Experiences</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed">
+            An experience only appears on this page after the partner organization audits submitted deliverables and co-signs the civic record under Algerian Civil Society standards (Loi 12-06).
+          </p>
+</div>
+<!-- Official Registry Record & Transcript Export -->
+<div class="bg-surface-card rounded-xl shadow-sm p-6 flex flex-col gap-4">
+<div class="flex flex-col gap-1">
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider">Official Registry Record</span>
+<span class="font-mono font-body-sm text-body-sm text-primary font-medium">ALG-2026-NEF-881</span>
+</div>
+<button class="w-full h-10 px-4 rounded-lg bg-surface-subtle hover:bg-line text-primary font-label-md text-label-md font-medium transition-colors flex items-center justify-center gap-2 focus:outline-none" type="button">
+<span class="material-symbols-outlined text-lg text-secondary">description</span>
+<span>Export complete transcript (PDF)</span>
+</button>
+</div>
+<!-- Privacy & Visibility Note -->
+<div class="px-2 flex items-start gap-3 text-secondary">
+<span class="material-symbols-outlined text-base text-tertiary shrink-0 mt-0.5">lock_outline</span>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed">
+            Only experiences and media items flagged as "Public" appear on your public volunteer profile. Submissions remain private between you and the participating NGO.
+          </p>
+</div>
+</aside>
+</div>
+</div>
+</div></main>
+<!-- FOOTER -->
+<footer class="w-full bg-surface-card border-t border-line py-5 px-8 mt-12">
+<div class="max-w-[1180px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-secondary">
+<span>© 2026 Basmatak Tatatoua. All rights reserved.</span>
+<div class="flex items-center gap-6">
+<a class="hover:text-primary transition-colors" href="#">Civic Integrity Code</a>
+<a class="hover:text-primary transition-colors" href="#">Institutional Verification</a>
+<a class="hover:text-primary transition-colors" href="#">Community Guidelines</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

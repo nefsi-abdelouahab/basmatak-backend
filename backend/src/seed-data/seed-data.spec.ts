@@ -20,7 +20,7 @@ import {
 } from '../skills/schemas/skill.schema';
 import { MUNICIPALITY_SEEDS, WILAYA_SEEDS } from './locations';
 import { SKILL_CATEGORY_SEEDS, SKILL_SEEDS } from './skills';
-import { seedLocations, seedSkills } from './seed.utils';
+import { seedLocations, seedSkills, pruneSkillCatalog } from './seed.utils';
 
 describe('reference-data seeds (idempotent)', () => {
   let handle: MemoryConnectionHandle;
@@ -83,12 +83,12 @@ describe('reference-data seeds (idempotent)', () => {
     expect(total).toBe(WILAYA_SEEDS.length + MUNICIPALITY_SEEDS.length);
   });
 
-  it('seedSkills plants the A4 catalog, idempotent on double-run', async () => {
+  it('seedSkills plants the confirmed catalog, idempotent on double-run', async () => {
     const first = await seedSkills(categoryModel, skillModel);
     expect(first.categories).toBe(SKILL_CATEGORY_SEEDS.length);
-    expect(first.categories).toBe(28);
+    expect(first.categories).toBe(7);
     expect(first.skills).toBe(SKILL_SEEDS.length);
-    expect(first.skills).toBeGreaterThanOrEqual(28 * 3);
+    expect(first.skills).toBeGreaterThanOrEqual(7 * 3);
 
     const second = await seedSkills(categoryModel, skillModel);
     expect(second).toEqual(first);
@@ -115,5 +115,50 @@ describe('reference-data seeds (idempotent)', () => {
     await seedSkills(categoryModel, skillModel);
     const after = await categoryModel.findById(firstCategory!._id).exec();
     expect(after?.active).toBe(false);
+  });
+
+  it('pruneSkillCatalog removes legacy rows and converges on the catalog', async () => {
+    await seedSkills(categoryModel, skillModel);
+    await categoryModel.create({
+      slug: 'legacy-category',
+      nameAr: 'قديم',
+      nameFr: 'Ancien',
+      order: 90,
+      active: true,
+    });
+    const legacyCategory = await categoryModel
+      .findOne({ slug: 'legacy-category' })
+      .exec();
+    await skillModel.create({
+      slug: 'legacy-skill',
+      categoryId: legacyCategory!._id,
+      nameAr: 'مهارة قديمة',
+      nameFr: 'Compétence ancienne',
+      order: 90,
+      active: true,
+    });
+
+    const pruned = await pruneSkillCatalog(categoryModel, skillModel);
+    expect(pruned.categories).toBe(1);
+    expect(pruned.skills).toBe(1);
+
+    const categories = await categoryModel
+      .find({})
+      .select('slug')
+      .lean()
+      .exec();
+    expect(categories.map((c: { slug: string }) => c.slug).sort()).toEqual(
+      SKILL_CATEGORY_SEEDS.map((c) => c.slug).sort(),
+    );
+    const skills = await skillModel.find({}).select('slug').lean().exec();
+    expect(skills.map((s: { slug: string }) => s.slug).sort()).toEqual(
+      SKILL_SEEDS.map((s) => s.slug).sort(),
+    );
+  });
+
+  it('pruneSkillCatalog is a no-op on an empty database', async () => {
+    const pruned = await pruneSkillCatalog(categoryModel, skillModel);
+    expect(pruned.categories).toBe(0);
+    expect(pruned.skills).toBe(0);
   });
 });

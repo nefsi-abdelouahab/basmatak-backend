@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-error-container":"#93000a","primary":"#5300b7","on-tertiary":"#ffffff","background":"#f9f9ff","surface-dim":"#d3daef","secondary":"#5d5d67","tertiary-container":"#8f4200","on-secondary-fixed-variant":"#46464f","primary-fixed":"#ebddff","on-primary-fixed":"#250059","secondary-fixed-dim":"#c7c5d1","surface-container":"#e9edff","tertiary-fixed-dim":"#ffb68b","on-secondary-container":"#64636d","surface-tint":"#7331df","inverse-surface":"#293040","surface-variant":"#dce2f7","on-surface":"#141b2b","on-secondary":"#ffffff","surface-container-lowest":"#ffffff","primary-fixed-dim":"#d3bbff","outline":"#7b7486","on-tertiary-fixed-variant":"#743400","surface":"#f9f9ff","surface-container-low":"#f1f3ff","tertiary-fixed":"#ffdbc8","primary-container":"#6d28d9","outline-variant":"#ccc3d7","inverse-primary":"#d3bbff","secondary-container":"#e3e1ed","on-tertiary-fixed":"#321300","surface-container-highest":"#dce2f7","surface-bright":"#f9f9ff","on-primary-container":"#dac5ff","on-tertiary-container":"#ffc19e","on-background":"#141b2b","on-secondary-fixed":"#1a1b23","on-error":"#ffffff","tertiary":"#6b3000","secondary-fixed":"#e3e1ed","surface-container-high":"#e1e8fd","inverse-on-surface":"#edf0ff","on-primary":"#ffffff","error":"#ba1a1a","on-surface-variant":"#4a4455","on-primary-fixed-variant":"#5b00c5","error-container":"#ffdad6"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-md":"1rem","space-xs":"0.25rem","space-xl":"2rem","gutter-mobile":"0.75rem","gutter":"1.5rem","space-sm":"0.5rem","margin":"1.5rem","margin-mobile":"1rem","space-lg":"1.5rem"},fontFamily:{"headline-md":["Inter"],"title-md":["Inter"],"body-md":["Inter"],"body-lg":["Inter"],"label-md":["Inter"],"label-xs":["Inter"],"title-sm":["Inter"],"title-lg":["Inter"],"body-sm":["Inter"],"headline-lg":["Inter"],"label-sm":["Inter"],"display-lg":["Inter"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",fontWeight:"600"}],"title-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"body-md":["14px",{lineHeight:"21px",fontWeight:"400"}],"body-lg":["15px",{lineHeight:"23px",fontWeight:"400"}],"label-md":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-xs":["11px",{lineHeight:"14px",fontWeight:"500"}],"title-sm":["15px",{lineHeight:"22px",fontWeight:"500"}],"title-lg":["18px",{lineHeight:"26px",fontWeight:"600"}],"body-sm":["13px",{lineHeight:"18px",fontWeight:"400"}],"headline-lg":["24px",{lineHeight:"32px",fontWeight:"600"}],"label-sm":["12px",{lineHeight:"16px",fontWeight:"500"}],"display-lg":["30px",{lineHeight:"38px",fontWeight:"600"}]}}}};</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-16 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-full px-gutter flex items-center justify-between gap-gutter"><div class="flex items-center gap-space-lg w-60 shrink-0"><img alt="Basmatak Tatatoua logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UbgOt7J25in6Q_p0OM_N_GokC9S75tZEJd3pn7saoZXTMqh-t7mjsEVdzBIANGYivhyYFXxMH8itSzMAU-3a4g7jIMNRAmiwX87f09zk5CAopgT-67PrCF0qzp7w1ogAIwSeuGeCWVpvGX95RvQIx9q4nALNJdOGC1BrCbFsrD7Ww6kjkylRsMXrK3dAHGzjSDnpY3ksUKR7XzGc2GrLkvFRN8Bew89R0fwLREdXjkFDVvvEi2kBFhNA"/><span class="font-title-md text-title-md text-on-surface tracking-tight">Basmatak Tatatoua</span></div><div class="flex-1 max-w-xl mx-auto"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-3 text-secondary text-lg pointer-events-none">search</span><input class="w-full h-10 pl-10 pr-4 bg-surface-container-low rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-secondary focus:outline-none focus:bg-surface-container-lowest transition-colors" placeholder="Search opportunities, contributors, credentials..." type="text"/></div></div><div class="flex items-center gap-space-lg shrink-0"><nav class="hidden lg:flex items-center gap-space-md" data-active-classes="text-primary font-title-sm"><a class="font-title-sm text-title-sm text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1" data-path="opportunities" href="#">Opportunities</a><a class="font-title-sm text-title-sm text-on-surface-variant hover:text-on-surface transition-colors px-2 py-1" data-path="discover-talents" href="#">Discover Talents</a></nav><div class="flex items-center gap-space-sm pl-space-md"><button aria-label="Notifications" class="w-9 h-9 rounded-lg flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-container transition-colors" type="button"><span class="material-symbols-outlined text-xl">notifications</span></button><nav data-active-classes="bg-surface-container ring-1 ring-primary/20"><a aria-current="page" class="flex items-center gap-space-sm py-1.5 px-2.5 rounded-lg transition-colors cursor-pointer group text-left bg-surface-container ring-1 ring-primary/20" data-path="organization-profile" href="#"><div class="text-right hidden sm:block"><div class="flex items-center justify-end gap-1"><span class="font-title-sm text-title-sm text-on-surface">Timimoun Cultural Association</span><span class="material-symbols-outlined text-[#16A34A] text-sm" title="Verified Organization">check_circle</span></div><span class="font-label-xs text-label-xs text-primary font-medium block">Organization Profile</span></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-transparent group-hover:ring-primary/20 transition-all" src="https://lh3.googleusercontent.com/aida/AEtjO1XOuwxHYA6mIOeQPIeoLTPS0OvOGzH9ptd7KjRUVnYeXklLdPIEQsCvzjfPXUwuf2o4r5zacnllfEGiw2xD5dKPUWv0xsj8T5dwlRusQ5ONutxw4sPkVAZQIetjNfMRzbga4fAZ7ZLqzzpZNUvNtO2fFT8L149tWsCcbGS4jzfO6yLJP0COFQzfreA1Fp_1_Qn2uIAaAL-5uh5pjN0SUQzQSR-2lpFBk-0As1FeRNf9nXacvSBfuRW2"/></a></nav></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-60 bg-surface-container-lowest z-40 flex flex-col justify-between py-space-lg shadow-[0_1px_8px_rgba(0,0,0,0.02)] overflow-y-auto"><div class="flex flex-col gap-space-xl px-space-md"><div class="flex flex-col gap-space-xs"><span class="px-space-sm font-label-xs text-label-xs text-secondary uppercase tracking-wider">Main</span><nav class="flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-title-sm rounded-lg"><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="overview" href="#">Overview</a><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="my-opportunities" href="#">My Opportunities</a><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="applications" href="#">Applications</a><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="participants" href="#">Participants</a><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="contributions" href="#">Contributions</a><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="verified-experiences" href="#">Verified Experiences</a></nav></div><div class="flex flex-col gap-space-xs"><span class="px-space-sm font-label-xs text-label-xs text-secondary uppercase tracking-wider">Discover</span><nav class="flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-title-sm rounded-lg"><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="discover-talents" href="#">Discover Talents</a></nav></div><div class="flex flex-col gap-space-xs"><span class="px-space-sm font-label-xs text-label-xs text-secondary uppercase tracking-wider">Account</span><nav class="flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-title-sm rounded-lg"><a class="flex items-center px-space-sm py-2 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="settings" href="#">Settings</a></nav></div></div><div class="px-space-md pt-space-md"><div class="p-space-sm rounded-lg bg-surface-container-low"><div class="flex items-center gap-space-xs text-secondary"><span class="material-symbols-outlined text-sm">gavel</span><span class="font-label-xs text-label-xs">Civic Charter Verified</span></div></div></div></aside><div class="pl-60"><main class="w-full pt-16 min-h-screen bg-background"><div class="flex flex-col w-full">
+<!-- Top Breadcrumb & Actions Bar -->
+<div class="w-full bg-surface-container-lowest shadow-sm">
+<div class="max-w-[1240px] mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+<span class="hover:text-on-surface transition-colors cursor-pointer">Civil Organization Workspace</span>
+<span class="text-outline">/</span>
+<span class="hover:text-on-surface transition-colors cursor-pointer">Timimoun Cultural Association</span>
+<span class="text-outline">/</span>
+<span class="text-on-surface font-title-sm text-title-sm">Profile</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface rounded-lg font-title-sm text-title-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[17px] text-secondary">edit</span>
+<span>Edit profile</span>
+</button>
+<a class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-surface-container-low hover:bg-surface-container text-on-surface rounded-lg font-title-sm text-title-sm transition-colors" href="#">
+<span>View public profile</span>
+<span class="material-symbols-outlined text-[17px] text-secondary">arrow_outward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Main Container -->
+<div class="max-w-[1240px] mx-auto w-full px-6 py-8">
+<!-- Profile Hero & Identity Banner -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-8">
+<!-- Cover Photo with Action Overlay -->
+<div class="relative w-full h-72 md:h-84 bg-surface-container overflow-hidden group">
+<img alt="Timimoun Cultural Association Community Restoration Work" class="w-full h-full object-cover object-center" src="https://lh3.googleusercontent.com/aida/AEtjO1XOuwxHYA6mIOeQPIeoLTPS0OvOGzH9ptd7KjRUVnYeXklLdPIEQsCvzjfPXUwuf2o4r5zacnllfEGiw2xD5dKPUWv0xsj8T5dwlRusQ5ONutxw4sPkVAZQIetjNfMRzbga4fAZ7ZLqzzpZNUvNtO2fFT8L149tWsCcbGS4jzfO6yLJP0COFQzfreA1Fp_1_Qn2uIAaAL-5uh5pjN0SUQzQSR-2lpFBk-0As1FeRNf9nXacvSBfuRW2"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
+<button class="absolute top-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md hover:bg-surface-container-lowest text-on-surface px-3 py-1.5 rounded-lg text-label-sm font-label-sm inline-flex items-center gap-1.5 shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">photo_camera</span>
+<span>Change cover photo</span>
+</button>
+</div>
+<!-- Identity Header -->
+<div class="px-8 pb-8 pt-0 relative">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-14 mb-6">
+<div class="flex items-end gap-5">
+<div class="relative group shrink-0">
+<div class="w-28 h-28 rounded-xl bg-primary-container text-on-primary flex flex-col items-center justify-center font-display-lg text-display-lg font-bold shadow-md">
+                TCA
+              </div>
+<button class="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="Update organization logo" type="button">
+<span class="material-symbols-outlined text-[15px]">photo_camera</span>
+</button>
+</div>
+<div class="pb-1">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Timimoun Cultural Association</h1>
+<p class="font-body-md text-body-md text-on-surface-variant italic">Association Culturelle de Timimoun</p>
+</div>
+</div>
+<div class="pb-2">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">verified</span>
+<span class="text-on-surface font-title-sm text-title-sm">Verified Civil Society Organization</span>
+<span class="text-outline">·</span>
+<span>Law 12-06 Accredited</span>
+<span class="text-outline">·</span>
+<span>Statute DZ-14/08</span>
+</div>
+</div>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface max-w-4xl mb-6 leading-relaxed">
+          Dedicated to preserving Saharan oral heritage, vernacular earthen architecture, and traditional oasis craftsmanship through structured civic youth fieldwork across Gourara and the Adrar province.
+        </p>
+<!-- Quick Metadata Row -->
+<div class="pt-5 bg-surface-container-lowest flex flex-wrap items-center gap-x-8 gap-y-3 font-body-sm text-body-sm text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[17px] text-secondary">location_on</span>
+<span>Timimoun Old Ksar, Adrar Province, Algeria</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[17px] text-secondary">language</span>
+<a class="hover:text-primary transition-colors" href="https://association-timimoun.dz" rel="noopener noreferrer" target="_blank">association-timimoun.dz</a>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[17px] text-secondary">calendar_today</span>
+<span>Accredited since 2018</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[17px] text-secondary">account_balance</span>
+<span>Non-Governmental Cultural Heritage &amp; Civil Organization</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Spacious Two-Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- MAIN COLUMN (~760px / col-span-8) -->
+<div class="lg:col-span-8 flex flex-col gap-8">
+<!-- Section A: About & Mission -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm">
+<h2 class="font-title-lg text-title-lg text-on-surface mb-4">About the Organization</h2>
+<div class="font-body-md text-body-md text-on-surface leading-relaxed flex flex-col gap-4 text-justify">
+<p>
+              The Timimoun Cultural Association (Association Culturelle de Timimoun) acts as an institutional and civil preservation bridge across the Gourara basin. Legally accredited under Algerian Civil Society Law 12-06, our mandate combines rigorous ethnolinguistic documentation with architectural conservation. Through continuous partnership with regional artisan guilds, traditional water masters (Keggadïn of the foggara networks), and academic researchers, we coordinate targeted civil volunteer cohorts to secure vulnerable intangible and built heritage.
+            </p>
+<p>
+              Every volunteer initiative coordinated through our civic workspace adheres to formal archiving standards, ensuring that raw ethnographic recordings, architectural surveys, and oral poetry transcripts are safely deposited into national open-access repositories and verified through cryptographically authenticated civic experience records.
+            </p>
+</div>
+<!-- Core Fields Typographic Grid -->
+<div class="mt-8 pt-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-surface-container-low rounded-lg p-6">
+<div>
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary block mb-1">Legal Registration</span>
+<p class="font-title-sm text-title-sm text-on-surface leading-snug">Statute Record No. DZ-14/08</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Wilaya of Adrar Civil Registry</p>
+</div>
+<div>
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary block mb-1">Focus Disciplines</span>
+<p class="font-title-sm text-title-sm text-on-surface leading-snug">Ahellil Archiving &amp; Earthen Ksar Photogrammetry</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Oasis Irrigation Documentation</p>
+</div>
+<div>
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary block mb-1">Operating Range</span>
+<p class="font-title-sm text-title-sm text-on-surface leading-snug">Gourara Oasis Region</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Timimoun, Ouled Saïd &amp; Adrar</p>
+</div>
+</div>
+</section>
+<!-- Section B: Volunteer Opportunities -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="font-title-lg text-title-lg text-on-surface">Volunteer opportunities</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Recent civic initiatives open for field contribution</p>
+</div>
+<a class="font-title-sm text-title-sm text-primary hover:text-primary-container inline-flex items-center gap-1 transition-colors" href="#">
+<span>View all opportunities (7)</span>
+<span class="material-symbols-outlined text-[17px]">arrow_forward</span>
+</a>
+</div>
+<div class="flex flex-col gap-6">
+<!-- Opportunity 1 -->
+<div class="flex flex-col sm:flex-row gap-5 p-4 rounded-xl hover:bg-surface-container-low transition-colors">
+<div class="w-full sm:w-44 h-32 rounded-lg overflow-hidden shrink-0 bg-surface-container">
+<img alt="Cultural Event Media Coverage &amp; Archival Documentation" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WALwgqPn7b-oYGAjStazXb8m2vxl0cFbBPpgPn4TfYh0OSQWz4RTByAaYGVrPYcIOMETQrsIz-yZPxWRZxhM8gNaUN4UktNuZEIX44ZQID1Zag6ZgGhbqJX8RQmC4GsLnNoLwyPs9v59apHp1EGfHoF9J9b9sdWkve7ISTgZ-VD30_3wQHrzQcD4pW5FINLbUGQ9kpahZ_MaldINrZCD6FJE7VDWfnMTeeU6nAYIrrT7d_oAWHz6UekQ"/>
+</div>
+<div class="flex-1 flex flex-col justify-between py-0.5">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface hover:text-primary transition-colors cursor-pointer">
+                    Cultural Event Media Coverage &amp; Archival Documentation
+                  </h3>
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 font-body-sm text-body-sm text-on-surface-variant">
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">location_on</span>
+                      Timimoun Old Ksar, Adrar Province
+                    </span>
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">calendar_today</span>
+                      Sep 25 – Sep 28, 2026
+                    </span>
+</div>
+</div>
+<div class="mt-3 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-body-sm text-body-sm">
+<div>
+<span class="text-secondary">Positions:</span>
+<span class="text-on-surface font-title-sm text-title-sm ml-1">2 Lead Photographers, 1 Sound Recordist</span>
+</div>
+<div class="text-on-surface-variant text-right sm:text-left">
+<span class="text-secondary">Deliverables:</span> 20 high-res RAW captures, 6 master audio recordings
+                  </div>
+</div>
+</div>
+</div>
+<!-- Opportunity 2 -->
+<div class="flex flex-col sm:flex-row gap-5 p-4 rounded-xl hover:bg-surface-container-low transition-colors">
+<div class="w-full sm:w-44 h-32 rounded-lg overflow-hidden shrink-0 bg-surface-container">
+<img alt="Earthen Architecture Photogrammetry &amp; Structural Survey" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XQ7uszhwJalC2B-xiOiXNxwKurpTrqusvzhf2x801FOGtTk4O0FfI7rat49-LQcmQDjIpWQaV1dkOl0J5PgyRHz7V9QxoWVa6o8c4SiuXaiPJyhdZ5rxA9WGrw3gf2FvKx4bQbRHGBZ0f8bu18GJ5V8ySEXB0M-250A3hnQaON29L-qMb1NCaRhNLYYHILYkzoba-L71fDefk_uXLZ_Fpq2696s4ZBPx4WRBS8Q_kdNcsld3TBJJUpRA"/>
+</div>
+<div class="flex-1 flex flex-col justify-between py-0.5">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface hover:text-primary transition-colors cursor-pointer">
+                    Earthen Architecture Photogrammetry &amp; Structural Survey
+                  </h3>
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 font-body-sm text-body-sm text-on-surface-variant">
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">location_on</span>
+                      Ouled Saïd Ancient Ksar, Gourara
+                    </span>
+<span class="inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">calendar_today</span>
+                      Oct 12 – Oct 18, 2026
+                    </span>
+</div>
+</div>
+<div class="mt-3 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-body-sm text-body-sm">
+<div>
+<span class="text-secondary">Positions:</span>
+<span class="text-on-surface font-title-sm text-title-sm ml-1">2 Photogrammetry Assistants, 1 Conservation Scribe</span>
+</div>
+<div class="text-on-surface-variant text-right sm:text-left">
+<span class="text-secondary">Deliverables:</span> 3D point cloud elevations, 1 condition report
+                  </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section C: Verified Volunteer Experiences (Minted Credentials) -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm">
+<div class="mb-6">
+<h2 class="font-title-lg text-title-lg text-on-surface">Verified volunteer experiences</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+              Official civic credentials issued and cryptographically anchored by Timimoun Cultural Association upon completed fieldwork deliverables.
+            </p>
+</div>
+<div class="flex flex-col gap-5">
+<!-- Credential 1 -->
+<div class="p-5 rounded-xl bg-surface-container-low flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+<div class="flex items-start gap-4">
+<img alt="Karim Zerrouki" class="w-12 h-12 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1V3U4Z_2pfkeuFRnBY05i09aiiLLyGw3XDeqhxh2iWZnf4gUrzK1xn2Z3g9o4ghL-PD_qOWWzp2ehEkZmV47HYspZ17VSinnYimtakl6ngmqPCNzVMIUdFVmeV-n_4CQozYjC4PXWDDIybin9Ak0e3r8n0GqhXNvJjvdy9pOWjH7XQKBz6xO2RBFQis-2upZ-9XMBD8Hl6-NjU0PdlTkWjlJI9bmkaTdcnKpH2Ov1xO7Oe8TSIQPgAcRg"/>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-title-md text-title-md text-on-surface">Karim Zerrouki</h3>
+<span class="text-outline">·</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Field Sound Recordist</span>
+</div>
+<p class="font-title-sm text-title-sm text-primary mt-0.5">Zenati-Arabic Bilingual Oral Traditions Audio Archiving</p>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                    Delivered: 48:22 min 24-bit broadcast audio master with bilingual sync logs
+                  </p>
+<div class="flex items-center gap-3 font-label-xs text-label-xs text-on-surface-variant mt-2">
+<span>Verified October 2, 2026</span>
+<span class="text-outline">·</span>
+<span class="font-mono text-secondary">#VE-TCA-2026-088</span>
+</div>
+</div>
+</div>
+<a class="inline-flex items-center gap-1 font-title-sm text-title-sm text-primary hover:text-primary-container shrink-0 self-end sm:self-center transition-colors" href="#">
+<span>View verified experience</span>
+<span class="material-symbols-outlined text-[16px]">arrow_outward</span>
+</a>
+</div>
+<!-- Credential 2 -->
+<div class="p-5 rounded-xl bg-surface-container-low flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+<div class="flex items-start gap-4">
+<img alt="Ahmed Benali" class="w-12 h-12 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-title-md text-title-md text-on-surface">Ahmed Benali</h3>
+<span class="text-outline">·</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Lead Event Photographer</span>
+</div>
+<p class="font-title-sm text-title-sm text-primary mt-0.5">Ahellil Nocturnal Recital Master Photography</p>
+<p class="font-body-sm text-body-sm text-secondary mt-1">
+                    Delivered: 18 uncompressed RAW captures with IPTC archival metadata
+                  </p>
+<div class="flex items-center gap-3 font-label-xs text-label-xs text-on-surface-variant mt-2">
+<span>Verified September 30, 2026</span>
+<span class="text-outline">·</span>
+<span class="font-mono text-secondary">#VE-TCA-2026-085</span>
+</div>
+</div>
+</div>
+<a class="inline-flex items-center gap-1 font-title-sm text-title-sm text-primary hover:text-primary-container shrink-0 self-end sm:self-center transition-colors" href="#">
+<span>View verified experience</span>
+<span class="material-symbols-outlined text-[16px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</section>
+<!-- Section D: Recent Volunteer Activity Timeline -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-sm">
+<h2 class="font-title-lg text-title-lg text-on-surface mb-6">Recent Volunteer Activity</h2>
+<div class="relative pl-6 flex flex-col gap-6">
+<div class="absolute left-2 top-2 bottom-2 w-0.5 bg-surface-container"></div>
+<div class="relative">
+<div class="absolute -left-6 top-1.5 w-2 h-2 rounded-full bg-primary ring-4 ring-surface-container-lowest"></div>
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider block">October 2, 2026</span>
+<p class="font-body-md text-body-md text-on-surface mt-1">
+                Verified experience issued to <span class="font-title-sm text-title-sm">Karim Zerrouki</span> for Cultural Event Media Coverage (36 fieldwork hours accredited).
+              </p>
+</div>
+<div class="relative">
+<div class="absolute -left-6 top-1.5 w-2 h-2 rounded-full bg-secondary ring-4 ring-surface-container-lowest"></div>
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider block">September 28, 2026</span>
+<p class="font-body-md text-body-md text-on-surface mt-1">
+                Fieldwork completed for Cultural Event Media Coverage &amp; Archival Documentation at Timimoun Old Ksar.
+              </p>
+</div>
+<div class="relative">
+<div class="absolute -left-6 top-1.5 w-2 h-2 rounded-full bg-secondary ring-4 ring-surface-container-lowest"></div>
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider block">September 25, 2026</span>
+<p class="font-body-md text-body-md text-on-surface mt-1">
+                Accepted 3 participants across 2 positions for Gourara Autumn Fieldwork cohort.
+              </p>
+</div>
+<div class="relative">
+<div class="absolute -left-6 top-1.5 w-2 h-2 rounded-full bg-secondary ring-4 ring-surface-container-lowest"></div>
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider block">September 10, 2026</span>
+<p class="font-body-md text-body-md text-on-surface mt-1">
+                New civic opportunity published: <span class="font-title-sm text-title-sm">Earthen Architecture Photogrammetry &amp; Structural Survey</span>.
+              </p>
+</div>
+</div>
+</section>
+</div>
+<!-- SIDEBAR (~320px / col-span-4) -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Sidebar Module A: Institutional Verification & Civic Charter -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-title-md text-title-md text-on-surface">Institutional Accreditation</h3>
+<span class="material-symbols-outlined text-[20px] text-primary">gavel</span>
+</div>
+<div class="flex items-center gap-2 mb-5">
+<span class="material-symbols-outlined text-[18px] text-primary">verified</span>
+<span class="font-title-sm text-title-sm text-on-surface">Status: Verified Civil Entity</span>
+</div>
+<div class="flex flex-col gap-4 font-body-sm text-body-sm">
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Issuing Body</span>
+<p class="text-on-surface font-title-sm text-title-sm">Ministry of Interior &amp; Local Authorities / Wilaya of Adrar</p>
+</div>
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Legal Framework</span>
+<p class="text-on-surface">Algerian Civil Society Law 12-06</p>
+</div>
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Civic Registry ID</span>
+<p class="text-on-surface font-mono font-title-sm text-title-sm">DZ-CIVIC-ORG-2018-0442</p>
+</div>
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Annual Report</span>
+<p class="text-on-surface">2025 Audited Civic Report (Filed March 2026)</p>
+</div>
+</div>
+<div class="mt-6 pt-5 bg-surface-container-lowest">
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Timimoun Cultural Association holds statutory authority to evaluate volunteer fieldwork and mint accredited national civic experience records.
+            </p>
+</div>
+</div>
+<!-- Sidebar Module B: Contact & Directory -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm">
+<h3 class="font-title-md text-title-md text-on-surface mb-5">Contact Information</h3>
+<div class="flex flex-col gap-4 font-body-sm text-body-sm">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-secondary mt-0.5">mail</span>
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Official Inquiries</span>
+<a class="text-on-surface hover:text-primary transition-colors font-title-sm text-title-sm" href="mailto:contact@association-timimoun.dz">contact@association-timimoun.dz</a>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-secondary mt-0.5">call</span>
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Telephone</span>
+<span class="text-on-surface font-title-sm text-title-sm">+213 (0) 49 90 12 34</span>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-secondary mt-0.5">language</span>
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Official Portal</span>
+<a class="text-on-surface hover:text-primary transition-colors font-title-sm text-title-sm" href="https://association-timimoun.dz" rel="noopener noreferrer" target="_blank">https://association-timimoun.dz</a>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-secondary mt-0.5">location_on</span>
+<div>
+<span class="text-secondary block font-label-xs text-label-xs uppercase tracking-wider mb-0.5">Physical Secretariat</span>
+<span class="text-on-surface">Rue du Ksar Ancien, Timimoun 01001, Adrar, Algeria</span>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-5 bg-surface-container-lowest flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary">visibility</span>
+<span class="font-body-sm text-body-sm text-secondary">Publicly visible to registered volunteers</span>
+</div>
+<span class="font-title-sm text-title-sm text-primary">Active</span>
+</div>
+</div>
+<!-- Sidebar Module C: Geographic Location Preview -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-title-md text-title-md text-on-surface">Fieldwork Region</h3>
+<span class="font-mono text-label-xs text-label-xs text-secondary">29°15′46″N 0°13′50″E</span>
+</div>
+<!-- Stylized regional map visual -->
+<div class="w-full h-44 rounded-lg bg-surface-container-low overflow-hidden relative mb-4">
+<svg class="w-full h-full text-surface-container-highest" preserveaspectratio="none" viewbox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+<!-- Topographic and regional lines -->
+<path d="M0,40 Q80,20 160,50 T320,30 L320,180 L0,180 Z" fill="currentColor" opacity="0.3"></path>
+<path d="M0,80 Q90,70 180,95 T320,75 L320,180 L0,180 Z" fill="currentColor" opacity="0.5"></path>
+<path d="M0,130 Q110,110 200,140 T320,120 L320,180 L0,180 Z" fill="currentColor" opacity="0.7"></path>
+<!-- Oasis contour markers -->
+<circle cx="140" cy="85" fill="#6D28D9" opacity="0.15" r="28"></circle>
+<circle cx="140" cy="85" fill="#6D28D9" opacity="0.3" r="14"></circle>
+<circle cx="140" cy="85" fill="#6D28D9" r="4"></circle>
+<text fill="#141B2B" font-family="Inter" font-size="10" font-weight="600" x="152" y="89">Timimoun</text>
+<text fill="#4A4455" font-family="Inter" font-size="8" x="152" y="99">Gourara Basin</text>
+<circle cx="210" cy="55" fill="#5D5D67" r="3"></circle>
+<text fill="#4A4455" font-family="Inter" font-size="8" x="218" y="58">Ouled Saïd</text>
+<circle cx="95" cy="145" fill="#5D5D67" r="3"></circle>
+<text fill="#4A4455" font-family="Inter" font-size="8" x="103" y="148">Adrar Base</text>
+</svg>
+<div class="absolute bottom-2 left-2 px-2 py-1 bg-surface-container-lowest/90 backdrop-blur-sm rounded text-label-xs font-label-xs text-on-surface">
+              Gourara Oasis Sector
+            </div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface leading-snug">
+<span class="font-title-sm text-title-sm text-on-surface">Primary operational base:</span> Timimoun Old Ksar, Oasis de Gourara, Wilaya d'Adrar.
+          </p>
+</div>
+</div>
+</div>
+</div>
+</div></main></div></body></html>

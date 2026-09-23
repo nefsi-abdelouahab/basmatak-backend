@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_dashboard" name="shell-type"/>
+<title>Submit Contribution — Basmatak Tatatoua</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: "#6D28D9",
+              hover: "#5B21B6",
+              light: "#F5F3FF",
+              muted: "#EDE9FE"
+            },
+            surface: {
+              page: "#F8FAFC",
+              card: "#FFFFFF",
+              subtle: "#F1F5F9"
+            },
+            line: "#E2E8F0",
+            primary: "#111827",
+            secondary: "#64748B",
+            tertiary: "#94A3B8"
+          },
+          fontFamily: {
+            sans: ["Inter", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #F8FAFC;
+        color: #111827;
+        font-family: 'Inter', sans-serif;
+      }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-surface-page antialiased text-primary selection:bg-brand-light selection:text-brand">
+<!-- TOP NAVIGATION HEADER -->
+<header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface-card border-b border-line px-6 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<!-- Brand Logo -->
+<a class="flex items-center gap-2.5 text-primary hover:opacity-90 transition-opacity" href="#">
+<img alt="Basmatak Tatatoua Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UbgOt7J25in6Q_p0OM_N_GokC9S75tZEJd3pn7saoZXTMqh-t7mjsEVdzBIANGYivhyYFXxMH8itSzMAU-3a4g7jIMNRAmiwX87f09zk5CAopgT-67PrCF0qzp7w1ogAIwSeuGeCWVpvGX95RvQIx9q4nALNJdOGC1BrCbFsrD7Ww6kjkylRsMXrK3dAHGzjSDnpY3ksUKR7XzGc2GrLkvFRN8Bew89R0fwLREdXjkFDVvvEi2kBFhNA"/>
+<span class="font-semibold text-base tracking-tight text-primary">Basmatak Tatatoua</span>
+</a>
+<!-- Global Search -->
+<div class="relative hidden md:block w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-lg pointer-events-none">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface-subtle border border-line rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all" placeholder="Search opportunities, people, organizations..." type="text"/>
+</div>
+</div>
+<!-- Center Navigation Links -->
+<nav class="hidden lg:flex items-center gap-7">
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Home</a>
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Opportunities</a>
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Discover Talents</a>
+</nav>
+<!-- Right Controls -->
+<div class="flex items-center gap-4">
+<button aria-label="Notifications" class="p-2 text-secondary hover:text-primary rounded-lg transition-colors relative" type="button">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="absolute top-2 right-2 w-1.5 h-1.5 bg-brand rounded-full"></span>
+</button>
+<div class="h-6 w-px bg-line"></div>
+<!-- User Profile -->
+<div class="flex items-center gap-2.5 cursor-pointer">
+<img alt="Abdelouahab Nefsi" class="w-8 h-8 rounded-full object-cover ring-1 ring-line" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/>
+<div class="hidden sm:flex flex-col text-left">
+<span class="text-xs font-semibold text-primary leading-tight">Abdelouahab Nefsi</span>
+<span class="text-[11px] text-secondary leading-tight">Volunteer Contributor</span>
+</div>
+</div>
+</div>
+</header>
+<!-- LEFT FIXED SIDEBAR (~240px) -->
+<aside class="fixed left-0 top-16 bottom-0 w-60 bg-surface-card border-r border-line z-40 flex flex-col justify-between py-6 px-4 overflow-y-auto">
+<div class="flex flex-col gap-6">
+<!-- Volunteer Space -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Volunteer Space</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">assignment</span>
+<span>My Applications</span>
+</a>
+<!-- Active link: My Participations -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-brand bg-brand-light transition-colors" href="#">
+<span class="material-symbols-outlined text-lg text-brand">task_alt</span>
+<span>My Participations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">history_edu</span>
+<span>My Experiences</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">folder_shared</span>
+<span>My Portfolio</span>
+</a>
+</nav>
+</div>
+<!-- Discover -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Discover</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">explore</span>
+<span>Opportunities</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">group</span>
+<span>Discover Talents</span>
+</a>
+</nav>
+</div>
+<!-- Account -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Account</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Sidebar footer profile context -->
+<div class="pt-4 border-t border-line flex items-center gap-2.5 px-2">
+<span class="material-symbols-outlined text-secondary text-base">verified_user</span>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-primary">Identity Confirmed</span>
+<span class="text-[11px] text-tertiary">National Civic Registry</span>
+</div>
+</div>
+</aside>
+<!-- MAIN VIEWPORT CONTAINER -->
+<div class="pl-60 min-h-screen flex flex-col justify-between pt-16">
+<main class="w-full flex-1"><div class="flex flex-col w-full">
+<div class="w-full max-w-[1240px] mx-auto px-6 py-8 flex flex-col gap-8">
+<!-- Top Context & Header -->
+<header class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-secondary font-label-sm text-label-sm">
+<span>Volunteer Space</span>
+<span class="text-tertiary">/</span>
+<span class="text-primary font-medium">My Portfolio</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">My Portfolio</h1>
+<p class="font-body-md text-body-md text-secondary">
+          Showcase the work that represents your skills and creative capability.
+        </p>
+</div>
+<!-- Action Button -->
+<div class="flex items-center gap-3">
+<button class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-container hover:bg-brand-hover text-on-primary rounded-lg font-label-md text-label-md transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-lg">add</span>
+<span>Add project</span>
+</button>
+</div>
+</header>
+<!-- Filter & Sort Bar (Zero badges, typographic text links) -->
+<section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3">
+<div class="flex items-center gap-6 overflow-x-auto text-label-md font-label-md scrollbar-none">
+<button class="text-primary-container font-semibold pb-1 relative transition-colors whitespace-nowrap" type="button">
+          All (7)
+          <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-container"></span>
+</button>
+<button class="text-secondary hover:text-primary transition-colors whitespace-nowrap" type="button">
+          Photography (3)
+        </button>
+<button class="text-secondary hover:text-primary transition-colors whitespace-nowrap" type="button">
+          Archival &amp; GIS (2)
+        </button>
+<button class="text-secondary hover:text-primary transition-colors whitespace-nowrap" type="button">
+          Audio &amp; Acoustic (1)
+        </button>
+<button class="text-secondary hover:text-primary transition-colors whitespace-nowrap" type="button">
+          Field Research (1)
+        </button>
+</div>
+<div class="flex items-center gap-5 text-label-sm font-label-sm text-secondary">
+<!-- Visibility Selector -->
+<div class="flex items-center gap-1.5 cursor-pointer hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-base text-tertiary">visibility</span>
+<span>All Visibility</span>
+<span class="material-symbols-outlined text-sm text-tertiary">expand_more</span>
+</div>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<!-- Sort Selector -->
+<div class="flex items-center gap-1.5 cursor-pointer hover:text-primary transition-colors">
+<span class="text-tertiary">Sort by:</span>
+<span class="font-medium text-primary">Featured</span>
+<span class="material-symbols-outlined text-sm text-tertiary">expand_more</span>
+</div>
+</div>
+</section>
+<!-- Main Two-Column Work Area -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Primary Showcase Column (~780px / 8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-8">
+<!-- A. Featured Hero Showcase Card -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col group transition-shadow hover:shadow-md">
+<div class="relative w-full aspect-[21/9] bg-surface-container-high overflow-hidden">
+<img alt="Ahellil Cultural Gathering - Field photo documentation" class="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-500" src="https://lh3.googleusercontent.com/aida/AEtjO1XOuwxHYA6mIOeQPIeoLTPS0OvOGzH9ptd7KjRUVnYeXklLdPIEQsCvzjfPXUwuf2o4r5zacnllfEGiw2xD5dKPUWv0xsj8T5dwlRusQ5ONutxw4sPkVAZQIetjNfMRzbga4fAZ7ZLqzzpZNUvNtO2fFT8L149tWsCcbGS4jzfO6yLJP0COFQzfreA1Fp_1_Qn2uIAaAL-5uh5pjN0SUQzQSR-2lpFBk-0As1FeRNf9nXacvSBfuRW2"/>
+<div class="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-inverse-surface/80 backdrop-blur-sm text-inverse-on-surface rounded font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-sm text-surface-variant">visibility</span>
+<span>Public · Visible on public profile</span>
+</div>
+</div>
+<div class="p-6 md:p-8 flex flex-col gap-5">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-tertiary font-label-xs text-label-xs tracking-wide uppercase">
+<span>Featured Project</span>
+<span>·</span>
+<span>Oral Traditions</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                Ahellil Cultural Gathering — Nighttime Heritage Photography
+              </h2>
+<p class="font-body-lg text-body-lg text-secondary leading-relaxed">
+                A curated 24-frame photographic documentary series capturing nighttime outdoor poetic recitals and vocal acoustics across Timimoun Old Ksar. Captured using ambient tungsten and natural desert night sky illuminations.
+              </p>
+</div>
+<!-- Skills List (Clean typographic line with monochrome icons) -->
+<div class="flex flex-wrap items-center gap-x-6 gap-y-2 py-2 text-secondary font-label-sm text-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base text-tertiary">photo_camera</span>
+<span>Documentary Photography</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base text-tertiary">image</span>
+<span>Low-Light Processing</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base text-tertiary">tune</span>
+<span>Color Grading</span>
+</div>
+</div>
+<!-- Connection to Verified Experience -->
+<div class="pt-4 flex flex-col gap-2 bg-surface-container-low p-4 rounded-lg">
+<span class="text-tertiary font-label-xs text-label-xs uppercase tracking-wider">Institutional Attestation</span>
+<a class="inline-flex items-center gap-1 text-primary-container hover:text-brand-hover font-label-sm text-label-sm font-medium transition-colors" href="#">
+<span>Related volunteer experience: Cultural Event Media Coverage (Timimoun Cultural Association) · View verified record</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+<!-- Project Meta & Link -->
+<div class="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-label-sm font-label-sm">
+<span class="text-tertiary font-normal">
+                Completed Sep 2026 · 24 High-Res Photographs · 4 Field Audio Syncs
+              </span>
+<a class="inline-flex items-center gap-1.5 text-primary hover:text-primary-container font-semibold transition-colors" href="#">
+<span>View project case study</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+</div>
+</article>
+<!-- B. Asymmetric Editorial Media Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Item 1: Oasis Foggaras Spatial Mapping -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-5 flex flex-col justify-between gap-4 group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-4">
+<div class="relative w-full aspect-[16/10] rounded-lg overflow-hidden bg-surface-container-high">
+<div class="w-full h-full bg-cover bg-center group-hover:scale-[1.02] transition-transform duration-500" data-alt="Technical high-resolution GIS top-down coordinate cartography and contour elevation map depicting subterranean foggara canal channels in southern Algerian oasis, clean neutral technical monochrome styling with geological survey markers" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC2W-U04oOD97qssU2tF7lhseD27__yhw5my5NXqtiQkSAlayskPBymI7FNqVqDTvh36RpLIWOd20iTuCiMaFS8vXbO_BmvG7GpkMJAyh1yA-OUZcwl81dF75cBFlVBVQqBeXFPun_XxHJ-esi1R4f3aBHexswcdZD51oUv5q88kjQuu1I1cy4Y-s_wF1QeR9BCaegE2tzVNEwGHscBh7LKxkThzjp4AjdYibkeqwOSywspOJ_exnk')"></div>
+<div class="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 bg-inverse-surface/80 backdrop-blur-sm text-inverse-on-surface rounded font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-xs">visibility</span>
+<span>Public</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<span class="text-tertiary font-label-xs text-label-xs uppercase tracking-wider">Cartography</span>
+<h3 class="font-title-lg text-title-lg text-primary tracking-tight">
+                  Oasis Foggaras Spatial Mapping &amp; Coordinate Survey
+                </h3>
+<p class="font-body-sm text-body-sm text-secondary">
+                  Differential GPS coordinates and cartographic elevation maps for 14 subterranean irrigation conduits in Gourara.
+                </p>
+</div>
+<!-- Skills -->
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-secondary font-label-xs text-label-xs">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">location_on</span>
+<span>GIS Mapping</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">database</span>
+<span>Spatial Topography</span>
+</div>
+</div>
+</div>
+<div class="pt-4 flex flex-col gap-2">
+<span class="font-label-xs text-label-xs text-tertiary">Related to: Oasis Irrigation Topographic Survey</span>
+<a class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>View project</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</article>
+<!-- Item 2: Vernacular Zenati Dialect Audio Master Recordings -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-5 flex flex-col justify-between gap-4 group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-4">
+<!-- Audio waveform visual representation -->
+<div class="relative w-full aspect-[16/10] rounded-lg bg-inverse-surface p-4 flex flex-col justify-between text-inverse-on-surface overflow-hidden">
+<div class="flex items-center justify-between z-10">
+<div class="flex items-center gap-1 px-2.5 py-1 bg-surface-container-highest/20 rounded font-label-xs text-label-xs text-inverse-on-surface">
+<span class="material-symbols-outlined text-xs">visibility</span>
+<span>Public</span>
+</div>
+<span class="font-label-xs text-label-xs text-outline-variant font-mono">48 kHz · 24-bit PCM</span>
+</div>
+<!-- Waveform SVG graphic -->
+<div class="my-auto py-2 flex items-center justify-center">
+<svg class="w-full h-12 text-primary-fixed-dim opacity-90" fill="none" viewbox="0 0 280 48">
+<path d="M2 24h6m4 -8v16m4 -12v24m4 -20v40m4 -30v20m4 -16v12m4 -24v36m4 -18v16m4 -32v44m4 -28v22m4 -12v14m4 -22v30m4 -36v42m4 -24v28m4 -16v12m4 -30v38m4 -22v26m4 -14v10m4 -28v34m4 -38v42m4 -26v22m4 -16v14m4 -32v38m4 -18v16m4 -28v32m4 -14v10m4 -34v40m4 -22v26m4 -12v12m4 -24v30m4 -16v18m4 -8v8m4 -24v32m4 -14v14m4 -26v28m4 -10v10m4 -20v24m4 -14v14m4 -8v8h10" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+<div class="flex items-center gap-3 z-10">
+<button aria-label="Play recording preview" class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center hover:bg-brand-hover transition-colors" type="button">
+<span class="material-symbols-outlined text-base">play_arrow</span>
+</button>
+<span class="font-label-xs text-label-xs text-surface-variant">Stereo Master 03 · 14:28</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<span class="text-tertiary font-label-xs text-label-xs uppercase tracking-wider">Acoustic Archive</span>
+<h3 class="font-title-lg text-title-lg text-primary tracking-tight">
+                  Zenati Poetic Recitations Acoustic Archiving
+                </h3>
+<p class="font-body-sm text-body-sm text-secondary">
+                  Stereo field recordings of elder poets preserving threatened Berber vernacular dialects in Adrar province.
+                </p>
+</div>
+<!-- Skills -->
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-secondary font-label-xs text-label-xs">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">mic</span>
+<span>Acoustic Field Recording</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">graphic_eq</span>
+<span>Sound Restoration</span>
+</div>
+</div>
+</div>
+<div class="pt-4 flex flex-col gap-2">
+<span class="font-label-xs text-label-xs text-tertiary">Related to: Gourara Linguistic Archive Mission</span>
+<a class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>Listen &amp; View notes</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</article>
+<!-- Item 3: Casbah Vernacular Architecture Photogrammetry -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-5 flex flex-col justify-between gap-4 group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-4">
+<div class="relative w-full aspect-[16/10] rounded-lg overflow-hidden bg-surface-container-high">
+<div class="w-full h-full bg-cover bg-center group-hover:scale-[1.02] transition-transform duration-500" data-alt="Close-up detail of historic Algiers Casbah vernacular masonry structural point-cloud mesh overlay, precision 3D architectural scanning visual with clean geometric lines, subtle neutral illumination" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBVqxPr7h2jDjvwYJulw4uInwvJMNHI-vKq3EeCgh498R29VuHkWg7M94s-nSk854AAvGZz5LVQvpvi9NKrTPYPXMT1oiWz5Eh2ML2gqD1h0vVYxR1LmU8P2jzO_V3RbjC-qjMs1yEA6mYGUSJVbW8NmFejWeV4jo7rb-jeJFC8dZ16LQ5j0tDv_80HlKJWdASG9oAiXfFLssI78ETiY8ESgvVB_rr5KvMEeTi3Y8W091HidB7A2GA')"></div>
+<div class="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 bg-inverse-surface/80 backdrop-blur-sm text-inverse-on-surface rounded font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-xs">visibility</span>
+<span>Public</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<span class="text-tertiary font-label-xs text-label-xs uppercase tracking-wider">3D Reconstruction</span>
+<h3 class="font-title-lg text-title-lg text-primary tracking-tight">
+                  Algiers Casbah Earthen Masonry 3D Point Cloud
+                </h3>
+<p class="font-body-sm text-body-sm text-secondary">
+                  High-overlap photographic documentation for masonry structural modeling and conservation reference.
+                </p>
+</div>
+<!-- Skills -->
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-secondary font-label-xs text-label-xs">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">view_in_ar</span>
+<span>Photogrammetry</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">photo_camera</span>
+<span>Architectural Capture</span>
+</div>
+</div>
+</div>
+<div class="pt-4 flex flex-col gap-2">
+<span class="font-label-xs text-label-xs text-tertiary">Related to: Casbah Historical Heritage Audit</span>
+<a class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>View project</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</article>
+<!-- Item 4: Sahara Youth Creative Coding Curriculum & Slides -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-5 flex flex-col justify-between gap-4 group hover:shadow-md transition-shadow">
+<div class="flex flex-col gap-4">
+<!-- Slide / Presentation cover representation -->
+<div class="relative w-full aspect-[16/10] rounded-lg bg-surface-container p-5 flex flex-col justify-between overflow-hidden">
+<div class="flex items-center justify-between">
+<!-- Private Indicator -->
+<div class="flex items-center gap-1 px-2.5 py-1 bg-surface-container-highest text-secondary rounded font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-xs">lock</span>
+<span>Private · Visible only to you</span>
+</div>
+<span class="font-label-xs text-label-xs text-tertiary">PDF Deck · 42 Slides</span>
+</div>
+<div class="flex items-center gap-3 my-auto">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-xl">slideshow</span>
+</div>
+<div class="flex flex-col">
+<span class="font-title-sm text-title-sm text-primary">Module 01: Foundations</span>
+<span class="font-label-xs text-label-xs text-secondary">HTML/CSS &amp; Open Web Standards</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-tertiary font-label-xs text-label-xs">
+<span>Version 1.4 Draft</span>
+<span>Updated 3d ago</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<span class="text-tertiary font-label-xs text-label-xs uppercase tracking-wider">Educational Curriculum</span>
+<h3 class="font-title-lg text-title-lg text-primary tracking-tight">
+                  Modern Web Foundations Workshop Curriculum
+                </h3>
+<p class="font-body-sm text-body-sm text-secondary">
+                  Structured bilingual curriculum deck and 12 interactive exercises tailored for Adrar community tech center.
+                </p>
+</div>
+<!-- Skills -->
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-secondary font-label-xs text-label-xs">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">menu_book</span>
+<span>Curriculum Design</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary">terminal</span>
+<span>Web Development</span>
+</div>
+</div>
+</div>
+<div class="pt-4 flex flex-col gap-2">
+<span class="font-label-xs text-label-xs text-tertiary">Independent community initiative</span>
+<a class="inline-flex items-center gap-1 text-secondary hover:text-primary font-label-sm text-label-sm font-semibold transition-colors" href="#">
+<span>Edit project draft</span>
+<span class="material-symbols-outlined text-sm">edit</span>
+</a>
+</div>
+</article>
+</div>
+</div>
+<!-- Right Column Context Sidebar (~300px / 4 cols) -->
+<aside class="lg:col-span-4 flex flex-col gap-6 sticky top-20">
+<!-- A. Portfolio Visibility & Public Reach Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-6 flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-xl">share</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-title-md text-title-md text-primary">Public Profile Sync</h4>
+<span class="font-label-xs text-label-xs text-tertiary">Live Network Visibility</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed">
+            Projects marked as Public are displayed on your Public Volunteer Profile to help partner organizations assess your capabilities.
+          </p>
+<div class="py-2.5 px-3 bg-surface-container-low rounded-lg flex items-center justify-between text-label-xs font-label-xs text-secondary">
+<span>Current catalog:</span>
+<span class="font-medium text-primary">4 public projects · 1 private</span>
+</div>
+<a class="inline-flex items-center justify-between text-primary-container hover:text-brand-hover font-label-sm text-label-sm font-medium transition-colors pt-1" href="#">
+<span>View public profile</span>
+<span class="material-symbols-outlined text-base">open_in_new</span>
+</a>
+</div>
+<!-- B. Portfolio Craft Guidelines (Editorial tips) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-6 flex flex-col gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg text-primary-container">lightbulb</span>
+<h4 class="font-title-md text-title-md text-primary">Showcase Guidelines</h4>
+</div>
+<ul class="flex flex-col gap-3 font-body-sm text-body-sm text-secondary">
+<li class="flex items-start gap-2.5">
+<span class="text-tertiary text-base leading-none select-none">•</span>
+<span>Lead with real deliverables, documentation, or field captures rather than conceptual mockups.</span>
+</li>
+<li class="flex items-start gap-2.5">
+<span class="text-tertiary text-base leading-none select-none">•</span>
+<span>Detail your methodology and specific tools used in the field.</span>
+</li>
+<li class="flex items-start gap-2.5">
+<span class="text-tertiary text-base leading-none select-none">•</span>
+<span>Link projects to verified NGO opportunities to reinforce institutional credibility.</span>
+</li>
+<li class="flex items-start gap-2.5">
+<span class="text-tertiary text-base leading-none select-none">•</span>
+<span>Keep master raw files organized for coordinator review and audit.</span>
+</li>
+</ul>
+</div>
+<!-- C. Direct Action Card (Civic Verification Link) -->
+<div class="bg-surface-container rounded-xl p-6 flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg text-primary">verified</span>
+<h4 class="font-title-sm text-title-sm text-primary">Need to verify past work?</h4>
+</div>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed">
+            Work completed during accredited missions should be submitted through My Participations for official NGO audit and civic attestation.
+          </p>
+<a class="inline-flex items-center gap-1.5 text-primary hover:text-primary-container font-label-sm text-label-sm font-semibold transition-colors pt-2" href="#">
+<span>Go to My Participations</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+</aside>
+</div>
+</div>
+</div></main>
+<!-- FOOTER -->
+<footer class="w-full bg-surface-card border-t border-line py-5 px-8 mt-12">
+<div class="max-w-[1180px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-secondary">
+<span>© 2026 Basmatak Tatatoua. All rights reserved.</span>
+<div class="flex items-center gap-6">
+<a class="hover:text-primary transition-colors" href="#">Civic Integrity Code</a>
+<a class="hover:text-primary transition-colors" href="#">Institutional Verification</a>
+<a class="hover:text-primary transition-colors" href="#">Community Guidelines</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

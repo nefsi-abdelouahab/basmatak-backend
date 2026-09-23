@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-surface":"#141b2b","surface-container-lowest":"#ffffff","on-error-container":"#93000a","on-tertiary-fixed-variant":"#743400","on-error":"#ffffff","on-secondary-container":"#64636d","error":"#ba1a1a","error-container":"#ffdad6","surface-variant":"#dce2f7","outline-variant":"#ccc3d7","primary-container":"#6d28d9","outline":"#7b7486","secondary-container":"#e3e1ed","surface-container-low":"#f1f3ff","on-background":"#141b2b","on-secondary-fixed-variant":"#46464f","surface-container-highest":"#dce2f7","tertiary":"#6b3000","inverse-on-surface":"#edf0ff","on-primary":"#ffffff","tertiary-fixed":"#ffdbc8","surface-container-high":"#e1e8fd","surface-container":"#e9edff","inverse-surface":"#293040","on-primary-fixed":"#250059","primary":"#5300b7","on-tertiary":"#ffffff","primary-fixed":"#ebddff","secondary-fixed":"#e3e1ed","surface-tint":"#7331df","surface-bright":"#f9f9ff","on-surface-variant":"#4a4455","surface-dim":"#d3daef","tertiary-fixed-dim":"#ffb68b","on-primary-container":"#dac5ff","secondary":"#5d5d67","inverse-primary":"#d3bbff","tertiary-container":"#8f4200","on-secondary":"#ffffff","background":"#f9f9ff","on-primary-fixed-variant":"#5b00c5","secondary-fixed-dim":"#c7c5d1","on-secondary-fixed":"#1a1b23","on-tertiary-container":"#ffc19e","primary-fixed-dim":"#d3bbff","on-tertiary-fixed":"#321300","surface":"#f9f9ff"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"margin-mobile":"1rem","space-md":"1rem","space-lg":"1.5rem","gutter":"1.5rem","gutter-mobile":"0.75rem","margin":"1.5rem","space-xl":"2rem","space-sm":"0.5rem","space-xs":"0.25rem"},fontFamily:{"body-sm":["Inter"],"display-lg":["Inter"],"headline-md":["Inter"],"headline-lg":["Inter"],"body-md":["Inter"],"label-sm":["Inter"],"label-md":["Inter"],"title-sm":["Inter"],"body-lg":["Inter"],"label-xs":["Inter"],"title-lg":["Inter"],"title-md":["Inter"]},fontSize:{"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"display-lg":["30px",{"lineHeight":"38px","fontWeight":"600"}],"headline-md":["20px",{"lineHeight":"28px","fontWeight":"600"}],"headline-lg":["24px",{"lineHeight":"32px","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"21px","fontWeight":"400"}],"label-sm":["12px",{"lineHeight":"16px","fontWeight":"500"}],"label-md":["14px",{"lineHeight":"20px","fontWeight":"500"}],"title-sm":["15px",{"lineHeight":"22px","fontWeight":"500"}],"body-lg":["15px",{"lineHeight":"23px","fontWeight":"400"}],"label-xs":["11px",{"lineHeight":"14px","fontWeight":"500"}],"title-lg":["18px",{"lineHeight":"26px","fontWeight":"600"}],"title-md":["16px",{"lineHeight":"24px","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 inset-x-0 h-16 bg-surface-container-lowest border-b border-surface-variant z-50"><div class="h-16 px-space-lg flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg min-w-[340px]"><div class="flex items-center gap-space-sm shrink-0"><img alt="Basmatak Tatatoua logo: a modern minimalist violet geometric emblem representing Skill, Contribution, Verification, and Impact." class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UbgOt7J25in6Q_p0OM_N_GokC9S75tZEJd3pn7saoZXTMqh-t7mjsEVdzBIANGYivhyYFXxMH8itSzMAU-3a4g7jIMNRAmiwX87f09zk5CAopgT-67PrCF0qzp7w1ogAIwSeuGeCWVpvGX95RvQIx9q4nALNJdOGC1BrCbFsrD7Ww6kjkylRsMXrK3dAHGzjSDnpY3ksUKR7XzGc2GrLkvFRN8Bew89R0fwLREdXjkFDVvvEi2kBFhNA"/><span class="font-title-sm text-title-sm text-on-surface leading-none tracking-tight">Basmatak Tatatoua</span></div><div class="relative w-64"><span class="material-symbols-outlined absolute inset-y-0 left-2.5 my-auto h-4 w-4 text-[18px] text-on-surface-variant flex items-center pointer-events-none">search</span><input class="w-full h-9 pl-9 pr-3 text-body-sm font-body-sm bg-surface rounded-lg border border-surface-variant text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search opportunities, applications..." type="text"/></div></div><nav class="hidden lg:flex items-center gap-space-lg h-full" data-active-classes="text-primary-container font-semibold border-b-2 border-primary-container"><a class="text-body-md font-body-md text-on-surface-variant hover:text-on-surface h-full flex items-center px-1 transition-colors" data-path="opportunities" href="#">Opportunities</a><a class="text-body-md font-body-md text-on-surface-variant hover:text-on-surface h-full flex items-center px-1 transition-colors" data-path="discover-talents" href="#">Discover Talents</a></nav><div class="flex items-center gap-space-md shrink-0"><button aria-label="Notifications" class="relative p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-container"></span></button><div class="flex items-center gap-space-sm pl-space-xs border-l border-surface-variant"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden xl:flex flex-col text-left"><span class="font-label-sm text-label-sm text-on-surface leading-tight font-medium">Timimoun Cultural Association</span><span class="font-label-xs text-label-xs text-on-surface-variant leading-tight">Verified Civil Entity</span></div><span class="material-symbols-outlined text-[18px] text-on-surface-variant">expand_more</span></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-60 bg-surface-container-lowest border-r border-surface-variant z-40 flex flex-col justify-between py-space-lg px-space-md overflow-y-auto"><div class="flex flex-col gap-space-md"><div class="flex flex-col gap-1"><div class="px-3 pb-1"><span class="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider font-semibold">Main</span></div><nav class="flex flex-col gap-1" data-active-classes="bg-surface-container-low text-primary-container font-semibold rounded-lg"><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="overview" href="#">Overview</a><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="my-opportunities" href="#">My Opportunities</a><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="applications" href="#">Applications</a><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="participants" href="#">Participants</a><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="contributions" href="#">Contributions</a><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="verified-experiences" href="#">Verified Experiences</a></nav></div><div class="flex flex-col gap-1 pt-space-xs"><div class="px-3 pb-1"><span class="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider font-semibold">Discover</span></div><nav class="flex flex-col gap-1" data-active-classes="bg-surface-container-low text-primary-container font-semibold rounded-lg"><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="discover-talents" href="#">Discover Talents</a></nav></div><div class="flex flex-col gap-1 pt-space-xs"><div class="px-3 pb-1"><span class="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider font-semibold">Account</span></div><nav class="flex flex-col gap-1" data-active-classes="bg-surface-container-low text-primary-container font-semibold rounded-lg"><a class="flex items-center justify-between px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface rounded-lg transition-colors font-body-sm text-body-sm" data-path="settings" href="#">Settings</a></nav></div></div><div class="p-3 rounded-lg border border-surface-variant bg-surface"><div class="flex items-center gap-space-sm mb-1.5"><div class="w-7 h-7 rounded bg-secondary-fixed flex items-center justify-center font-label-sm text-label-sm font-semibold text-on-secondary-fixed">TCA</div><div class="flex flex-col min-w-0"><span class="font-label-sm text-label-sm text-on-surface font-medium truncate">Timimoun Cultural Assoc.</span><span class="font-label-xs text-label-xs text-on-surface-variant truncate">Civil Association</span></div></div><div class="pt-1.5 border-t border-surface-variant"><span class="font-label-xs text-label-xs text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[13px] text-primary-container">verified</span>Verified Entity · DZ-14/08</span></div></div></aside><div class="pl-60 min-h-screen bg-surface"><main class="pt-16 pb-space-xl px-space-lg w-full max-w-[1240px] mx-auto"><div class="flex flex-col w-full">
+<script>
+    (function () {
+      const asideLinks = document.querySelectorAll('aside nav a[data-path]');
+      asideLinks.forEach(link => {
+        if (link.getAttribute('data-path') === 'participants') {
+          link.classList.add('bg-surface-container-low', 'text-primary-container', 'font-semibold', 'rounded-lg');
+          link.classList.remove('text-on-surface-variant');
+        } else {
+          link.classList.remove('bg-surface-container-low', 'text-primary-container', 'font-semibold');
+          link.classList.add('text-on-surface-variant');
+        }
+      });
+    })();
+  </script>
+<!-- Page Header & Utility Bar -->
+<div class="flex flex-col gap-space-md mb-space-lg">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-sm pb-space-sm">
+<div class="flex flex-col">
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider font-semibold mb-1">Civil Organization Workspace · Timimoun Cultural Association</span>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Participants</h1>
+<p class="font-body-md text-body-md text-secondary mt-0.5">Volunteers currently participating in your published civic opportunities.</p>
+</div>
+<div class="flex items-center gap-space-xs text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-primary-container">group</span>
+<span class="font-semibold text-on-surface">21</span>
+<span>active participants across</span>
+<span class="font-semibold text-on-surface">7</span>
+<span>published opportunities</span>
+</div>
+</div>
+<!-- Filters & Query Strip -->
+<div class="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+<div class="relative flex-1 min-w-[280px]">
+<span class="material-symbols-outlined absolute inset-y-0 left-3 my-auto h-4 w-4 text-[18px] text-secondary flex items-center pointer-events-none">search</span>
+<input class="w-full h-10 pl-9 pr-3 text-body-sm font-body-sm bg-surface-container-low rounded-lg text-on-surface placeholder:text-secondary focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search participants by name, role, or opportunity..." type="text"/>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<div class="flex items-center gap-2">
+<label class="font-label-xs text-label-xs text-secondary uppercase font-semibold">Opportunity</label>
+<div class="relative inline-block">
+<select class="h-10 pl-3 pr-8 text-body-sm font-body-sm bg-surface-container-low text-on-surface rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-container">
+<option selected="" value="all">All opportunities (7)</option>
+<option value="media">Cultural Event Media Coverage &amp; Archival Documentation</option>
+<option value="ksar">Vernacular Architecture &amp; Ksar Conservation Documentation</option>
+<option value="workshop">Summer Youth Heritage &amp; Digital Archiving Workshop</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-[18px] text-secondary">expand_more</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<label class="font-label-xs text-label-xs text-secondary uppercase font-semibold">Sort</label>
+<div class="relative inline-block">
+<select class="h-10 pl-3 pr-8 text-body-sm font-body-sm bg-surface-container-low text-on-surface rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-container">
+<option selected="">Newest participation</option>
+<option>Oldest participation</option>
+<option>Opportunity title</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 pointer-events-none text-[18px] text-secondary">swap_vert</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Master-Detail People Architecture (Desktop First, 1440px anchor) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Participant Directory / Roster (~440px / 5 cols) -->
+<section aria-label="Participant Roster" class="xl:col-span-5 flex flex-col gap-space-sm">
+<div class="flex items-center justify-between px-1">
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider font-semibold">Participant Directory</span>
+<span class="font-label-xs text-label-xs text-secondary">Showing 4 of 21</span>
+</div>
+<!-- Item 1: Selected Participant (Ahmed Benali) -->
+<article class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm cursor-pointer transition-all relative">
+<div class="absolute left-0 top-3 bottom-3 w-1 bg-primary-container rounded-r"></div>
+<div class="flex items-start gap-space-md pl-1">
+<img alt="Ahmed Benali" class="w-14 h-14 rounded-lg object-cover shrink-0 bg-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1XCUg9OR-ZvqdFSUwu-__IfGktWMYNZCC-3MhNcESP3zp7RB1uU2xKVXg8QRYUDzS3F4Bq6lJCJktBp6IraT2ngtzane6V-74Qob3AvhmY-uah1M6-H84y7PEbnHnQOgtXobXoih8lceVqRsOdWaRncjanQyM2ernkFLs42_vvAI_7uwBQ0r-kEhWMjtC0ZgTE1-xme2EGceappUJaGdmzk5QJVj9OaU7gxqa-ku9NxnWQPXQgpEVerXA"/>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center justify-between gap-2 mb-0.5">
+<h2 class="font-title-md text-title-md text-on-surface font-semibold truncate">Ahmed Benali</h2>
+<span class="font-label-xs text-label-xs text-primary-container font-medium shrink-0">Selected</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium truncate">Lead Event Photographer</p>
+<p class="font-body-sm text-body-sm text-secondary truncate mt-0.5">Cultural Event Media Coverage &amp; Archival Documentation</p>
+<div class="mt-3 pt-2.5 flex flex-col gap-1.5 bg-surface-container-low p-2 rounded-lg">
+<div class="flex items-center gap-1.5 text-secondary font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-[15px] text-secondary">event_available</span>
+<span>Joined Sept 26, 2026</span>
+<span class="text-outline-variant">·</span>
+<span class="text-secondary">App ID TCA-092</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-xs text-label-xs text-on-surface font-medium">
+<span class="material-symbols-outlined text-[15px] text-primary-container">pending_actions</span>
+<span>Contribution submitted · Awaiting review</span>
+</div>
+</div>
+<div class="mt-2 text-secondary font-label-xs text-label-xs leading-relaxed truncate">
+              Documentary Photography · Low-Light Field Capture · IPTC Archival Metadata
+            </div>
+</div>
+</div>
+</article>
+<!-- Item 2: Abdelouahab Nefsi -->
+<article class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-all cursor-pointer">
+<div class="flex items-start gap-space-md">
+<img alt="Abdelouahab Nefsi" class="w-14 h-14 rounded-lg object-cover shrink-0 bg-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center justify-between gap-2 mb-0.5">
+<h2 class="font-title-md text-title-md text-on-surface font-semibold truncate">Abdelouahab Nefsi</h2>
+<span class="font-label-xs text-label-xs text-secondary shrink-0">Reviewing</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium truncate">Lead Event Photographer</p>
+<p class="font-body-sm text-body-sm text-secondary truncate mt-0.5">Cultural Event Media Coverage &amp; Archival Documentation</p>
+<div class="mt-3 pt-2.5 flex flex-col gap-1.5 bg-surface-container-low p-2 rounded-lg">
+<div class="flex items-center gap-1.5 text-secondary font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-[15px] text-secondary">event_available</span>
+<span>Joined Sept 24, 2026</span>
+<span class="text-outline-variant">·</span>
+<span class="text-secondary">App ID TCA-088</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-xs text-label-xs text-secondary font-medium">
+<span class="material-symbols-outlined text-[15px] text-secondary">fact_check</span>
+<span>Under review (Submitted 20 Archival High-Res Captures)</span>
+</div>
+</div>
+<div class="mt-2 text-secondary font-label-xs text-label-xs leading-relaxed truncate">
+              Photogrammetry · Documentary Photography · Architectural Capture
+            </div>
+</div>
+</div>
+</article>
+<!-- Item 3: Karim Zerrouki -->
+<article class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-all cursor-pointer">
+<div class="flex items-start gap-space-md">
+<img alt="Karim Zerrouki" class="w-14 h-14 rounded-lg object-cover shrink-0 bg-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1W24vvD0Bz5PHilpBQp6OTwgKzaETZh0zJ5fQLZp_CMgCA_hiBazWZcWobAa43ZqeE3-3C78aTLO2K_yo_64TJp01Hi90c0mZNC38sPhio0Vz_JDl7PYQprUWEDPriKWasqPQXFFFU2mUrvl5PA-NR3Vdd32OhBSb_8AKjIoG1AVx8XlG5ndyZiH5VKccGsqKeHNR3SaRxrzT6Y3aUU3Lc-Bk6vbzHT0zm63eH2mH7QcARnkzzkaGe8Cg"/>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center justify-between gap-2 mb-0.5">
+<h2 class="font-title-md text-title-md text-on-surface font-semibold truncate">Karim Zerrouki</h2>
+<span class="font-label-xs text-label-xs text-secondary shrink-0">Completed</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium truncate">Field Sound Recordist</p>
+<p class="font-body-sm text-body-sm text-secondary truncate mt-0.5">Cultural Event Media Coverage &amp; Archival Documentation</p>
+<div class="mt-3 pt-2.5 flex flex-col gap-1.5 bg-surface-container-low p-2 rounded-lg">
+<div class="flex items-center gap-1.5 text-secondary font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-[15px] text-secondary">event_available</span>
+<span>Joined Sept 22, 2026</span>
+<span class="text-outline-variant">·</span>
+<span class="text-secondary">App ID TCA-079</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-xs text-label-xs text-secondary font-medium">
+<span class="material-symbols-outlined text-[15px] text-primary-container">verified</span>
+<span>Verified · Sovereign civic experience record issued</span>
+</div>
+</div>
+<div class="mt-2 text-secondary font-label-xs text-label-xs leading-relaxed truncate">
+              Acoustic Field Recording · Audio Digitization · Zenati/Arabic
+            </div>
+</div>
+</div>
+</article>
+<!-- Item 4: Amel Boudiaf -->
+<article class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-all cursor-pointer">
+<div class="flex items-start gap-space-md">
+<img alt="Amel Boudiaf" class="w-14 h-14 rounded-lg object-cover shrink-0 bg-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1WMFXIjkNmlEr9VhTzK2psL2w7uJJDAjO_yyoVcDQ2R-5EmV6fm-QqG-VkIP6MWNICrYS6X5mYFFGm3I8s1F7hD1RLQJu0uea1DXz8a7co-PFcU2n9ZhCAj7PxAS3vRyPO-K8g_l8ZWZ-BMSqly8OiKtIGPfn8gxY9ugvnPppbpKU5qH6aqz18w_Aba6kj_R8GDCPdDRTnVhWcwtV4OeFQdcRseafiINzXNPX45qnQwlg_1LEy0V8WLzw"/>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center justify-between gap-2 mb-0.5">
+<h2 class="font-title-md text-title-md text-on-surface font-semibold truncate">Amel Boudiaf</h2>
+<span class="font-label-xs text-label-xs text-secondary shrink-0">In Fieldwork</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium truncate">Photogrammetry Assistant</p>
+<p class="font-body-sm text-body-sm text-secondary truncate mt-0.5">Vernacular Architecture &amp; Ksar Conservation Documentation</p>
+<div class="mt-3 pt-2.5 flex flex-col gap-1.5 bg-surface-container-low p-2 rounded-lg">
+<div class="flex items-center gap-1.5 text-secondary font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-[15px] text-secondary">event_available</span>
+<span>Joined Sept 25, 2026</span>
+<span class="text-outline-variant">·</span>
+<span class="text-secondary">App ID TCA-095</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-xs text-label-xs text-secondary font-medium">
+<span class="material-symbols-outlined text-[15px] text-secondary">architecture</span>
+<span>Participating · Fieldwork in progress (No submission yet)</span>
+</div>
+</div>
+<div class="mt-2 text-secondary font-label-xs text-label-xs leading-relaxed truncate">
+              GIS Mapping · Spatial Topography · Architectural Drafting
+            </div>
+</div>
+</div>
+</article>
+<div class="p-3 text-center bg-surface-container-low rounded-lg text-secondary font-label-sm text-label-sm">
+        End of current query results · 17 additional participants loaded in background
+      </div>
+</section>
+<!-- Right Column: Participant Detail View (~720px / 7 cols) -->
+<main aria-label="Participant Detailed Record" class="xl:col-span-7 flex flex-col gap-space-md">
+<!-- Volunteer Profile Master Card -->
+<section class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row items-start justify-between gap-space-md">
+<div class="flex items-start gap-space-md">
+<img alt="Ahmed Benali" class="w-20 h-20 rounded-xl object-cover shrink-0 bg-surface-container-high" src="https://lh3.googleusercontent.com/aida/AEtjO1XCUg9OR-ZvqdFSUwu-__IfGktWMYNZCC-3MhNcESP3zp7RB1uU2xKVXg8QRYUDzS3F4Bq6lJCJktBp6IraT2ngtzane6V-74Qob3AvhmY-uah1M6-H84y7PEbnHnQOgtXobXoih8lceVqRsOdWaRncjanQyM2ernkFLs42_vvAI_7uwBQ0r-kEhWMjtC0ZgTE1-xme2EGceappUJaGdmzk5QJVj9OaU7gxqa-ku9NxnWQPXQgpEVerXA"/>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-md text-headline-md text-on-surface font-semibold">Ahmed Benali</h2>
+<span class="material-symbols-outlined text-[16px] text-primary-container" title="Verified Volunteer Identity">verified_user</span>
+</div>
+<span class="font-body-md text-body-md text-secondary">Timimoun, Adrar Province, Algeria</span>
+<p class="font-body-sm text-body-sm text-on-surface mt-2 max-w-xl leading-relaxed">
+                Specialist documentary photographer focusing on desert communities, nocturnal oral poetry, and vernacular architectural preservation in Adrar.
+              </p>
+</div>
+</div>
+<a class="inline-flex items-center gap-1 text-primary-container font-label-sm text-label-sm hover:underline shrink-0" href="#">
+<span>View public profile</span>
+<span class="material-symbols-outlined text-[14px]">north_east</span>
+</a>
+</div>
+<!-- Participation Context Sub-Panel -->
+<div class="bg-surface-container-low p-space-md rounded-lg flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-2">
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider font-semibold">Participation Context &amp; Assignment</span>
+<span class="font-label-xs text-label-xs text-secondary">Record ID: TCA-APP-2026-092</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<span class="font-label-xs text-label-xs text-secondary block">Assigned Opportunity</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold block mt-0.5">Cultural Event Media Coverage &amp; Archival Documentation</span>
+</div>
+<div>
+<span class="font-label-xs text-label-xs text-secondary block">Assigned Position</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold block mt-0.5">Lead Event Photographer (Quota: 2/2 positions filled)</span>
+</div>
+<div>
+<span class="font-label-xs text-label-xs text-secondary block">Fieldwork Dates &amp; Venue</span>
+<span class="font-body-sm text-body-sm text-on-surface block mt-0.5">September 25 – 28, 2026 · Timimoun Old Ksar</span>
+</div>
+<div>
+<span class="font-label-xs text-label-xs text-secondary block">Participant Status</span>
+<span class="font-body-sm text-body-sm text-on-surface block mt-0.5">Accepted &amp; Fieldwork Delivered (Sept 26, 2026)</span>
+</div>
+</div>
+</div>
+<!-- Progress Timeline (Strictly Typographic, Monochrome, Zero Badges) -->
+<div class="flex flex-col gap-space-sm pt-2">
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider font-semibold">Participant Progression Lifecycle</span>
+<div class="relative pl-6 flex flex-col gap-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-container-high">
+<!-- Step 1 -->
+<div class="relative flex items-start justify-between gap-2">
+<span class="material-symbols-outlined absolute -left-6 top-0 text-[18px] text-primary-container bg-surface-container-lowest">check_circle</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Application Accepted</span>
+<span class="font-label-xs text-label-xs text-secondary">Verified by Civil Admin Council on September 26, 2026</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary">Completed</span>
+</div>
+<!-- Step 2 -->
+<div class="relative flex items-start justify-between gap-2">
+<span class="material-symbols-outlined absolute -left-6 top-0 text-[18px] text-primary-container bg-surface-container-lowest">check_circle</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">On-Site Fieldwork Participation</span>
+<span class="font-label-xs text-label-xs text-secondary">Completed nocturnal coverage at Timimoun Old Ksar on September 27, 2026</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary">Completed</span>
+</div>
+<!-- Step 3 (Active) -->
+<div class="relative flex items-start justify-between gap-2">
+<span class="material-symbols-outlined absolute -left-6 top-0 text-[18px] text-primary-container bg-surface-container-lowest">radio_button_checked</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Contribution Submitted</span>
+<span class="font-label-xs text-label-xs text-secondary">Uploaded 18 Archival RAW/TIFF assets with metadata log on September 28, 2026 at 09:15</span>
+</div>
+<span class="font-label-xs text-label-xs text-primary-container font-semibold">Active State</span>
+</div>
+<!-- Step 4 -->
+<div class="relative flex items-start justify-between gap-2">
+<span class="material-symbols-outlined absolute -left-6 top-0 text-[18px] text-secondary bg-surface-container-lowest">radio_button_unchecked</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-secondary">Organization Review &amp; Verification</span>
+<span class="font-label-xs text-label-xs text-secondary">Institutional inspection of technical deliverables and hour audits</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary">Pending Review</span>
+</div>
+<!-- Step 5 -->
+<div class="relative flex items-start justify-between gap-2">
+<span class="material-symbols-outlined absolute -left-6 top-0 text-[18px] text-secondary bg-surface-container-lowest">radio_button_unchecked</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-semibold text-secondary">Verified Experience Minting</span>
+<span class="font-label-xs text-label-xs text-secondary">Accreditation issued directly into volunteer's sovereign registry record</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary">Upcoming</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Submitted Contribution & Field Evidence Section -->
+<section class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+<div>
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider font-semibold">Pending Institutional Review</span>
+<h3 class="font-title-lg text-title-lg text-on-surface font-semibold">Submitted Contribution Deliverables</h3>
+</div>
+<div class="flex items-center gap-1.5 text-secondary font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-[16px]">folder_zip</span>
+<span>18 files uploaded · 1.42 GB total</span>
+</div>
+</div>
+<!-- Submission Summary Block -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-xs">
+<div class="flex items-baseline justify-between">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Ahellil Recital Masters &amp; Ksar Nocturnal Documentation</span>
+<span class="font-label-xs text-label-xs text-secondary">Sept 28, 2026 at 09:15</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed">
+            "Delivered 18 high-resolution master RAW/TIFF frames captured during the nocturnal recital at Old Ksar square. All files tagged with IPTC multilingual metadata and speaker logs."
+          </p>
+</div>
+<!-- Field Evidence Visual Previews Grid -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-xs text-label-xs text-secondary uppercase tracking-wider font-semibold">Deliverable Previews &amp; Asset Manifest</span>
+<span class="font-label-xs text-label-xs text-secondary">Digital Preservation Standard DZ-IPTC</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<!-- Evidence Item 1 -->
+<div class="bg-surface-container-low rounded-lg p-2 flex flex-col gap-2">
+<div class="w-full h-36 rounded bg-surface-container-high overflow-hidden">
+<img alt="Documentation of Timimoun recital fieldwork gear" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XQ7uszhwJalC2B-xiOiXNxwKurpTrqusvzhf2x801FOGtTk4O0FfI7rat49-LQcmQDjIpWQaV1dkOl0J5PgyRHz7V9QxoWVa6o8c4SiuXaiPJyhdZ5rxA9WGrw3gf2FvKx4bQbRHGBZ0f8bu18GJ5V8ySEXB0M-250A3hnQaON29L-qMb1NCaRhNLYYHILYkzoba-L71fDefk_uXLZ_Fpq2696s4ZBPx4WRBS8Q_kdNcsld3TBJJUpRA"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-medium truncate">Ahellil_Nocturnal_01.raw</span>
+<span class="font-label-xs text-label-xs text-secondary">48.2 MB · RAW 14-bit Uncompressed</span>
+</div>
+</div>
+<!-- Evidence Item 2 -->
+<div class="bg-surface-container-low rounded-lg p-2 flex flex-col gap-2">
+<div class="w-full h-36 rounded bg-surface-container-high overflow-hidden">
+<img alt="Artisan crafts documentation by volunteer" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WALwgqPn7b-oYGAjStazXb8m2vxl0cFbBPpgPn4TfYh0OSQWz4RTByAaYGVrPYcIOMETQrsIz-yZPxWRZxhM8gNaUN4UktNuZEIX44ZQID1Zag6ZgGhbqJX8RQmC4GsLnNoLwyPs9v59apHp1EGfHoF9J9b9sdWkve7ISTgZ-VD30_3wQHrzQcD4pW5FINLbUGQ9kpahZ_MaldINrZCD6FJE7VDWfnMTeeU6nAYIrrT7d_oAWHz6UekQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-medium truncate">Crafts_Fieldwork_04.tiff</span>
+<span class="font-label-xs text-label-xs text-secondary">36.1 MB · ProPhoto RGB 16-bit</span>
+</div>
+</div>
+<!-- Evidence Item 3 -->
+<div class="bg-surface-container-low rounded-lg p-2 flex flex-col gap-2">
+<div class="w-full h-36 rounded bg-surface-container-high overflow-hidden">
+<img alt="Archival documentation coordination courtyard" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XOuwxHYA6mIOeQPIeoLTPS0OvOGzH9ptd7KjRUVnYeXklLdPIEQsCvzjfPXUwuf2o4r5zacnllfEGiw2xD5dKPUWv0xsj8T5dwlRusQ5ONutxw4sPkVAZQIetjNfMRzbga4fAZ7ZLqzzpZNUvNtO2fFT8L149tWsCcbGS4jzfO6yLJP0COFQzfreA1Fp_1_Qn2uIAaAL-5uh5pjN0SUQzQSR-2lpFBk-0As1FeRNf9nXacvSBfuRW2"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-medium truncate">Ksar_Preservation_08.raw</span>
+<span class="font-label-xs text-label-xs text-secondary">52.4 MB · RAW 14-bit Uncompressed</span>
+</div>
+</div>
+</div>
+<!-- Document / Log File Row -->
+<div class="mt-1 p-3 bg-surface-container-low rounded-lg flex items-center justify-between gap-3">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-[20px] text-secondary">picture_as_pdf</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-medium truncate">Audio_Sync_Log_Ahellil.pdf</span>
+<span class="font-label-xs text-label-xs text-secondary">1.2 MB · Dual-channel timestamp logs with Zenati verse annotations</span>
+</div>
+</div>
+<button class="text-secondary hover:text-on-surface font-label-xs text-label-xs flex items-center gap-1 shrink-0" type="button">
+<span class="material-symbols-outlined text-[15px]">visibility</span>
+<span>Preview</span>
+</button>
+</div>
+</div>
+<!-- Workflow Action Bar -->
+<div class="flex flex-wrap items-center justify-between gap-3 pt-space-xs">
+<div class="flex items-center gap-2">
+<button class="h-10 px-space-md rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-medium hover:bg-primary transition-colors flex items-center gap-2 shadow-sm" type="button">
+<span>Review contribution</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<button class="h-10 px-space-md rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md font-medium hover:bg-surface-container-low transition-colors flex items-center gap-1.5 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">download</span>
+<span>Inspect raw files</span>
+</button>
+</div>
+<button class="h-10 px-space-md rounded-lg text-secondary hover:text-on-surface hover:bg-surface-container-low transition-colors font-label-md text-label-md flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">mail</span>
+<span>Send participant message</span>
+</button>
+</div>
+</section>
+<!-- Skills & Verified Volunteering Background -->
+<section class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<h3 class="font-title-md text-title-md text-on-surface font-semibold">Skills &amp; Civil Accreditation Background</h3>
+<span class="font-label-xs text-label-xs text-secondary">Sovereign Registry Record</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<div>
+<span class="font-label-xs text-label-xs text-secondary block mb-1">Demonstrated Skills on File</span>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-on-surface font-body-sm text-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">check</span>
+<span>Documentary Photography</span>
+</span>
+<span class="text-outline-variant">·</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">check</span>
+<span>Low-Light &amp; Night Field Capture</span>
+</span>
+<span class="text-outline-variant">·</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">check</span>
+<span>Photo Editing &amp; Color Grading</span>
+</span>
+<span class="text-outline-variant">·</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">check</span>
+<span>IPTC Archival Metadata Standard</span>
+</span>
+</div>
+</div>
+<div class="pt-2">
+<span class="font-label-xs text-label-xs text-secondary block mb-1">Prior Verified Volunteer Experience</span>
+<div class="p-3 bg-surface-container-low rounded-lg flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary-container shrink-0 mt-0.5">verified</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Festival Cultural Documentation</span>
+<span class="font-label-xs text-label-xs text-secondary">Issued by Gourara Heritage Trust · Credential #GHT-DOC-2025 · Verified March 2025</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Civic Compliance Notice -->
+<div class="p-3 bg-surface-container-high/40 rounded-lg flex items-start gap-2 text-secondary font-label-xs text-label-xs leading-relaxed">
+<span class="material-symbols-outlined text-[16px] text-secondary shrink-0 mt-0.5">gavel</span>
+<span>
+            Participant status is governed by Algerian Civil Society Law 12-06. Submissions approved through this review will directly issue an accredited Verified Experience into the volunteer's sovereign civic registry.
+          </span>
+</div>
+</section>
+</main>
+</div>
+</div></main></div></body></html>

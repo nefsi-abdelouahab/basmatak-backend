@@ -15,6 +15,11 @@ export interface SkillsSeedCounts {
   skills: number;
 }
 
+export interface SkillsPruneCounts {
+  categories: number;
+  skills: number;
+}
+
 /**
  * Idempotent location seed: `bulkWrite` upserts keyed by unique `code`.
  * Re-running updates rows in place, so counts stay stable.
@@ -99,5 +104,33 @@ export async function seedSkills(
   return {
     categories: await categoryModel.countDocuments(),
     skills: await skillModel.countDocuments(),
+  };
+}
+
+/**
+ * Idempotent catalog reseed: removes `skill_categories`/`skills` rows whose
+ * slug is no longer part of the current seed catalog (e.g. the older 28-category
+ * dataset from before the confirmed list). Skills are pruned first so no row
+ * outlives a removed category. Safe on an empty database (no-op) and on a local
+ * dev DB; a deployed database would need an explicit re-seed (deploy-doc note).
+ * Runs AFTER `seedSkills` so freshly upserted rows always survive.
+ */
+export async function pruneSkillCatalog(
+  categoryModel: Model<SkillCategoryModel>,
+  skillModel: Model<SkillModel>,
+): Promise<SkillsPruneCounts> {
+  const keptCategorySlugs = SKILL_CATEGORY_SEEDS.map((c) => c.slug);
+  const keptSkillSlugs = SKILL_SEEDS.map((s) => s.slug);
+
+  const removedSkills = await skillModel
+    .deleteMany({ slug: { $nin: keptSkillSlugs } })
+    .exec();
+  const removedCategories = await categoryModel
+    .deleteMany({ slug: { $nin: keptCategorySlugs } })
+    .exec();
+
+  return {
+    categories: removedCategories.deletedCount ?? 0,
+    skills: removedSkills.deletedCount ?? 0,
   };
 }

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_dashboard" name="shell-type"/>
+<title>Submit Contribution — Basmatak Tatatoua</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: "#6D28D9",
+              hover: "#5B21B6",
+              light: "#F5F3FF",
+              muted: "#EDE9FE"
+            },
+            surface: {
+              page: "#F8FAFC",
+              card: "#FFFFFF",
+              subtle: "#F1F5F9"
+            },
+            line: "#E2E8F0",
+            primary: "#111827",
+            secondary: "#64748B",
+            tertiary: "#94A3B8"
+          },
+          fontFamily: {
+            sans: ["Inter", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #F8FAFC;
+        color: #111827;
+        font-family: 'Inter', sans-serif;
+      }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-surface-page antialiased text-primary selection:bg-brand-light selection:text-brand">
+<!-- TOP NAVIGATION HEADER -->
+<header class="fixed top-0 left-0 right-0 z-50 h-16 bg-surface-card border-b border-line px-6 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<!-- Brand Logo -->
+<a class="flex items-center gap-2.5 text-primary hover:opacity-90 transition-opacity" href="#">
+<img alt="Basmatak Tatatoua Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UbgOt7J25in6Q_p0OM_N_GokC9S75tZEJd3pn7saoZXTMqh-t7mjsEVdzBIANGYivhyYFXxMH8itSzMAU-3a4g7jIMNRAmiwX87f09zk5CAopgT-67PrCF0qzp7w1ogAIwSeuGeCWVpvGX95RvQIx9q4nALNJdOGC1BrCbFsrD7Ww6kjkylRsMXrK3dAHGzjSDnpY3ksUKR7XzGc2GrLkvFRN8Bew89R0fwLREdXjkFDVvvEi2kBFhNA"/>
+<span class="font-semibold text-base tracking-tight text-primary">Basmatak Tatatoua</span>
+</a>
+<!-- Global Search -->
+<div class="relative hidden md:block w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-lg pointer-events-none">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface-subtle border border-line rounded-lg text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all" placeholder="Search opportunities, people, organizations..." type="text"/>
+</div>
+</div>
+<!-- Center Navigation Links -->
+<nav class="hidden lg:flex items-center gap-7">
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Home</a>
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Opportunities</a>
+<a class="text-sm font-medium text-secondary hover:text-primary transition-colors" href="#">Discover Talents</a>
+</nav>
+<!-- Right Controls -->
+<div class="flex items-center gap-4">
+<button aria-label="Notifications" class="p-2 text-secondary hover:text-primary rounded-lg transition-colors relative" type="button">
+<span class="material-symbols-outlined text-xl">notifications</span>
+<span class="absolute top-2 right-2 w-1.5 h-1.5 bg-brand rounded-full"></span>
+</button>
+<div class="h-6 w-px bg-line"></div>
+<!-- User Profile -->
+<div class="flex items-center gap-2.5 cursor-pointer">
+<img alt="Abdelouahab Nefsi" class="w-8 h-8 rounded-full object-cover ring-1 ring-line" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/>
+<div class="hidden sm:flex flex-col text-left">
+<span class="text-xs font-semibold text-primary leading-tight">Abdelouahab Nefsi</span>
+<span class="text-[11px] text-secondary leading-tight">Volunteer Contributor</span>
+</div>
+</div>
+</div>
+</header>
+<!-- LEFT FIXED SIDEBAR (~240px) -->
+<aside class="fixed left-0 top-16 bottom-0 w-60 bg-surface-card border-r border-line z-40 flex flex-col justify-between py-6 px-4 overflow-y-auto">
+<div class="flex flex-col gap-6">
+<!-- Volunteer Space -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Volunteer Space</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">assignment</span>
+<span>My Applications</span>
+</a>
+<!-- Active link: My Participations -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-brand bg-brand-light transition-colors" href="#">
+<span class="material-symbols-outlined text-lg text-brand">task_alt</span>
+<span>My Participations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">history_edu</span>
+<span>My Experiences</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">folder_shared</span>
+<span>My Portfolio</span>
+</a>
+</nav>
+</div>
+<!-- Discover -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Discover</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">explore</span>
+<span>Opportunities</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">group</span>
+<span>Discover Talents</span>
+</a>
+</nav>
+</div>
+<!-- Account -->
+<div class="flex flex-col gap-1.5">
+<span class="px-3 text-[11px] font-semibold uppercase tracking-wider text-tertiary">Account</span>
+<nav class="flex flex-col gap-0.5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-surface-subtle transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Sidebar footer profile context -->
+<div class="pt-4 border-t border-line flex items-center gap-2.5 px-2">
+<span class="material-symbols-outlined text-secondary text-base">verified_user</span>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-primary">Identity Confirmed</span>
+<span class="text-[11px] text-tertiary">National Civic Registry</span>
+</div>
+</div>
+</aside>
+<!-- MAIN VIEWPORT CONTAINER -->
+<div class="pl-60 min-h-screen flex flex-col justify-between pt-16">
+<main class="w-full flex-1">
+<div class="max-w-[1180px] w-full mx-auto px-8 py-8 flex flex-col gap-8">
+<!-- 4. PAGE HEADER (Pure typography & back link, no containing hero box) -->
+<div class="flex flex-col gap-3">
+<a class="inline-flex items-center gap-1.5 text-xs font-medium text-secondary hover:text-primary transition-colors w-fit" href="#">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+<span>Back to My Participations</span>
+</a>
+<div class="flex flex-col gap-1">
+<h1 class="text-2xl font-semibold tracking-tight text-primary">Submit Contribution</h1>
+<p class="text-sm text-secondary">Share the work you completed for this opportunity.</p>
+</div>
+</div>
+<!-- 5. OPPORTUNITY CONTEXT (Compact visual row, no pills or badges) -->
+<div class="bg-surface-card border border-line rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+<div class="flex items-center gap-4 min-w-0">
+<img alt="Opportunity Thumbnail" class="w-[110px] h-[74px] rounded-md object-cover flex-shrink-0 border border-line" src="https://lh3.googleusercontent.com/aida/AEtjO1WALwgqPn7b-oYGAjStazXb8m2vxl0cFbBPpgPn4TfYh0OSQWz4RTByAaYGVrPYcIOMETQrsIz-yZPxWRZxhM8gNaUN4UktNuZEIX44ZQID1Zag6ZgGhbqJX8RQmC4GsLnNoLwyPs9v59apHp1EGfHoF9J9b9sdWkve7ISTgZ-VD30_3wQHrzQcD4pW5FINLbUGQ9kpahZ_MaldINrZCD6FJE7VDWfnMTeeU6nAYIrrT7d_oAWHz6UekQ"/>
+<div class="flex flex-col gap-1 min-w-0">
+<span class="text-base font-semibold text-primary truncate">Cultural Event Coverage</span>
+<span class="text-xs text-secondary">Photographer · Timimoun Cultural Association</span>
+<span class="text-xs text-tertiary">September 25, 2026 · Timimoun, Algeria</span>
+</div>
+</div>
+<div class="text-xs text-secondary sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-line w-full sm:w-auto">
+<span class="block text-tertiary font-normal">Deliverable scope</span>
+<span class="font-medium text-primary">10 event photographs · 1 edited photo selection</span>
+</div>
+</div>
+<!-- 6. TWO-COLUMN LAYOUT -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- MAIN EDITORIAL CONTENT COLUMN (~740px, col-span-8) -->
+<div class="lg:col-span-8 flex flex-col gap-8 bg-surface-card border border-line rounded-lg p-6 sm:p-8">
+<!-- Section 1: Contribution title -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-secondary" for="contribution-title">
+                Contribution title
+              </label>
+<input class="w-full h-11 px-3.5 bg-surface-card border border-line rounded-lg text-sm text-primary font-medium focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all" id="contribution-title" type="text" value="Event photography — Timimoun Cultural Event"/>
+</div>
+<!-- Section 2: Description -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-secondary" for="contribution-description">
+                What did you contribute?
+              </label>
+<textarea class="w-full p-3.5 bg-surface-card border border-line rounded-lg text-sm text-primary leading-relaxed focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all resize-y" id="contribution-description" rows="5">Documented the nighttime outdoor poetic recitations across Timimoun Old Ksar on Sept 25. Recorded 24 distinct performances with ambient acoustic capture alignment. Curated 12 master archival photographs capturing the oral poetry elders, audience resonance, and architectural night light.</textarea>
+<span class="text-xs text-tertiary text-right">Provide concise details regarding methodology, locations, and format.</span>
+</div>
+<!-- Section 3: Your work -->
+<div class="flex flex-col gap-3">
+<div class="flex flex-col">
+<span class="text-xs font-semibold uppercase tracking-wider text-secondary">Your work</span>
+<span class="text-xs text-secondary mt-0.5">Add the files that demonstrate your contribution.</span>
+</div>
+<!-- 3-Column Image Gallery of Authentic Uploaded Photos -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+<!-- Photo 1 -->
+<div class="group relative flex flex-col bg-surface-subtle rounded-lg border border-line overflow-hidden">
+<div class="aspect-[4/3] w-full overflow-hidden bg-surface-subtle">
+<img alt="Ahellil Poetry Gathering" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1WALwgqPn7b-oYGAjStazXb8m2vxl0cFbBPpgPn4TfYh0OSQWz4RTByAaYGVrPYcIOMETQrsIz-yZPxWRZxhM8gNaUN4UktNuZEIX44ZQID1Zag6ZgGhbqJX8RQmC4GsLnNoLwyPs9v59apHp1EGfHoF9J9b9sdWkve7ISTgZ-VD30_3wQHrzQcD4pW5FINLbUGQ9kpahZ_MaldINrZCD6FJE7VDWfnMTeeU6nAYIrrT7d_oAWHz6UekQ"/>
+</div>
+<div class="p-2.5 flex items-center justify-between gap-1 bg-surface-card border-t border-line">
+<span class="text-xs font-mono text-primary truncate" title="ahellil_poetry_gathering_01.jpg">ahellil_poetry_gathering_01.jpg</span>
+<button class="text-tertiary hover:text-primary transition-colors" title="Remove image" type="button">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<!-- Photo 2 -->
+<div class="group relative flex flex-col bg-surface-subtle rounded-lg border border-line overflow-hidden">
+<div class="aspect-[4/3] w-full overflow-hidden bg-surface-subtle">
+<img alt="Ahellil Elder Recital" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1XQ7uszhwJalC2B-xiOiXNxwKurpTrqusvzhf2x801FOGtTk4O0FfI7rat49-LQcmQDjIpWQaV1dkOl0J5PgyRHz7V9QxoWVa6o8c4SiuXaiPJyhdZ5rxA9WGrw3gf2FvKx4bQbRHGBZ0f8bu18GJ5V8ySEXB0M-250A3hnQaON29L-qMb1NCaRhNLYYHILYkzoba-L71fDefk_uXLZ_Fpq2696s4ZBPx4WRBS8Q_kdNcsld3TBJJUpRA"/>
+</div>
+<div class="p-2.5 flex items-center justify-between gap-1 bg-surface-card border-t border-line">
+<span class="text-xs font-mono text-primary truncate" title="ahellil_elder_recital_02.jpg">ahellil_elder_recital_02.jpg</span>
+<button class="text-tertiary hover:text-primary transition-colors" title="Remove image" type="button">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<!-- Photo 3 -->
+<div class="group relative flex flex-col bg-surface-subtle rounded-lg border border-line overflow-hidden">
+<div class="aspect-[4/3] w-full overflow-hidden bg-surface-subtle">
+<img alt="Timimoun Ksar Night" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1XOuwxHYA6mIOeQPIeoLTPS0OvOGzH9ptd7KjRUVnYeXklLdPIEQsCvzjfPXUwuf2o4r5zacnllfEGiw2xD5dKPUWv0xsj8T5dwlRusQ5ONutxw4sPkVAZQIetjNfMRzbga4fAZ7ZLqzzpZNUvNtO2fFT8L149tWsCcbGS4jzfO6yLJP0COFQzfreA1Fp_1_Qn2uIAaAL-5uh5pjN0SUQzQSR-2lpFBk-0As1FeRNf9nXacvSBfuRW2"/>
+</div>
+<div class="p-2.5 flex items-center justify-between gap-1 bg-surface-card border-t border-line">
+<span class="text-xs font-mono text-primary truncate" title="timimoun_ksar_night_03.jpg">timimoun_ksar_night_03.jpg</span>
+<button class="text-tertiary hover:text-primary transition-colors" title="Remove image" type="button">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Upload Tile -->
+<div class="border border-dashed border-line hover:border-brand rounded-lg p-6 bg-surface-page hover:bg-brand-light/30 text-center transition-colors cursor-pointer mt-1">
+<div class="flex flex-col items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-2xl text-secondary">add_circle_outline</span>
+<span class="text-xs font-semibold text-primary">+ Add files</span>
+<span class="text-[11px] text-tertiary">Images, videos, documents, or audio up to 500 MB</span>
+</div>
+</div>
+<!-- Non-Image Deliverable Files List -->
+<div class="flex flex-col gap-2 pt-2">
+<!-- PDF File Row -->
+<div class="flex items-center justify-between p-3 rounded-lg border border-line bg-surface-card hover:bg-surface-page transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-outlined text-secondary text-xl">description</span>
+<div class="flex items-baseline gap-2 min-w-0">
+<span class="text-xs font-mono font-medium text-primary truncate">timimoun_curated_contact_sheet.pdf</span>
+<span class="text-xs text-tertiary">1.8 MB</span>
+</div>
+</div>
+<button class="text-xs font-medium text-secondary hover:text-primary transition-colors px-2 py-1" type="button">
+                    Remove
+                  </button>
+</div>
+<!-- ZIP Archive Row -->
+<div class="flex items-center justify-between p-3 rounded-lg border border-line bg-surface-card hover:bg-surface-page transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-outlined text-secondary text-xl">folder_zip</span>
+<div class="flex items-baseline gap-2 min-w-0">
+<span class="text-xs font-mono font-medium text-primary truncate">raw_masters_uncompressed_captures.zip</span>
+<span class="text-xs text-tertiary">142.4 MB</span>
+</div>
+</div>
+<button class="text-xs font-medium text-secondary hover:text-primary transition-colors px-2 py-1" type="button">
+                    Remove
+                  </button>
+</div>
+</div>
+</div>
+<!-- Section 4: External Repository Link -->
+<div class="flex flex-col gap-2 pt-2 border-t border-line">
+<label class="text-xs font-semibold uppercase tracking-wider text-secondary" for="external-repo">
+                External repository or institutional drive (optional)
+              </label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tertiary text-base">link</span>
+<input class="w-full h-10 pl-9 pr-3 bg-surface-card border border-line rounded-lg text-xs text-primary focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all" id="external-repo" type="url" value="https://archive.algeria-heritage.dz/timimoun/2026/ahellil-session-nefsi"/>
+</div>
+</div>
+<!-- Privacy Note -->
+<div class="flex items-start gap-2 pt-2 text-xs text-secondary leading-relaxed">
+<span class="material-symbols-outlined text-sm text-tertiary mt-0.5">lock</span>
+<p>Submitted files are private by default. Only you and Timimoun Cultural Association have access to this submission. Only verified items approved by both parties can later be shown on your public profile.</p>
+</div>
+<!-- Actions -->
+<div class="pt-4 border-t border-line flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-5">
+<button class="h-10 px-6 rounded-lg bg-brand hover:bg-brand-hover text-white text-sm font-medium transition-colors" type="button">
+                  Submit contribution
+                </button>
+<button class="text-sm font-medium text-secondary hover:text-primary transition-colors" type="button">
+                  Save draft
+                </button>
+</div>
+<a class="text-sm text-tertiary hover:text-secondary transition-colors" href="#">
+                Cancel
+              </a>
+</div>
+</div>
+<!-- RIGHT CONTEXT SIDEBAR (~300px, col-span-4) -->
+<div class="lg:col-span-4 flex flex-col gap-6 sticky top-24">
+<!-- Section 1: Opportunity Brief -->
+<div class="bg-surface-card border border-line rounded-lg p-5 flex flex-col gap-4">
+<span class="text-xs font-semibold uppercase tracking-wider text-tertiary">Opportunity</span>
+<div class="aspect-video w-full rounded-md overflow-hidden bg-surface-subtle border border-line">
+<img alt="Opportunity Cover" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UGjDBPeX0psfyh51OL7O3LIxqHGnKGh1XuByszeTDYC0tXmWneiqTp1NtFam8cTz2uXPsRDP9OjZ2zFzpQUAeXOhe31IlCx1Hjuz0TT88ILDq_WXztFN6cMVr7PB2GtIM6fAAFfqQu5cw-RyEAP8forGNgoHhPdWBXiWAOwHHkpiyJqK3wkAevhcuUuvTc-lNX-5FU3Yuf2Kdk5nrvWByYxdCAbchM8PqCUMYJ2OZE7Flb2hMdJBbe"/>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-sm font-semibold text-primary">Cultural Event Coverage</span>
+<span class="text-xs text-secondary">Timimoun Cultural Association</span>
+<span class="text-xs text-secondary">Role: Photographer</span>
+<span class="text-xs text-secondary">Date: September 25, 2026</span>
+</div>
+<a class="text-xs font-medium text-brand hover:underline inline-flex items-center gap-1 pt-1" href="#">
+<span>View opportunity details</span>
+<span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+<!-- Section 2: Submission Lifecycle (Clean vertical text-and-icon timeline, no progress bar, no badges) -->
+<div class="bg-surface-card border border-line rounded-lg p-5 flex flex-col gap-4">
+<span class="text-xs font-semibold uppercase tracking-wider text-tertiary">Submission Lifecycle</span>
+<div class="relative flex flex-col gap-4 pl-1">
+<!-- Timeline track line -->
+<div class="absolute left-2 top-2 bottom-2 w-px bg-line"></div>
+<!-- Stage 1: Draft -->
+<div class="relative flex items-start gap-3">
+<div class="w-4 h-4 rounded-full bg-surface-card border border-line flex items-center justify-center z-10 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs text-secondary">Draft</span>
+</div>
+</div>
+<!-- Stage 2: In Progress (Current) -->
+<div class="relative flex items-start gap-3">
+<div class="w-4 h-4 rounded-full bg-surface-card border border-brand flex items-center justify-center z-10 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-brand"></span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-primary">In Progress</span>
+<span class="text-[11px] text-secondary">Currently adding contribution deliverables</span>
+</div>
+</div>
+<!-- Stage 3: Submitted -->
+<div class="relative flex items-start gap-3">
+<div class="w-4 h-4 rounded-full bg-surface-card border border-line flex items-center justify-center z-10 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs text-secondary">Submitted</span>
+</div>
+</div>
+<!-- Stage 4: Organization Review -->
+<div class="relative flex items-start gap-3">
+<div class="w-4 h-4 rounded-full bg-surface-card border border-line flex items-center justify-center z-10 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs text-secondary">Organization Review</span>
+<span class="text-[11px] text-tertiary">Technical audit by Larbi Benali</span>
+</div>
+</div>
+<!-- Stage 5: Verified Experience -->
+<div class="relative flex items-start gap-3">
+<div class="w-4 h-4 rounded-full bg-surface-card border border-line flex items-center justify-center z-10 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs text-secondary">Verified Experience</span>
+<span class="text-[11px] text-tertiary">Added to permanent civic registry</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Expected from your role -->
+<div class="bg-surface-card border border-line rounded-lg p-5 flex flex-col gap-3">
+<span class="text-xs font-semibold uppercase tracking-wider text-tertiary">Expected from your role</span>
+<div class="flex flex-col gap-2.5">
+<div class="flex items-center gap-2.5 text-xs text-primary">
+<span class="material-symbols-outlined text-secondary text-base">photo_camera</span>
+<span>10 event photographs</span>
+</div>
+<div class="flex items-center gap-2.5 text-xs text-primary">
+<span class="material-symbols-outlined text-secondary text-base">image</span>
+<span>1 edited photo selection</span>
+</div>
+<div class="flex items-center gap-2.5 text-xs text-primary">
+<span class="material-symbols-outlined text-secondary text-base">description</span>
+<span>Field notes &amp; IPTC metadata</span>
+</div>
+</div>
+</div>
+<!-- Section 4: Coordinator -->
+<div class="bg-surface-card border border-line rounded-lg p-5 flex flex-col gap-3">
+<span class="text-xs font-semibold uppercase tracking-wider text-tertiary">Coordinator</span>
+<div class="flex flex-col gap-1">
+<span class="text-sm font-semibold text-primary">Larbi Benali</span>
+<span class="text-xs text-secondary">Head of Documentation</span>
+</div>
+<a class="text-xs font-medium text-brand hover:underline inline-flex items-center gap-1 pt-1" href="#">
+<span class="material-symbols-outlined text-sm">chat</span>
+<span>Message coordinator</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FOOTER -->
+<footer class="w-full bg-surface-card border-t border-line py-5 px-8 mt-12">
+<div class="max-w-[1180px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-secondary">
+<span>© 2026 Basmatak Tatatoua. All rights reserved.</span>
+<div class="flex items-center gap-6">
+<a class="hover:text-primary transition-colors" href="#">Civic Integrity Code</a>
+<a class="hover:text-primary transition-colors" href="#">Institutional Verification</a>
+<a class="hover:text-primary transition-colors" href="#">Community Guidelines</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

@@ -9,7 +9,7 @@ import {
 } from '../src/locations/schemas/location.schema';
 import { MUNICIPALITY_SEEDS, WILAYA_SEEDS } from '../src/seed-data/locations';
 import { seedLocations, seedSkills } from '../src/seed-data/seed.utils';
-import { SKILL_SEEDS } from '../src/seed-data/skills';
+import { SKILL_CATEGORY_SEEDS, SKILL_SEEDS } from '../src/seed-data/skills';
 import {
   SkillCategoriesCollection,
   SkillCategoryModel,
@@ -117,7 +117,7 @@ describe('reference-data e2e — public reads + admin maintenance', () => {
 
     it('lists active categories ordered by order, cacheable', async () => {
       const response = await get('/skill-categories').expect(200);
-      expect(response.body.length).toBe(28);
+      expect(response.body.length).toBe(SKILL_CATEGORY_SEEDS.length);
       const orders = response.body.map((c: { order: number }) => c.order);
       expect(orders).toEqual([...orders].sort((a, b) => a - b));
       for (const category of response.body) {
@@ -147,11 +147,11 @@ describe('reference-data e2e — public reads + admin maintenance', () => {
     });
 
     it('filters skills by text query (q)', async () => {
-      const response = await get('/skills?q=secourisme').expect(200);
+      const response = await get('/skills?q=montage').expect(200);
       expect(response.body.length).toBeGreaterThan(0);
       for (const skill of response.body) {
         const haystack = `${skill.nameFr} ${skill.nameAr}`.toLowerCase();
-        expect(haystack).toContain('secourisme');
+        expect(haystack).toContain('montage');
       }
     });
   });
@@ -202,12 +202,12 @@ describe('reference-data e2e — public reads + admin maintenance', () => {
         .post('/api/v1/admin/skill-categories')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          nameAr: 'خدمات جديدة',
-          nameFr: 'Secourisme & Santé',
+          nameAr: 'تصميم جديد',
+          nameFr: 'Design',
           order: 99,
         })
         .expect(201);
-      expect(created.body.slug).toBe('secourisme-and-sante-1');
+      expect(created.body.slug).toBe('design-1');
     });
 
     it('creates a skill and deactivating it hides it from public reads', async () => {

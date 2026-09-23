@@ -48,6 +48,7 @@ export class SmtpMailService implements MailService {
       to,
       subject: this.templates.verificationSubject(),
       text: this.templates.verificationText(url),
+      html: this.templates.verificationHtml(url),
     });
   }
 
@@ -57,6 +58,7 @@ export class SmtpMailService implements MailService {
       to,
       subject: this.templates.passwordResetSubject(),
       text: this.templates.passwordResetText(url),
+      html: this.templates.passwordResetHtml(url),
     });
   }
 

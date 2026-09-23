@@ -11,7 +11,11 @@ import {
   SkillCategoriesCollection,
 } from '../skills/schemas/skill-category.schema';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
-import { seedLocations, seedSkills } from '../seed-data/seed.utils';
+import {
+  seedLocations,
+  seedSkills,
+  pruneSkillCatalog,
+} from '../seed-data/seed.utils';
 import { seedAdmin } from './seed-admin';
 import { seedDemo } from './seed-demo';
 
@@ -59,6 +63,12 @@ async function run(): Promise<void> {
       results.push(
         `skills: ${counts.categories} categories, ${counts.skills} skills`,
       );
+      const pruned = await pruneSkillCatalog(categories, skills);
+      if (pruned.categories > 0 || pruned.skills > 0) {
+        results.push(
+          `skills-pruned: ${pruned.categories} categories, ${pruned.skills} skills`,
+        );
+      }
     }
     if (target === 'admin' || target === 'all') {
       const result = await seedAdmin(app);

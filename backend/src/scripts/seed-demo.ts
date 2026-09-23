@@ -47,11 +47,7 @@ const DEFAULT_ORG_PASSWORD = 'DemoOrg123!';
 const DEFAULT_VOLUNTEER_EMAIL = 'demo-volunteer@basmatak.test';
 const DEFAULT_VOLUNTEER_PASSWORD = 'DemoVol123!';
 
-const DEMO_SKILL_SLUGS = [
-  'secourisme-de-base',
-  'soutien-scolaire-en-mathematiques',
-  'garde-denfants',
-] as const;
+const DEMO_SKILL_SLUGS = ['photographie', 'montage', 'programmation'] as const;
 
 export interface SeedDemoResult {
   organizationEmail: string;
@@ -201,7 +197,7 @@ export async function seedDemo(
         skillId: catalogSkill._id.toString(),
         level: 3,
         yearsOfExperience: 1,
-        isPrimary: catalogSkill.slug === 'secourisme-de-base',
+        isPrimary: catalogSkill.slug === 'photographie',
       });
     }
     volunteerSkills += 1;

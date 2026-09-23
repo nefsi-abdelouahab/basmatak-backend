@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-primary":"#ffffff","on-primary-container":"#dac5ff","tertiary-fixed":"#ffdbc8","on-tertiary":"#ffffff","surface-container-lowest":"#ffffff","surface-container-high":"#e1e8fd","on-surface-variant":"#4a4455","background":"#f9f9ff","surface-dim":"#d3daef","error":"#ba1a1a","on-primary-fixed":"#250059","inverse-primary":"#d3bbff","surface-container":"#e9edff","on-secondary-fixed-variant":"#46464f","tertiary-fixed-dim":"#ffb68b","surface-container-low":"#f1f3ff","outline-variant":"#ccc3d7","on-secondary-container":"#64636d","inverse-on-surface":"#edf0ff","surface":"#f9f9ff","secondary-container":"#e3e1ed","on-primary-fixed-variant":"#5b00c5","surface-tint":"#7331df","error-container":"#ffdad6","primary":"#5300b7","on-error-container":"#93000a","on-background":"#141b2b","surface-container-highest":"#dce2f7","inverse-surface":"#293040","on-tertiary-fixed":"#321300","on-error":"#ffffff","secondary":"#5d5d67","primary-container":"#6d28d9","on-surface":"#141b2b","on-tertiary-container":"#ffc19e","on-secondary-fixed":"#1a1b23","primary-fixed":"#ebddff","primary-fixed-dim":"#d3bbff","on-secondary":"#ffffff","on-tertiary-fixed-variant":"#743400","surface-bright":"#f9f9ff","secondary-fixed-dim":"#c7c5d1","secondary-fixed":"#e3e1ed","surface-variant":"#dce2f7","outline":"#7b7486","tertiary":"#6b3000","tertiary-container":"#8f4200"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xl":"2rem","margin-mobile":"1rem","margin":"1.5rem","space-sm":"0.5rem","space-lg":"1.5rem","gutter":"1.5rem","gutter-mobile":"0.75rem","space-xs":"0.25rem","space-md":"1rem"},"fontFamily":{"body-lg":["Inter"],"headline-md":["Inter"],"label-sm":["Inter"],"title-sm":["Inter"],"label-md":["Inter"],"label-xs":["Inter"],"headline-lg":["Inter"],"body-md":["Inter"],"title-md":["Inter"],"display-lg":["Inter"],"title-lg":["Inter"],"body-sm":["Inter"]},"fontSize":{"body-lg":["15px",{"lineHeight":"23px","fontWeight":"400"}],"headline-md":["20px",{"lineHeight":"28px","fontWeight":"600"}],"label-sm":["12px",{"lineHeight":"16px","fontWeight":"500"}],"title-sm":["15px",{"lineHeight":"22px","fontWeight":"500"}],"label-md":["14px",{"lineHeight":"20px","fontWeight":"500"}],"label-xs":["11px",{"lineHeight":"14px","fontWeight":"500"}],"headline-lg":["24px",{"lineHeight":"32px","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"21px","fontWeight":"400"}],"title-md":["16px",{"lineHeight":"24px","fontWeight":"600"}],"display-lg":["30px",{"lineHeight":"38px","fontWeight":"600"}],"title-lg":["18px",{"lineHeight":"26px","fontWeight":"600"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-40 bg-surface-container-lowest border-b border-outline-variant/30 h-16 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-md"><img alt="Basmatak Tatatoua logo: a modern, minimalist geometric mark combining an abstract continuous pathway or fingerprint loop with a stylized sprout/hand touch, representing Skill, Contribution, Verification, and Impact. Violet #6D28D9 stroke on clean white. Professional, social platform quality.. Brand logo. - Primary color: #6d28d9
+- Font: inter
+- Mode: light
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UbgOt7J25in6Q_p0OM_N_GokC9S75tZEJd3pn7saoZXTMqh-t7mjsEVdzBIANGYivhyYFXxMH8itSzMAU-3a4g7jIMNRAmiwX87f09zk5CAopgT-67PrCF0qzp7w1ogAIwSeuGeCWVpvGX95RvQIx9q4nALNJdOGC1BrCbFsrD7Ww6kjkylRsMXrK3dAHGzjSDnpY3ksUKR7XzGc2GrLkvFRN8Bew89R0fwLREdXjkFDVvvEi2kBFhNA"/><div class="flex items-baseline gap-space-sm"><span class="font-title-md text-title-md text-on-surface tracking-tight">Basmatak Tatatoua</span><span class="font-label-xs text-label-xs text-on-surface-variant uppercase tracking-wider pl-space-xs border-l border-outline-variant/50">PLATFORM ADMINISTRATION</span></div></div><div class="flex items-center gap-space-lg"><div class="relative w-64 md:w-80"><span class="material-symbols-outlined absolute left-space-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span><input class="w-full h-10 pl-9 pr-space-md bg-surface-container-low border border-outline-variant/40 rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary-container focus:bg-surface-container-lowest transition-all" placeholder="Search records, entities, logs..." type="text"/></div><div class="relative flex items-center justify-center"><button aria-label="Notifications" class="relative p-space-xs rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary-container ring-2 ring-surface-container-lowest"></span></button></div><div class="h-6 w-px bg-outline-variant/40"></div><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-outline-variant/40" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/><div class="hidden sm:flex flex-col text-left"><span class="font-label-md text-label-md text-on-surface leading-tight">Platform Admin</span><span class="font-label-xs text-label-xs text-on-surface-variant leading-tight">Super Administrator</span></div></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-60 bg-surface-container-lowest border-r border-outline-variant/30 z-30 flex flex-col justify-between pt-space-lg pb-space-md"><div class="flex-1 px-space-sm overflow-y-auto"><div class="mb-space-lg"><div class="px-space-md mb-space-xs font-label-xs text-label-xs font-semibold uppercase tracking-wider text-on-surface-variant/70">Overview</div><nav class="flex flex-col gap-0.5" data-active-classes="bg-[#F5F3FF] text-primary-container font-semibold rounded-lg"><a class="flex items-center px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="admin-dashboard" href="#">Dashboard</a></nav></div><div class="mb-space-lg"><div class="px-space-md mb-space-xs font-label-xs text-label-xs font-semibold uppercase tracking-wider text-on-surface-variant/70">Management</div><nav class="flex flex-col gap-0.5" data-active-classes="bg-[#F5F3FF] text-primary-container font-semibold rounded-lg"><a aria-current="page" class="flex items-center px-space-md py-2 transition-colors bg-[#F5F3FF] text-primary-container font-semibold rounded-lg" data-path="volunteers" href="#">Volunteers</a><a class="flex items-center px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="organizations" href="#">Organizations</a><a class="flex items-center px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="opportunities" href="#">Opportunities</a></nav></div><div class="mb-space-lg"><div class="px-space-md mb-space-xs font-label-xs text-label-xs font-semibold uppercase tracking-wider text-on-surface-variant/70">Moderation</div><nav class="flex flex-col gap-0.5" data-active-classes="bg-[#F5F3FF] text-primary-container font-semibold rounded-lg"><a class="flex items-center px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="reports" href="#">Reports</a></nav></div><div><div class="px-space-md mb-space-xs font-label-xs text-label-xs font-semibold uppercase tracking-wider text-on-surface-variant/70">System</div><nav class="flex flex-col gap-0.5" data-active-classes="bg-[#F5F3FF] text-primary-container font-semibold rounded-lg"><a class="flex items-center px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="settings" href="#">Settings</a></nav></div></div><div class="px-space-md pt-space-sm border-t border-outline-variant/30"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-emerald-600"></span><span class="font-label-xs text-label-xs text-on-surface-variant truncate">System v2.4 · All operational</span></div></div></aside><div class="pl-60"><main class="relative w-full pt-16 min-h-screen bg-surface"><div class="flex flex-col w-full">
+<!-- Content Canvas Area -->
+<div class="w-full bg-[#F8FAFC] px-space-xl py-space-lg flex flex-col gap-space-lg">
+<!-- 1. Breadcrumbs / Context Bar -->
+<nav aria-label="Breadcrumb" class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+<span>Administration</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">chevron_right</span>
+<span>Management</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">chevron_right</span>
+<span class="text-on-surface font-medium">Volunteers</span>
+</nav>
+<!-- 2. Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Volunteers</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage registered volunteers and review their account status across the national platform.</p>
+</div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-secondary">search</span>
+<input class="w-full h-10 pl-9 pr-3 bg-surface-container-lowest text-on-surface font-body-sm text-body-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-container shadow-sm" placeholder="Search by name, username, or email..." type="text"/>
+</div>
+<button class="h-10 px-4 bg-surface-container-lowest text-on-surface font-label-md text-label-md rounded-lg shadow-sm hover:bg-surface-container-low transition-colors flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">download</span>
+<span>Export Registry (CSV)</span>
+</button>
+<button aria-label="Refresh Registry" class="h-10 w-10 flex items-center justify-center bg-surface-container-lowest text-secondary hover:text-on-surface rounded-lg shadow-sm hover:bg-surface-container-low transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+</button>
+</div>
+</div>
+<!-- 3. Metric / Summary Ribbon -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-sm grid grid-cols-2 md:grid-cols-5 divide-x-0 md:divide-x divide-surface-container-low overflow-hidden">
+<div class="p-space-md flex flex-col justify-between">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Total Registered</span>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md text-on-surface tracking-tight">12,482</span>
+<span class="font-label-xs text-label-xs text-secondary">+412 this mo</span>
+</div>
+</div>
+<div class="p-space-md flex flex-col justify-between">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Active Volunteers</span>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md text-on-surface tracking-tight">11,820</span>
+<span class="font-label-xs text-label-xs text-secondary">94.7% active</span>
+</div>
+</div>
+<div class="p-space-md flex flex-col justify-between">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Pending Verification</span>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md text-on-surface tracking-tight">518</span>
+<span class="font-label-xs text-label-xs text-secondary">Awaiting ID check</span>
+</div>
+</div>
+<div class="p-space-md flex flex-col justify-between">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Suspended Accounts</span>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md text-on-surface tracking-tight">144</span>
+<span class="font-label-xs text-label-xs text-secondary">Moderation hold</span>
+</div>
+</div>
+<div class="p-space-md flex flex-col justify-between">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Experiences Minted</span>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md text-on-surface tracking-tight">3,894</span>
+<span class="font-label-xs text-label-xs text-secondary">Civic ledger</span>
+</div>
+</div>
+</div>
+<!-- 4. Filters & Search Control Bar -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-sm p-space-sm flex items-center justify-between gap-space-sm flex-wrap">
+<div class="flex items-center gap-space-xs flex-wrap flex-1">
+<div class="relative min-w-[260px] flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-secondary">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface text-on-surface font-body-sm text-body-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-container" placeholder="Search volunteers by name, email, or ID..." type="text"/>
+</div>
+<div class="relative">
+<select class="h-9 px-3 pr-8 bg-surface text-on-surface font-label-sm text-label-sm rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-primary-container cursor-pointer">
+<option>All statuses (4)</option>
+<option>Active</option>
+<option>Pending</option>
+<option>Suspended</option>
+<option>Deleted</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-secondary pointer-events-none">expand_more</span>
+</div>
+<div class="relative">
+<select class="h-9 px-3 pr-8 bg-surface text-on-surface font-label-sm text-label-sm rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-primary-container cursor-pointer">
+<option>All Wilayas (58)</option>
+<option>Adrar (01)</option>
+<option>Algiers (16)</option>
+<option>Sétif (19)</option>
+<option>Oran (31)</option>
+<option>Constantine (25)</option>
+<option>Ghardaia (47)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-secondary pointer-events-none">expand_more</span>
+</div>
+<div class="relative">
+<select class="h-9 px-3 pr-8 bg-surface text-on-surface font-label-sm text-label-sm rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-primary-container cursor-pointer">
+<option>All Municipalities</option>
+<option>Timimoun</option>
+<option>Bab El Oued</option>
+<option>El Eulma</option>
+<option>Es Senia</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-secondary pointer-events-none">expand_more</span>
+</div>
+<div class="relative">
+<select class="h-9 px-3 pr-8 bg-surface text-on-surface font-label-sm text-label-sm rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-primary-container cursor-pointer">
+<option>All skills</option>
+<option>Photogrammetry</option>
+<option>Architectural Survey</option>
+<option>Audio Recording</option>
+<option>Bilingual Translation</option>
+<option>Archival Media</option>
+<option>Vernacular Scribe</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-secondary pointer-events-none">expand_more</span>
+</div>
+<div class="relative">
+<select class="h-9 px-3 pr-8 bg-surface text-on-surface font-label-sm text-label-sm rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-primary-container cursor-pointer">
+<option>All time</option>
+<option>Last 7 days</option>
+<option>Last 30 days</option>
+<option>Custom range</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-secondary pointer-events-none">expand_more</span>
+</div>
+</div>
+<button class="h-9 px-3 text-secondary hover:text-on-surface font-label-sm text-label-sm rounded-lg hover:bg-surface transition-colors" type="button">
+        Clear filters
+      </button>
+</div>
+<!-- 5. Master Table & Detail Split Architecture -->
+<div class="w-full grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Master Table (8 Cols) -->
+<div class="xl:col-span-8 flex flex-col bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface text-secondary uppercase font-label-xs text-label-xs tracking-wider">
+<tr>
+<th class="py-3 px-4 font-semibold" scope="col">Volunteer</th>
+<th class="py-3 px-4 font-semibold" scope="col">Username</th>
+<th class="py-3 px-4 font-semibold" scope="col">Location</th>
+<th class="py-3 px-4 font-semibold" scope="col">Skills &amp; Focus</th>
+<th class="py-3 px-4 font-semibold" scope="col">Joined</th>
+<th class="py-3 px-4 font-semibold" scope="col">Status</th>
+<th class="py-3 px-4 font-semibold text-right" scope="col">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low text-on-surface">
+<!-- Row 1: Selected Record -->
+<tr class="bg-primary-fixed/30 hover:bg-primary-fixed/40 transition-colors cursor-pointer" onclick="selectVolunteer('abdelouahab')">
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img alt="Abdelouahab Nefsi" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/>
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface font-medium truncate">Abdelouahab Nefsi</span>
+<span class="font-label-xs text-label-xs text-secondary">DZ-VOL-2024-9120</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm text-label-sm text-secondary">@abdelnefsi</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Timimoun, Adrar</td>
+<td class="py-3 px-4 text-secondary max-w-[180px] truncate" title="Photogrammetry, Architectural Survey">Photogrammetry, Survey</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Sep 18, 2026</td>
+<td class="py-3 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 font-label-xs text-label-xs text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button aria-label="Inspect profile" class="p-1 text-primary-container hover:bg-surface-container rounded transition-colors" title="Inspect Volunteer" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button aria-label="More options" class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors cursor-pointer" onclick="selectVolunteer('karim')">
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img alt="Karim Benali" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1V3U4Z_2pfkeuFRnBY05i09aiiLLyGw3XDeqhxh2iWZnf4gUrzK1xn2Z3g9o4ghL-PD_qOWWzp2ehEkZmV47HYspZ17VSinnYimtakl6ngmqPCNzVMIUdFVmeV-n_4CQozYjC4PXWDDIybin9Ak0e3r8n0GqhXNvJjvdy9pOWjH7XQKBz6xO2RBFQis-2upZ-9XMBD8Hl6-NjU0PdlTkWjlJI9bmkaTdcnKpH2Ov1xO7Oe8TSIQPgAcRg"/>
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface font-medium truncate">Karim Benali</span>
+<span class="font-label-xs text-label-xs text-secondary">DZ-VOL-2024-88402</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm text-label-sm text-secondary">@k_benali</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Bab El Oued, Algiers</td>
+<td class="py-3 px-4 text-secondary max-w-[180px] truncate" title="Event Photography, Archival Media">Photography, Media</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Aug 12, 2026</td>
+<td class="py-3 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 font-label-xs text-label-xs text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button aria-label="Inspect profile" class="p-1 text-secondary hover:text-primary-container hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button aria-label="More options" class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors cursor-pointer" onclick="selectVolunteer('amina')">
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img alt="Amina Cherif" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WMFXIjkNmlEr9VhTzK2psL2w7uJJDAjO_yyoVcDQ2R-5EmV6fm-QqG-VkIP6MWNICrYS6X5mYFFGm3I8s1F7hD1RLQJu0uea1DXz8a7co-PFcU2n9ZhCAj7PxAS3vRyPO-K8g_l8ZWZ-BMSqly8OiKtIGPfn8gxY9ugvnPppbpKU5qH6aqz18w_Aba6kj_R8GDCPdDRTnVhWcwtV4OeFQdcRseafiINzXNPX45qnQwlg_1LEy0V8WLzw"/>
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface font-medium truncate">Amina Cherif</span>
+<span class="font-label-xs text-label-xs text-secondary">DZ-VOL-2024-74109</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm text-label-sm text-secondary">@amina_ch</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">El Eulma, Sétif</td>
+<td class="py-3 px-4 text-secondary max-w-[180px] truncate" title="Audio Recording, Bilingual Translation">Audio, Translation</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Jul 04, 2026</td>
+<td class="py-3 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 font-label-xs text-label-xs text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Pending
+                  </span>
+</td>
+<td class="py-3 px-4 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button aria-label="Inspect profile" class="p-1 text-secondary hover:text-primary-container hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button aria-label="More options" class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors cursor-pointer" onclick="selectVolunteer('redha')">
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<img alt="Dr. Redha Mansouri" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1W24vvD0Bz5PHilpBQp6OTwgKzaETZh0zJ5fQLZp_CMgCA_hiBazWZcWobAa43ZqeE3-3C78aTLO2K_yo_64TJp01Hi90c0mZNC38sPhio0Vz_JDl7PYQprUWEDPriKWasqPQXFFFU2mUrvl5PA-NR3Vdd32OhBSb_8AKjIoG1AVx8XlG5ndyZiH5VKccGsqKeHNR3SaRxrzT6Y3aUU3Lc-Bk6vbzHT0zm63eH2mH7QcARnkzzkaGe8Cg"/>
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface font-medium truncate">Dr. Redha Mansouri</span>
+<span class="font-label-xs text-label-xs text-secondary">DZ-VOL-2023-11024</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm text-label-sm text-secondary">@rmansouri</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Es Senia, Oran</td>
+<td class="py-3 px-4 text-secondary max-w-[180px] truncate" title="Vernacular Scribe, Dialect Transcription">Transcription, Scribe</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">May 29, 2026</td>
+<td class="py-3 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 font-label-xs text-label-xs text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                    Suspended
+                  </span>
+</td>
+<td class="py-3 px-4 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button aria-label="Inspect profile" class="p-1 text-secondary hover:text-primary-container hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button aria-label="More options" class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors cursor-pointer">
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-secondary font-medium">YM</div>
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface font-medium truncate">Yacine Mahfoud</span>
+<span class="font-label-xs text-label-xs text-secondary">DZ-VOL-2024-60193</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm text-label-sm text-secondary">@yacine_m</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Ghardaia, Ghardaia</td>
+<td class="py-3 px-4 text-secondary max-w-[180px] truncate" title="Heritage Masonry, Field Survey">Field Survey, Heritage</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Jun 14, 2026</td>
+<td class="py-3 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 font-label-xs text-label-xs text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button aria-label="Inspect profile" class="p-1 text-secondary hover:text-primary-container hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button aria-label="More options" class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors cursor-pointer">
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-secondary font-medium">SL</div>
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface font-medium truncate">Samia Larbi</span>
+<span class="font-label-xs text-label-xs text-secondary">DZ-VOL-2024-52219</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 font-label-sm text-label-sm text-secondary">@samialarbi</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Constantine, Constantine</td>
+<td class="py-3 px-4 text-secondary max-w-[180px] truncate" title="Archival Indexing, Document Digitization">Indexing, Digitization</td>
+<td class="py-3 px-4 text-secondary whitespace-nowrap">Jun 02, 2026</td>
+<td class="py-3 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 font-label-xs text-label-xs text-on-surface">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 text-right whitespace-nowrap">
+<div class="inline-flex items-center gap-1">
+<button aria-label="Inspect profile" class="p-1 text-secondary hover:text-primary-container hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button aria-label="More options" class="p-1 text-secondary hover:text-on-surface hover:bg-surface-container rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- 6. Table Pagination & Summary Bar -->
+<div class="px-4 py-3 bg-surface border-t border-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-3 font-label-sm text-label-sm text-secondary">
+<div class="flex items-center gap-2">
+<span>Showing <span class="text-on-surface font-medium">1–25</span> of <span class="text-on-surface font-medium">12,482</span> volunteers</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1">
+<button class="px-2 py-1 bg-surface-container-lowest text-on-surface rounded hover:bg-surface-container disabled:opacity-40 transition-colors" disabled="" type="button">
+                Previous
+              </button>
+<button class="w-7 h-7 bg-primary-container text-on-primary rounded font-medium" type="button">1</button>
+<button class="w-7 h-7 bg-surface-container-lowest text-on-surface rounded hover:bg-surface-container" type="button">2</button>
+<button class="w-7 h-7 bg-surface-container-lowest text-on-surface rounded hover:bg-surface-container" type="button">3</button>
+<span class="px-1 text-secondary">...</span>
+<button class="w-7 h-7 bg-surface-container-lowest text-on-surface rounded hover:bg-surface-container" type="button">500</button>
+<button class="px-2 py-1 bg-surface-container-lowest text-on-surface rounded hover:bg-surface-container transition-colors" type="button">
+                Next
+              </button>
+</div>
+<div class="flex items-center gap-1.5 pl-3 border-l border-surface-container-high">
+<span>Show:</span>
+<select class="bg-surface-container-lowest text-on-surface rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-container">
+<option>25</option>
+<option>50</option>
+<option>100</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Volunteer Inspection Panel (4 Cols) -->
+<div class="xl:col-span-4 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md flex flex-col gap-space-md">
+<!-- Inspection Header -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<img alt="Abdelouahab Nefsi" class="w-14 h-14 rounded-full object-cover ring-2 ring-primary-fixed" src="https://lh3.googleusercontent.com/aida/AEtjO1UAiaJR0WG5cOEdNNdEgx39DDfMbRbYHVmfqwbplCehXZDTedf4ONTF122TXT-9yqBBQu39_gD1sEsbSyGPQbYp8olmjhWnBIZ8iwu0IM5EZKurnAQhK9KSviNt35_APMGQ-1xIqxctY3Vadq4rDu_5gHYgfCQmG5oqqHd2FNr2T_6hlZ0VwS9eV_7kkUNBA5kA8fiRtRPGEx3WcVZT78K7GeM4I9aKHhVmDD2qXy9NvKhLtIbtlVWRbg"/>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<h2 class="font-title-lg text-title-lg text-on-surface font-semibold">Abdelouahab Nefsi</h2>
+<span class="material-symbols-outlined text-[16px] text-emerald-600" title="Civil Registry Verified">check_circle</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">@abdelnefsi · DZ-VOL-2024-9120</span>
+<span class="font-label-xs text-label-xs text-secondary mt-0.5">Joined Sep 18, 2026 · Active Today, 09:42</span>
+</div>
+</div>
+<a class="text-secondary hover:text-primary-container p-1 rounded hover:bg-surface-container transition-colors" href="#" title="View Public Profile">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+</a>
+</div>
+<!-- Account State Indicator & Quick Toggle -->
+<div class="p-3 bg-surface-container-low rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+<span class="font-label-sm text-label-sm font-medium text-on-surface">Account Active</span>
+<span class="font-label-xs text-label-xs text-secondary">Law 12-06 Compliant</span>
+</div>
+<button class="font-label-xs text-label-xs text-rose-700 hover:text-rose-900 font-medium px-2 py-1 rounded hover:bg-surface-container transition-colors" onclick="openSuspendModal()" type="button">
+              Suspend
+            </button>
+</div>
+<!-- Contact & Verification Metadata -->
+<div class="flex flex-col gap-2 pt-2 border-t border-surface-container-low font-body-sm text-body-sm">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs uppercase tracking-wider">Email</span>
+<span class="text-on-surface font-medium select-all">a.nefsi@civic.dz</span>
+</div>
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs uppercase tracking-wider">Phone</span>
+<span class="text-on-surface font-medium select-all">+213 (0) 661 24 88 19</span>
+</div>
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs uppercase tracking-wider">Location</span>
+<span class="text-on-surface font-medium">Timimoun, Adrar</span>
+</div>
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs uppercase tracking-wider">National ID Status</span>
+<span class="text-emerald-700 font-medium flex items-center gap-1 font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+                Verified under Law 12-06
+              </span>
+</div>
+</div>
+<!-- Platform Activity Metrics -->
+<div class="flex flex-col gap-2 pt-2 border-t border-surface-container-low">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Platform Activity Summary</span>
+<div class="grid grid-cols-2 gap-2 mt-1">
+<div class="p-2.5 bg-surface rounded-lg flex flex-col">
+<span class="font-label-xs text-label-xs text-secondary">Initiatives</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">6 Active &amp; Done</span>
+</div>
+<div class="p-2.5 bg-surface rounded-lg flex flex-col">
+<span class="font-label-xs text-label-xs text-secondary">Packages Submitted</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">4 Archival</span>
+</div>
+<div class="p-2.5 bg-surface rounded-lg flex flex-col">
+<span class="font-label-xs text-label-xs text-secondary">Verified Records</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">2 Credentials</span>
+</div>
+<div class="p-2.5 bg-surface rounded-lg flex flex-col">
+<span class="font-label-xs text-label-xs text-secondary">Accredited Hours</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">78 Civic Hours</span>
+</div>
+</div>
+</div>
+<!-- Recent Engagement Record -->
+<div class="flex flex-col gap-2 pt-2 border-t border-surface-container-low font-body-sm text-body-sm">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-secondary">Latest Verified Engagement</span>
+<div class="p-3 bg-surface rounded-lg flex flex-col gap-1">
+<span class="font-title-sm text-title-sm text-on-surface font-medium leading-tight">Cultural Event Media Coverage &amp; Archival Documentation</span>
+<span class="font-label-xs text-label-xs text-secondary">Timimoun Cultural Association · Ledger: VE-TCA-2026-061</span>
+<div class="flex items-center justify-between text-secondary font-label-xs text-label-xs pt-1.5 mt-1 border-t border-surface-container-low">
+<span>Completed Oct 03, 2026</span>
+<span class="text-primary-container font-medium">18 Hours Accredited</span>
+</div>
+</div>
+</div>
+<!-- Administrative Action Triggers -->
+<div class="flex flex-col gap-2 pt-3 border-t border-surface-container-low">
+<div class="grid grid-cols-2 gap-2">
+<button class="h-9 px-3 bg-surface text-on-surface hover:bg-surface-container font-label-sm text-label-sm rounded-lg transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">history</span>
+                Audit Activity Logs
+              </button>
+<button class="h-9 px-3 bg-surface text-on-surface hover:bg-surface-container font-label-sm text-label-sm rounded-lg transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">mail</span>
+                Send System Notice
+              </button>
+</div>
+<button class="w-full h-9 px-3 bg-rose-50 text-rose-700 hover:bg-rose-100 font-label-sm text-label-sm rounded-lg transition-colors flex items-center justify-center gap-1.5" onclick="openSuspendModal()" type="button">
+<span class="material-symbols-outlined text-[16px]">block</span>
+              Suspend Account &amp; Revoke Access
+            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 7. Confirmation Modal: Suspend Account (Accessible & Functional Micro-interaction) -->
+<div class="hidden fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 backdrop-blur-[1px] p-4" id="suspendModal">
+<div class="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-xl p-space-lg flex flex-col gap-space-md">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-rose-50 text-rose-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">warning</span>
+</div>
+<div>
+<h3 class="font-title-lg text-title-lg text-on-surface font-semibold">Suspend Volunteer</h3>
+<p class="font-label-sm text-label-sm text-secondary">Abdelouahab Nefsi (@abdelnefsi)</p>
+</div>
+</div>
+<button class="text-secondary hover:text-on-surface p-1 rounded hover:bg-surface transition-colors" onclick="closeSuspendModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+        Suspending this account will immediately revoke access to active initiatives, pause pending credential issuance, and restrict login. This action will be recorded in the system audit log.
+      </p>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm font-medium text-on-surface" for="suspensionReason">Suspension Reason</label>
+<select class="h-10 px-3 bg-surface text-on-surface font-body-sm text-body-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-container" id="suspensionReason">
+<option>Violation of Volunteer Code of Conduct</option>
+<option>Identity mismatch / Civil Registry failed</option>
+<option>Inappropriate submission or invalid data</option>
+<option>Administrative security review hold</option>
+<option>Other / Manual investigation</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm font-medium text-on-surface" for="suspensionNotes">Internal Audit Notes (Optional)</label>
+<textarea class="w-full p-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-container resize-none" id="suspensionNotes" placeholder="Document the case rationale for judicial and administrative compliance..." rows="3"></textarea>
+</div>
+<div class="flex items-center justify-end gap-2 pt-2">
+<button class="h-9 px-4 bg-surface text-on-surface hover:bg-surface-container font-label-md text-label-md rounded-lg transition-colors" onclick="closeSuspendModal()" type="button">
+          Cancel
+        </button>
+<button class="h-9 px-4 bg-rose-700 hover:bg-rose-800 text-on-primary font-label-md text-label-md rounded-lg transition-colors" onclick="confirmSuspension()" type="button">
+          Confirm Suspension
+        </button>
+</div>
+</div>
+</div>
+<!-- Inline Micro-interactions Script -->
+<script>
+    function openSuspendModal() {
+      const modal = document.getElementById('suspendModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeSuspendModal() {
+      const modal = document.getElementById('suspendModal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function confirmSuspension() {
+      alert('Volunteer status updated: Account placed on administrative suspension. Audit log #AUD-9921 recorded.');
+      closeSuspendModal();
+    }
+
+    function selectVolunteer(id) {
+      // Functional hook to highlight selection or switch detail state
+      console.log('Inspecting volunteer record: ' + id);
+    }
+  </script>
+</div></main></div></body></html>

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-secondary":"#ffffff","on-background":"#141b2b","on-secondary-fixed":"#1a1b23","on-primary":"#ffffff","error-container":"#ffdad6","surface-container":"#e9edff","tertiary":"#6b3000","tertiary-fixed-dim":"#ffb68b","surface-container-highest":"#dce2f7","primary-container":"#6d28d9","on-tertiary":"#ffffff","on-primary-fixed-variant":"#5b00c5","secondary":"#5d5d67","on-surface":"#141b2b","on-error":"#ffffff","secondary-container":"#e3e1ed","on-primary-container":"#dac5ff","surface-bright":"#f9f9ff","on-tertiary-container":"#ffc19e","surface-container-high":"#e1e8fd","surface-container-low":"#f1f3ff","inverse-on-surface":"#edf0ff","tertiary-fixed":"#ffdbc8","surface-variant":"#dce2f7","surface-dim":"#d3daef","background":"#f9f9ff","outline-variant":"#ccc3d7","surface":"#f9f9ff","on-error-container":"#93000a","primary-fixed-dim":"#d3bbff","on-surface-variant":"#4a4455","inverse-primary":"#d3bbff","on-tertiary-fixed":"#321300","surface-container-lowest":"#ffffff","on-primary-fixed":"#250059","primary-fixed":"#ebddff","outline":"#7b7486","error":"#ba1a1a","primary":"#5300b7","on-tertiary-fixed-variant":"#743400","tertiary-container":"#8f4200","secondary-fixed-dim":"#c7c5d1","on-secondary-fixed-variant":"#46464f","secondary-fixed":"#e3e1ed","surface-tint":"#7331df","on-secondary-container":"#64636d","inverse-surface":"#293040"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xs":"0.25rem","space-xl":"2rem","space-sm":"0.5rem","space-lg":"1.5rem","margin-mobile":"1rem","gutter-mobile":"0.75rem","margin":"1.5rem","space-md":"1rem","gutter":"1.5rem"},fontFamily:{"label-xs":["Inter"],"body-sm":["Inter"],"title-md":["Inter"],"label-md":["Inter"],"label-sm":["Inter"],"body-lg":["Inter"],"headline-md":["Inter"],"title-sm":["Inter"],"headline-lg":["Inter"],"display-lg":["Inter"],"title-lg":["Inter"],"body-md":["Inter"]},fontSize:{"label-xs":["11px",{lineHeight:"14px",fontWeight:"500"}],"body-sm":["13px",{lineHeight:"18px",fontWeight:"400"}],"title-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"label-md":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-sm":["12px",{lineHeight:"16px",fontWeight:"500"}],"body-lg":["15px",{lineHeight:"23px",fontWeight:"400"}],"headline-md":["20px",{lineHeight:"28px",fontWeight:"600"}],"title-sm":["15px",{lineHeight:"22px",fontWeight:"500"}],"headline-lg":["24px",{lineHeight:"32px",fontWeight:"600"}],"display-lg":["30px",{lineHeight:"38px",fontWeight:"600"}],"title-lg":["18px",{lineHeight:"26px",fontWeight:"600"}],"body-md":["14px",{lineHeight:"21px",fontWeight:"400"}]}}}}</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">volunteer_activism</span></div><div class="flex flex-col"><span class="font-title-sm text-title-sm text-on-surface leading-none">Basmatak</span><span class="font-label-xs text-label-xs text-on-surface-variant leading-none mt-1 tracking-wider uppercase">Tatatoua</span></div></div><nav class="flex flex-col px-space-md mt-space-sm gap-space-xs" data-active-classes="bg-primary-container text-on-primary rounded-lg font-label-md"><div class="px-space-sm pt-space-sm pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">OVERVIEW</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[18px]">space_dashboard</span><span>Dashboard</span></a><div class="px-space-sm pt-space-md pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">MANAGEMENT</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="volunteers" href="#"><span class="material-symbols-outlined text-[18px]">group</span><span>Volunteers</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="organizations" href="#"><span class="material-symbols-outlined text-[18px]">domain</span><span>Organizations</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="opportunities" href="#"><span class="material-symbols-outlined text-[18px]">event_available</span><span>Opportunities</span></a><div class="px-space-sm pt-space-md pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">MODERATION</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="reports" href="#"><span class="material-symbols-outlined text-[18px]">flag</span><span>Reports</span></a><div class="px-space-sm pt-space-md pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">SYSTEM</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="settings" href="#"><span class="material-symbols-outlined text-[18px]">settings</span><span>Settings</span></a></nav></div><div class="p-space-lg"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-600"></span><span class="font-label-xs text-label-xs text-on-surface-variant">System v2.4 · All operational</span></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-space-lg flex items-center justify-between"><div class="flex items-center gap-space-md"><span class="font-label-xs text-label-xs font-semibold uppercase tracking-wider text-outline px-space-sm py-1 bg-surface-container-low rounded">PLATFORM ADMINISTRATION</span></div><div class="flex items-center gap-space-lg"><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-[18px]">search</span><input class="h-10 pl-10 pr-4 w-72 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" placeholder="Search records, entities, logs..." type="text"/></div><button aria-label="Notifications" class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 bg-primary-container rounded-full"></span></button><div class="flex items-center gap-space-sm"><div class="flex flex-col text-right"><span class="font-title-sm text-title-sm text-on-surface leading-tight">Platform Admin</span><span class="font-label-xs text-label-xs text-outline leading-tight">Super Administrator</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="max-w-[1440px] w-full mx-auto px-6 py-8">
+<!-- Top Context & Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between pb-6 gap-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2 text-secondary font-label-sm text-label-sm">
+<span>Administration</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span>System</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface font-semibold">Settings</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Platform Settings</h1>
+<p class="font-body-md text-body-md text-secondary max-w-2xl">
+          Configure platform-wide defaults, automated notification queues, statutory moderation frameworks, and administrative security controls.
+        </p>
+</div>
+<div class="flex items-center gap-4 shrink-0">
+<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface-container-low text-secondary font-label-xs text-label-xs">
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+<span>All system services operational · v2.4</span>
+</div>
+<button class="h-10 px-5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary transition-all flex items-center gap-2 shadow-sm" id="save-all-btn">
+<span class="material-symbols-outlined text-[18px]">check</span>
+<span>Save All Changes</span>
+</button>
+</div>
+</div>
+<!-- Main Workspace Two-Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Column: Navigation Sidebar Anchor -->
+<div class="lg:col-span-3 sticky top-24 flex flex-col gap-4">
+<nav class="bg-surface-container-lowest rounded-lg p-2 flex flex-col gap-1 shadow-sm" id="settings-nav">
+<a class="nav-item flex items-center justify-between px-3 py-2.5 rounded-md text-primary font-label-md text-label-md bg-surface-container transition-colors" href="#general">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+<span>General</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+</a>
+<a class="nav-item flex items-center justify-between px-3 py-2.5 rounded-md text-secondary hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors" href="#notifications">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">notifications_active</span>
+<span>Notifications</span>
+</div>
+</a>
+<a class="nav-item flex items-center justify-between px-3 py-2.5 rounded-md text-secondary hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors" href="#moderation">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+<span>Moderation</span>
+</div>
+</a>
+<a class="nav-item flex items-center justify-between px-3 py-2.5 rounded-md text-secondary hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors" href="#platform-controls">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">toggle_on</span>
+<span>Platform Controls</span>
+</div>
+</a>
+<a class="nav-item flex items-center justify-between px-3 py-2.5 rounded-md text-secondary hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors" href="#security">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">shield</span>
+<span>Security</span>
+</div>
+</a>
+<a class="nav-item flex items-center justify-between px-3 py-2.5 rounded-md text-error hover:bg-error-container/40 font-label-md text-label-md transition-colors" href="#danger-zone">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span>Danger Zone</span>
+</div>
+</a>
+</nav>
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center gap-2 text-on-surface font-title-sm text-title-sm">
+<span class="material-symbols-outlined text-[18px] text-primary-container">info</span>
+<span>National Jurisdiction</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed">
+            System-level configurations apply consistently across all 58 Wilayas and sync with the National Civic Ledger framework (Law 12-06).
+          </p>
+</div>
+</div>
+<!-- Right Column: Settings Sections -->
+<div class="lg:col-span-9 flex flex-col gap-8 pb-16">
+<!-- SECTION 1: GENERAL SETTINGS -->
+<section class="bg-surface-container-lowest rounded-lg p-6 lg:p-8 shadow-sm flex flex-col gap-6" id="general">
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">General Configuration</h2>
+<span class="px-2.5 py-1 rounded bg-surface-container font-label-xs text-label-xs text-secondary font-medium">CORE-01</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+              Core platform identity, language handling, and regional defaults for civic volunteers and registered associations.
+            </p>
+</div>
+<div class="flex flex-col gap-5 pt-2">
+<!-- Platform Name -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">Platform Formal Name</label>
+<input class="h-10 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none transition-colors" type="text" value="Basmatak Tatatoua | بصمتك تطوع"/>
+<span class="font-label-xs text-label-xs text-secondary">Published across national certificates and government transparency logs.</span>
+</div>
+<!-- Platform Description -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">Platform Statutory Summary</label>
+<textarea class="p-3 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none transition-colors leading-relaxed" rows="3">Algeria's national digital platform connecting skilled volunteers with verified civil society organizations under Law 12-06 framework.</textarea>
+<span class="font-label-xs text-label-xs text-secondary">Visible in canonical search indexes, institutional portals, and citizen registration intros.</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+<!-- Default Language -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">Default Language</label>
+<div class="relative flex items-center">
+<select class="h-10 w-full px-3.5 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest transition-colors">
+<option selected="">English (Algeria / International)</option>
+<option>Arabic (العربية - الجزائر)</option>
+<option>French (Français - Algérie)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 text-secondary pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Default Timezone -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">Default Timezone</label>
+<div class="relative flex items-center">
+<select class="h-10 w-full px-3.5 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest transition-colors">
+<option selected="">UTC+01:00 — Algiers (WAT/CET)</option>
+<option>UTC+00:00 — Universal Coordinated Time</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 text-secondary pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Date Format -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">Date Presentation Format</label>
+<div class="relative flex items-center">
+<select class="h-10 w-full px-3.5 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest transition-colors">
+<option selected="">DD MMM YYYY (e.g. 18 Oct 2026)</option>
+<option>YYYY-MM-DD (ISO 8601)</option>
+<option>DD/MM/YYYY</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 text-secondary pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-3 flex justify-end">
+<button class="h-9 px-4 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors flex items-center gap-1.5">
+<span>Save General Settings</span>
+</button>
+</div>
+</section>
+<!-- SECTION 2: ADMINISTRATIVE NOTIFICATIONS -->
+<section class="bg-surface-container-lowest rounded-lg p-6 lg:p-8 shadow-sm flex flex-col gap-6" id="notifications">
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">Administrative Notifications</h2>
+<span class="px-2.5 py-1 rounded bg-surface-container font-label-xs text-label-xs text-secondary font-medium">DISPATCH-QUEUE</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+              Configure real-time statutory event dispatches and system audit triggers forwarded to the executive moderation desk.
+            </p>
+</div>
+<div class="flex flex-col">
+<!-- Toggle Row 1 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">New Organization Verification Dossier</span>
+<p class="font-body-sm text-body-sm text-secondary">Alert administration immediately when an NGO submits legal statutes and approval decrees under Law 12-06.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Toggle Row 2 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">New Content or Account Report Submitted</span>
+<p class="font-body-sm text-body-sm text-secondary">Notify moderation queue when content, opportunities, or volunteer accounts are flagged for statutory review.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Toggle Row 3 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">High-Priority Opportunity Incident</span>
+<p class="font-body-sm text-body-sm text-secondary">Escalate safety warnings, hazardous fieldwork flags, or location disputes to priority desk.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Toggle Row 4 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Contribution Deliverable Pending Escalation</span>
+<p class="font-body-sm text-body-sm text-secondary">Alert if an organization has not reviewed a submitted volunteer deliverable within 14 days.</p>
+</div>
+<button aria-checked="false" class="toggle-btn w-11 h-6 bg-surface-variant rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-0 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Toggle Row 5 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">System Audit &amp; Ledger Digest</span>
+<p class="font-body-sm text-body-sm text-secondary">Weekly summary of legal compliance, registry syncing, and certificate minting.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 3: MODERATION & STATUTORY COMPLIANCE -->
+<section class="bg-surface-container-lowest rounded-lg p-6 lg:p-8 shadow-sm flex flex-col gap-6" id="moderation">
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">Moderation Policies</h2>
+<span class="px-2.5 py-1 rounded bg-surface-container font-label-xs text-label-xs text-secondary font-medium">STATUTORY COMPLIANCE</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+              Governance rules enforcing content credibility, safety guarantees, and civic verification requirements before public broadcast.
+            </p>
+</div>
+<div class="flex flex-col">
+<!-- Row 1 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-title-sm text-title-sm text-on-surface">Require Organization Verification Before Publishing</span>
+<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-label-xs text-label-xs font-medium">Statutory Mandate</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">Associations must hold verified Law 12-06 legal status before publishing open opportunities to the national registry.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Row 2 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Allow Public Content Reporting</span>
+<p class="font-body-sm text-body-sm text-secondary">Enable volunteers and registered associations to submit moderation reports on platform listings.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Row 3 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Mandatory Written Justification for Moderation Sanctions</span>
+<p class="font-body-sm text-body-sm text-secondary">Administrators must cite statutory articles and rationale when suspending opportunities or dossiers.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Row 4 -->
+<div class="py-4.5 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Auto-Retract Flagged Opportunities with 3+ High-Priority Reports</span>
+<p class="font-body-sm text-body-sm text-secondary">Temporarily pause candidate applications during pending administrative inspection.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 4: PLATFORM STATUS & REGISTRATION CONTROLS -->
+<section class="bg-surface-container-lowest rounded-lg p-6 lg:p-8 shadow-sm flex flex-col gap-6" id="platform-controls">
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">Platform Operation State</h2>
+<span class="px-2.5 py-1 rounded bg-surface-container font-label-xs text-label-xs text-secondary font-medium">RUNTIME STATUS</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+              Live operational health and registration gateway controls across Algerian wilaya access nodes.
+            </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Operational Node Status -->
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-medium">Platform Runtime Status</span>
+<span class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-100/70 text-emerald-800 font-label-xs text-label-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                  Active
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">All endpoints, verification queues, and notifications executing in nominal state.</p>
+</div>
+<!-- National Ledger Sync -->
+<div class="p-4 rounded-lg bg-surface-container-low flex flex-col justify-between gap-3">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-medium">Civic Hours Ledger Sync</span>
+<span class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container text-secondary font-label-xs text-label-xs font-semibold">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+                  DZ-NAT-REG v2.4
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">Decentralized synchronization active with the Algerian National Volunteer Registry.</p>
+</div>
+</div>
+<!-- Specific Switches -->
+<div class="flex flex-col pt-2">
+<div class="py-4 flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="font-title-sm text-title-sm text-on-surface">Volunteer Registration</span>
+<span class="font-body-sm text-body-sm text-secondary">Enabled — Open to all Algerian citizens &amp; residents</span>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<div class="py-4 flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="font-title-sm text-title-sm text-on-surface">Organization Registration</span>
+<span class="font-body-sm text-body-sm text-secondary">Enabled — Legal association intake active</span>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<div class="py-4 flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="font-title-sm text-title-sm text-on-surface">Opportunity Publishing</span>
+<span class="font-body-sm text-body-sm text-secondary">Enabled — Verified organizations actively posting</span>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 5: ADMINISTRATIVE SECURITY -->
+<section class="bg-surface-container-lowest rounded-lg p-6 lg:p-8 shadow-sm flex flex-col gap-6" id="security">
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<h2 class="font-title-lg text-title-lg text-on-surface tracking-tight">Security &amp; Authentication</h2>
+<span class="px-2.5 py-1 rounded bg-surface-container font-label-xs text-label-xs text-secondary font-medium">PROTECTION &amp; AUDIT</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+              Session governance, high-privilege verification gates, and tamper-resistant audit retention rules.
+            </p>
+</div>
+<div class="flex flex-col gap-5 pt-2">
+<!-- Session Duration -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface font-medium">Administrative Session Duration</label>
+<div class="relative flex items-center">
+<select class="h-10 w-full px-3.5 pr-8 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md appearance-none focus:outline-none focus:bg-surface-container-lowest transition-colors">
+<option selected="">8 hours (Automatic timeout on inactivity)</option>
+<option>4 hours (Recommended for shared terminals)</option>
+<option>2 hours (Strict security standard)</option>
+<option>12 hours (Standard operational shift)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 text-secondary pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Re-Auth -->
+<div class="py-3 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Require Re-Authentication for Consequential Actions</span>
+<p class="font-body-sm text-body-sm text-secondary">Prompt for administrator credentials when approving Law 12-06 seals, retracting opportunities, or revoking accounts.</p>
+</div>
+<button aria-checked="true" class="toggle-btn w-11 h-6 bg-primary-container rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-5 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- IP Whitelist -->
+<div class="py-3 flex items-start justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Strict IP Allowlisting for Super Administrator</span>
+<p class="font-body-sm text-body-sm text-secondary">Restrict global management operations to approved ministerial and institutional IP ranges.</p>
+</div>
+<button aria-checked="false" class="toggle-btn w-11 h-6 bg-surface-variant rounded-full relative flex items-center shrink-0 p-0.5 transition-colors focus:outline-none" role="switch">
+<span class="w-5 h-5 bg-surface-container-lowest rounded-full shadow-sm transform translate-x-0 transition-transform"></span>
+</button>
+</div>
+<div class="h-px bg-surface-container w-full"></div>
+<!-- Audit Trail -->
+<div class="py-3 flex items-center justify-between gap-4">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Comprehensive Audit Log Retention</span>
+<p class="font-body-sm text-body-sm text-secondary">Store cryptographic access trails and moderation logs for 5 years as required by civic archiving regulations.</p>
+</div>
+<span class="px-3 py-1 rounded bg-surface-container text-primary-container font-label-xs text-label-xs font-semibold shrink-0">Compliant · 5 Years</span>
+</div>
+</div>
+</section>
+<!-- SECTION 6: DANGER ZONE -->
+<section class="bg-error-container/30 rounded-lg p-6 lg:p-8 flex flex-col gap-6" id="danger-zone">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[22px]">warning</span>
+<h2 class="font-title-lg text-title-lg text-error tracking-tight">Danger Zone</h2>
+</div>
+<p class="font-body-sm text-body-sm text-secondary">
+              Highly consequential actions that impact national platform accessibility. All actions require dual administrator confirmation.
+            </p>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Row 1 -->
+<div class="p-4 rounded-lg bg-surface-container-lowest flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Disable New Registrations</span>
+<span class="font-body-sm text-body-sm text-secondary">Temporarily prevent new volunteers and associations from registering accounts. Existing sessions remain unaffected.</span>
+</div>
+<button class="h-9 px-4 rounded-lg bg-surface-container-low hover:bg-error-container text-error font-label-md text-label-md transition-colors shrink-0 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">pause_circle</span>
+<span>Pause Registrations</span>
+</button>
+</div>
+<!-- Row 2 -->
+<div class="p-4 rounded-lg bg-surface-container-lowest flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+<div class="flex flex-col gap-0.5">
+<span class="font-title-sm text-title-sm text-on-surface">Platform Maintenance Mode</span>
+<span class="font-body-sm text-body-sm text-secondary">Display a scheduled maintenance screen across public portals. Administrative access remains active.</span>
+</div>
+<button class="h-9 px-4 rounded-lg bg-surface-container-low hover:bg-error-container text-error font-label-md text-label-md transition-colors shrink-0 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">engineering</span>
+<span>Enable Maintenance Mode</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Interactive Toggle Switch Behavior
+    document.querySelectorAll('.toggle-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const isChecked = button.getAttribute('aria-checked') === 'true';
+        const thumb = button.querySelector('span');
+        
+        if (isChecked) {
+          button.setAttribute('aria-checked', 'false');
+          button.classList.remove('bg-primary-container');
+          button.classList.add('bg-surface-variant');
+          thumb.classList.remove('translate-x-5');
+          thumb.classList.add('translate-x-0');
+        } else {
+          button.setAttribute('aria-checked', 'true');
+          button.classList.add('bg-primary-container');
+          button.classList.remove('bg-surface-variant');
+          thumb.classList.remove('translate-x-0');
+          thumb.classList.add('translate-x-5');
+        }
+      });
+    });
+
+    // Simple smooth scroll & active state navigation
+    const navLinks = document.querySelectorAll('#settings-nav .nav-item');
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href');
+        const targetEl = document.querySelector(targetId);
+        
+        if (targetEl) {
+          window.scrollTo({
+            top: targetEl.offsetTop - 90,
+            behavior: 'smooth'
+          });
+
+          navLinks.forEach(item => {
+            item.classList.remove('bg-surface-container', 'text-primary');
+            if (!item.classList.contains('text-error')) {
+              item.classList.add('text-secondary');
+            }
+            const dot = item.querySelector('.bg-primary-container');
+            if (dot) dot.remove();
+          });
+
+          if (!link.classList.contains('text-error')) {
+            link.classList.add('bg-surface-container', 'text-primary');
+            link.classList.remove('text-secondary');
+            const dot = document.createElement('span');
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-primary-container';
+            link.appendChild(dot);
+          }
+        }
+      });
+    });
+
+    // Save All Toast Feedback
+    const saveBtn = document.getElementById('save-all-btn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">done_all</span><span>Saved Successfully</span>';
+        saveBtn.classList.replace('bg-primary-container', 'bg-emerald-600');
+        setTimeout(() => {
+          saveBtn.innerHTML = originalText;
+          saveBtn.classList.replace('bg-emerald-600', 'bg-primary-container');
+        }, 2200);
+      });
+    }
+  })();
+</script></main></div></body></html>
