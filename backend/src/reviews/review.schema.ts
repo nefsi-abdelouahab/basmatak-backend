@@ -3,12 +3,18 @@ import { createSchema } from '../common/schema/base.schema';
 
 export const ReviewsCollection = 'reviews';
 
+export const REVIEW_STATUSES = ['visible', 'hidden'] as const;
+
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
+
 export interface Review {
   submissionId: Types.ObjectId;
   organizationId: Types.ObjectId;
   volunteerId: Types.ObjectId;
   rating: number;
   comment?: string;
+  /** Moderation flag (roadmap S16): hidden reviews are excluded from reliability. */
+  status: ReviewStatus;
 }
 
 export class ReviewModel extends Document implements Review {
@@ -17,6 +23,7 @@ export class ReviewModel extends Document implements Review {
   volunteerId!: Types.ObjectId;
   rating!: number;
   comment?: string;
+  status!: ReviewStatus;
   createdAt!: Date;
   updatedAt!: Date;
 }
@@ -34,6 +41,12 @@ export const ReviewSchema: Schema<ReviewModel> = createSchema({
   volunteerId: { type: Schema.Types.ObjectId, required: true },
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, trim: true, maxlength: 2000 },
+  status: {
+    type: String,
+    enum: REVIEW_STATUSES,
+    required: true,
+    default: 'visible',
+  },
 });
 
 // Indexes (inventory §3): one review per submission; the §2.16 list reads

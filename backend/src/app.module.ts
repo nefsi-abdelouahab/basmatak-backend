@@ -24,6 +24,7 @@ import { SubmissionsModule } from './submissions/submissions.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { VerificationsModule } from './verifications/verifications.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
+import { ReportsModule } from './reports/reports.module';
 import { AdminModule } from './admin/admin.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
@@ -79,6 +80,7 @@ const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
     ReviewsModule,
     VerificationsModule,
     PortfolioModule,
+    ReportsModule,
     AdminModule,
   ],
   controllers: [AppController, HealthController],
