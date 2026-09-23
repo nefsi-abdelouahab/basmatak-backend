@@ -12,15 +12,23 @@ import {
 } from '../skills/schemas/skill-category.schema';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
 import { seedLocations, seedSkills } from '../seed-data/seed.utils';
+import { seedAdmin } from './seed-admin';
+import { seedDemo } from './seed-demo';
 
-type SeedTarget = 'locations' | 'skills' | 'all';
+type SeedTarget = 'locations' | 'skills' | 'admin' | 'demo' | 'all';
+
+const TARGETS: readonly SeedTarget[] = [
+  'locations',
+  'skills',
+  'admin',
+  'demo',
+  'all',
+];
 
 function parseTarget(argv: string[]): SeedTarget {
   const onlyIndex = argv.indexOf('--only');
   const value = onlyIndex >= 0 ? argv[onlyIndex + 1] : 'all';
-  return ['locations', 'skills', 'all'].includes(value)
-    ? (value as SeedTarget)
-    : 'all';
+  return TARGETS.includes(value as SeedTarget) ? (value as SeedTarget) : 'all';
 }
 
 async function run(): Promise<void> {
@@ -50,6 +58,16 @@ async function run(): Promise<void> {
       const counts = await seedSkills(categories, skills);
       results.push(
         `skills: ${counts.categories} categories, ${counts.skills} skills`,
+      );
+    }
+    if (target === 'admin' || target === 'all') {
+      const result = await seedAdmin(app);
+      results.push(`admin: ${result.action} ${result.email}`);
+    }
+    if (target === 'demo' || target === 'all') {
+      const result = await seedDemo(app);
+      results.push(
+        `demo: org=${result.organizationEmail} verified=${result.organizationVerified}, volunteer=${result.volunteerEmail}`,
       );
     }
     console.log(`Seeded ${results.join(' | ')}`);
