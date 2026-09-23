@@ -78,6 +78,17 @@ export class OrganizationsService {
     return this.organizationModel.findOne({ userId }).exec();
   }
 
+  /** Read-only batch lookup for rendering context joins (e.g. review lists). */
+  async listForIds(ids: string[]): Promise<OrganizationModel[]> {
+    const objectIds = ids
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+    if (objectIds.length === 0) {
+      return [];
+    }
+    return this.organizationModel.find({ _id: { $in: objectIds } }).exec();
+  }
+
   async getOwn(account: AccountToken): Promise<OrganizationModel> {
     const organization = await this.findByUserId(account.sub);
     if (!organization) {

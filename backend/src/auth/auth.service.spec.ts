@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'crypto';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { AuthService } from './auth.service';
 import { TokenUtil } from './token.util';
 import { UsersService } from '../users/users.service';
@@ -198,5 +198,54 @@ describe('AuthService', () => {
   it('forgot-password stays silent for unknown emails (no mail sent)', async () => {
     await service.forgotPassword('nobody@example.com');
     expect(mail.sent.filter((m) => m.kind === 'reset')).toHaveLength(0);
+  });
+
+  it('listSessions returns only the caller’s own sessions without the token hash', async () => {
+    await registerVolunteer();
+    const doc = await sessionModel.findOne({}).exec();
+
+    const sessions = await service.listSessions(doc!.userId.toString());
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      id: doc!._id.toString(),
+      createdAt: expect.any(Date),
+      expiresAt: expect.any(Date),
+    });
+    expect(sessions[0]).not.toHaveProperty('refreshTokenHash');
+  });
+
+  it('listSessions ignores foreign sessions', async () => {
+    await registerVolunteer();
+    const doc = await sessionModel.findOne({}).exec();
+    await sessionModel.create({
+      _id: new Types.ObjectId(),
+      userId: new Types.ObjectId(),
+      refreshTokenHash: 'other-hash',
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 10_000),
+    });
+
+    const sessions = await service.listSessions(doc!.userId.toString());
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].id).toBe(doc!._id.toString());
+  });
+
+  it('removeSession deletes an own session and reports nothing for foreign/absent ids', async () => {
+    await registerVolunteer();
+    const doc = await sessionModel.findOne({}).exec();
+    const ownId = doc!._id.toString();
+    const userId = doc!.userId.toString();
+
+    expect(await service.removeSession(userId, ownId)).toBe(true);
+    expect(await sessionModel.countDocuments({})).toBe(0);
+
+    await expect(service.removeSession(userId, ownId)).resolves.toBe(false);
+    await expect(
+      service.removeSession(userId, new Types.ObjectId().toString()),
+    ).resolves.toBe(false);
+    await expect(
+      service.removeSession(userId, 'not-an-object-id'),
+    ).resolves.toBe(false);
   });
 });

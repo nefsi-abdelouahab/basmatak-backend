@@ -20,13 +20,16 @@ import {
   PortfolioItemSchema,
   PortfolioItemsCollection,
 } from '../portfolio/schemas/portfolio-item.schema';
+import { TrustModule } from '../trust/trust.module';
+import { TrustPublishGateService } from '../trust/trust-publish-gate.service';
 
 /**
  * Cross-cutting providers: seams (inert defaults until their owning sessions)
  * and the app logger. Guards/filters/pipes are registered at the app level.
- * `REGISTRATION_EXTRAS_SERVICE` is the role-dispatching volunteer provider
- * (S2+S5): it creates the `volunteer_profiles` row for volunteers and hands
- * every other role to the organization provider.
+ * `PublishGateService` is overridden with the real trust-layer counter via DI
+ * (D3); `REGISTRATION_EXTRAS_SERVICE` is the role-dispatching volunteer
+ * provider (S2+S5): it creates the `volunteer_profiles` row for volunteers and
+ * hands every other role to the organization provider.
  */
 @Global()
 @Module({
@@ -37,10 +40,11 @@ import {
       { name: PortfolioItemsCollection, schema: PortfolioItemSchema },
     ]),
     VolunteersModule,
+    TrustModule,
   ],
   providers: [
     AppLogger,
-    PublishGateService,
+    { provide: PublishGateService, useClass: TrustPublishGateService },
     PortfolioQueryService,
     MediaOwnership,
     InertRegistrationExtrasService,

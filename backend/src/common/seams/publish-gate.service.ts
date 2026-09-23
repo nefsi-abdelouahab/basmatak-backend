@@ -17,7 +17,7 @@ export interface PublishGateEvaluation {
  */
 @Injectable()
 export class PublishGateService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(protected readonly config: ConfigService) {}
 
   async evaluate(_organization: {
     id: string;

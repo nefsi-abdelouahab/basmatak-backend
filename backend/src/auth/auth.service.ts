@@ -166,6 +166,49 @@ export class AuthService {
     await this.sessionModel.deleteMany({ userId }).exec();
   }
 
+  /**
+   * The caller's own sessions (F7, Session 13) — id + non-secret metadata
+   * only, never the refresh-token hash. Foreign rows are never surfaced.
+   */
+  async listSessions(userId: string): Promise<
+    Array<{
+      id: string;
+      createdAt: Date;
+      expiresAt: Date;
+      lastUsedAt?: Date;
+    }>
+  > {
+    const sessions = await this.sessionModel
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .select('_id createdAt expiresAt lastUsedAt')
+      .lean()
+      .exec();
+    return sessions.map((session) => ({
+      id: session._id.toString(),
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+      lastUsedAt: session.lastUsedAt,
+    }));
+  }
+
+  /**
+   * Deletes one of the caller's own sessions (F7, Session 13). Absent or
+   * foreign rows return `false`; revoking the current session is allowed.
+   */
+  async removeSession(userId: string, sessionId: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(sessionId)) {
+      return false;
+    }
+    const deleted = await this.sessionModel
+      .deleteOne({
+        _id: new Types.ObjectId(sessionId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec();
+    return (deleted.deletedCount ?? 0) > 0;
+  }
+
   async verifyEmail(rawToken: string): Promise<void> {
     const now = new Date();
     const hash = this.tokenUtil.hash(rawToken);

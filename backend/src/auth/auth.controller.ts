@@ -69,6 +69,13 @@ export class AuthController {
     await this.authService.logout(account.sessionId);
   }
 
+  @Post('logout-all')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke every session of the caller' })
+  async logoutAll(@CurrentAccount() account: AccountToken): Promise<void> {
+    await this.authService.logoutAll(account.sub);
+  }
+
   @Post('verify-email')
   @Public()
   @HttpCode(HttpStatus.NO_CONTENT)
