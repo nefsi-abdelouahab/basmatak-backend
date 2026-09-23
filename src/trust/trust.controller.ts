@@ -1,6 +1,11 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Model } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import {
@@ -35,6 +40,7 @@ export class TrustController {
     private readonly organizationModel: Model<OrganizationModel>,
   ) {}
 
+  @ApiBearerAuth()
   @Get('organizations/me/publish-gate')
   @Roles('organization')
   @ApiOperation({ summary: "Caller's organization publish-gate state" })
@@ -56,6 +62,11 @@ export class TrustController {
     return this.gate.status(organization._id);
   }
 
+  @ApiParam({
+    name: 'slug',
+    description: 'Organization slug',
+    type: String,
+  })
   @Get('organizations/:slug/reliability')
   @Public()
   @ApiOperation({ summary: 'Public reliability metrics by organization slug' })

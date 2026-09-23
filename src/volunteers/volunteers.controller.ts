@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -9,6 +9,7 @@ import {
 import { VolunteerDashboard, VolunteersService } from './volunteers.service';
 import { VolunteerProfileModel } from './schemas/volunteer-profile.schema';
 
+@ApiBearerAuth()
 @ApiTags('volunteers')
 @Controller('volunteers')
 export class VolunteersController {

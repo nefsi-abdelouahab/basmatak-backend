@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -7,6 +12,7 @@ import { ReportModel } from '../reports/report.schema';
 import { ReportStatusDto, ReportsQueryDto } from './dto/admin-part-b.dto';
 import { AdminReportsService } from './reports.service';
 
+@ApiBearerAuth()
 @ApiTags('admin (reports)')
 @Controller('admin/reports')
 @Roles('admin')
@@ -19,6 +25,12 @@ export class AdminReportsController {
     return this.reports.list(query);
   }
 
+  @ApiParam({
+    name: 'reportId',
+    description: 'The report id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch(':reportId')
   @ApiOperation({ summary: 'Resolve/dismiss a report' })
   resolve(

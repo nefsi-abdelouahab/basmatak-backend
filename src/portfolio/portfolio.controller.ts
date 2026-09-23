@@ -10,7 +10,12 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -25,6 +30,7 @@ import { PortfolioService } from './portfolio.service';
  * showcase. All routes require a volunteer token; the guest read lives on the
  * volunteers controller (`GET /volunteers/:username/portfolio`).
  */
+@ApiBearerAuth()
 @ApiTags('portfolio')
 @Controller('portfolio')
 export class PortfolioController {
@@ -59,6 +65,12 @@ export class PortfolioController {
     return this.portfolio.reorder(account, dto);
   }
 
+  @ApiParam({
+    name: 'itemId',
+    description: 'The portfolio item id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch(':itemId')
   @Roles('volunteer')
   @ApiOperation({ summary: 'Update an owned portfolio item' })
@@ -70,6 +82,12 @@ export class PortfolioController {
     return this.portfolio.update(account, itemId, dto);
   }
 
+  @ApiParam({
+    name: 'itemId',
+    description: 'The portfolio item id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Delete(':itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles('volunteer')

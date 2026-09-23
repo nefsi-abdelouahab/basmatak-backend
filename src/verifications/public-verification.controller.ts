@@ -1,5 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/auth.decorators';
 import { ExperiencesService } from './experiences.service';
 
@@ -13,6 +13,11 @@ import { ExperiencesService } from './experiences.service';
 export class PublicVerificationController {
   constructor(private readonly experiences: ExperiencesService) {}
 
+  @ApiParam({
+    name: 'verificationCode',
+    description: 'Verification code from the experience completion email',
+    type: String,
+  })
   @Get('verify/:verificationCode')
   @Public()
   @ApiOperation({ summary: 'Public proof summary for a verification code' })

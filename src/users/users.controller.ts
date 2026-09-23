@@ -8,7 +8,12 @@ import {
   Param,
   Patch,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { CurrentAccount } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
@@ -16,6 +21,7 @@ import { AuthService, UserPayload } from '../auth/auth.service';
 import { UsersService } from './users.service';
 import { UpdateMeDto } from './dto/update-user.dto';
 
+@ApiBearerAuth()
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
@@ -58,6 +64,12 @@ export class UsersController {
     return this.auth.listSessions(account.sub);
   }
 
+  @ApiParam({
+    name: 'sessionId',
+    description: 'The session id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Delete('me/sessions/:sessionId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Revoke one of the caller's own sessions" })

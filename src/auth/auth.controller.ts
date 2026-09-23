@@ -7,7 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentAccount, Public } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { AuthService, AuthTokens } from './auth.service';
@@ -62,6 +62,7 @@ export class AuthController {
     return this.authService.refresh(dto.refreshToken);
   }
 
+  @ApiBearerAuth()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Revoke the current session' })
@@ -69,6 +70,7 @@ export class AuthController {
     await this.authService.logout(account.sessionId);
   }
 
+  @ApiBearerAuth()
   @Post('logout-all')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Revoke every session of the caller' })
@@ -84,6 +86,7 @@ export class AuthController {
     await this.authService.verifyEmail(dto.token);
   }
 
+  @ApiBearerAuth()
   @Post('resend-verification')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Throttle(SLOW_LIMIT)
@@ -113,6 +116,7 @@ export class AuthController {
     await this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
+  @ApiBearerAuth()
   @Post('change-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
@@ -130,6 +134,7 @@ export class AuthController {
     );
   }
 
+  @ApiBearerAuth()
   @Get('me')
   @ApiOperation({ summary: 'Current account (user + role, org block in S5)' })
   me(@CurrentAccount() account: AccountToken) {

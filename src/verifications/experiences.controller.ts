@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -13,6 +18,7 @@ import { ExperiencesService } from './experiences.service';
  * volunteer's own list/detail/visibility routes. Non-owners (including org
  * callers) read as not-found (404, service-selected).
  */
+@ApiBearerAuth()
 @ApiTags('experiences')
 @Controller()
 export class ExperiencesController {
@@ -28,6 +34,12 @@ export class ExperiencesController {
     return this.experiences.listMine(account, query);
   }
 
+  @ApiParam({
+    name: 'experienceId',
+    description: 'The experience id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Get('experiences/:experienceId')
   @ApiOperation({
     summary: 'Experience detail (owning volunteer only)',
@@ -39,6 +51,12 @@ export class ExperiencesController {
     return this.experiences.getDetail(account, experienceId);
   }
 
+  @ApiParam({
+    name: 'experienceId',
+    description: 'The experience id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch('experiences/:experienceId/visibility')
   @ApiOperation({ summary: 'Toggle public/private visibility (own row)' })
   updateVisibility(

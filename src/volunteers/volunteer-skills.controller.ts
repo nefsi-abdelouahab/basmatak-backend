@@ -9,7 +9,12 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -19,6 +24,7 @@ import {
 import { VolunteerSkillModel } from './schemas/volunteer-skill.schema';
 import { VolunteersService } from './volunteers.service';
 
+@ApiBearerAuth()
 @ApiTags('volunteers')
 @Controller('volunteers/me/skills')
 export class VolunteerSkillsController {
@@ -43,6 +49,12 @@ export class VolunteerSkillsController {
     return this.volunteers.addSkill(account.sub, dto);
   }
 
+  @ApiParam({
+    name: 'skillId',
+    description: 'The skill id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch(':skillId')
   @Roles('volunteer')
   @ApiOperation({ summary: 'Update one of own skills' })
@@ -54,6 +66,12 @@ export class VolunteerSkillsController {
     return this.volunteers.updateSkill(account.sub, skillId, dto);
   }
 
+  @ApiParam({
+    name: 'skillId',
+    description: 'The skill id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Delete(':skillId')
   @Roles('volunteer')
   @HttpCode(HttpStatus.NO_CONTENT)

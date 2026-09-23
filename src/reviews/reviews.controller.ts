@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -13,11 +18,18 @@ import { ReviewsService } from './reviews.service';
  * §2.16 list routes. `/me` routes keep their static prefix so `me` is never
  * swallowed by the organizations `:slug` catch-all (route-order trap).
  */
+@ApiBearerAuth()
 @ApiTags('reviews')
 @Controller()
 export class ReviewsController {
   constructor(private readonly reviews: ReviewsService) {}
 
+  @ApiParam({
+    name: 'submissionId',
+    description: 'The submission id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('submissions/:submissionId/review')
   @Roles('organization')
   @ApiOperation({

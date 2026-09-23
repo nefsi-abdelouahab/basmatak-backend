@@ -1,8 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/auth.decorators';
 import { AdminStatsOverview, AdminStatsService } from './stats.service';
 
+@ApiBearerAuth()
 @ApiTags('admin (stats)')
 @Controller('admin/stats')
 @Roles('admin')

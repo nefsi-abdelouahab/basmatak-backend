@@ -8,7 +8,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { NotificationListQueryDto } from './dto/notification.dto';
@@ -19,6 +24,7 @@ import { NotificationsService } from './notifications.service';
  * every route reads/writes only the caller's rows; a foreign or absent row is
  * a 404 (inventory §6 non-owner-as-not-found convention).
  */
+@ApiBearerAuth()
 @ApiTags('notifications')
 @Controller()
 export class NotificationsController {
@@ -39,6 +45,12 @@ export class NotificationsController {
     return this.notifications.unreadCount(account.sub);
   }
 
+  @ApiParam({
+    name: 'notificationId',
+    description: 'The notification id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch('notifications/:notificationId/read')
   @ApiOperation({ summary: 'Mark one notification read' })
   markRead(

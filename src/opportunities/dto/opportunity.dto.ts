@@ -16,18 +16,32 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LocationDto {
+  @ApiPropertyOptional({ description: 'Wilaya code (01-58)', example: '16' })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   wilayaId?: string;
 
+  @ApiPropertyOptional({
+    description: 'Municipality code (4 digits)',
+    example: '1601',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   municipalityId?: string;
 
+  @ApiPropertyOptional({
+    description: 'Geo coordinates [lng, lat]',
+    type: 'array',
+    minItems: 2,
+    maxItems: 2,
+    items: { type: 'number' },
+    example: [3.05, 36.75],
+  })
   @IsOptional()
   @IsArray()
   @ArrayMinSize(2)
@@ -39,19 +53,30 @@ export class LocationDto {
 }
 
 export class CreatePositionDto {
+  @ApiProperty({ example: 'Distribute hygiene kits', maxLength: 200 })
   @IsString()
   @MaxLength(200)
   title!: string;
 
+  @ApiPropertyOptional({
+    example: 'Help 3 families in Algiers',
+    maxLength: 2000,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(2000)
   description?: string;
 
+  @ApiProperty({ description: 'Number of seats', example: 3, minimum: 1 })
   @IsInt()
   @Min(1)
   requiredCount!: number;
 
+  @ApiPropertyOptional({
+    description: 'Skill ids required for this position',
+    type: 'array',
+    items: { type: 'string' },
+  })
   @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
@@ -59,21 +84,35 @@ export class CreatePositionDto {
 }
 
 export class UpdatePositionDto {
+  @ApiPropertyOptional({ example: 'Distribute hygiene kits', maxLength: 200 })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   title?: string;
 
+  @ApiPropertyOptional({
+    example: 'Help 3 families in Algiers',
+    maxLength: 2000,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(2000)
   description?: string;
 
+  @ApiPropertyOptional({
+    description: 'Seats; never below the filled count',
+    minimum: 1,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
   requiredCount?: number;
 
+  @ApiPropertyOptional({
+    type: 'array',
+    items: { type: 'string' },
+    description: 'Skill ids required for this position',
+  })
   @IsOptional()
   @IsArray()
   @IsMongoId({ each: true })
@@ -81,32 +120,52 @@ export class UpdatePositionDto {
 }
 
 export class CreateOpportunityDto {
+  @ApiProperty({ example: 'Ramadan food distribution', maxLength: 200 })
   @IsString()
   @MaxLength(200)
   title!: string;
 
+  @ApiProperty({
+    example: 'Help distribute meal boxes in Algiers',
+    maxLength: 2000,
+  })
   @IsString()
   @MaxLength(2000)
   description!: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    format: 'ObjectId',
+    description: 'Skill category id',
+  })
   @IsOptional()
   @IsMongoId()
   categoryId?: string;
 
+  @ApiPropertyOptional({
+    description: 'ISO date; past starts auto-start (job)',
+  })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
+  @ApiPropertyOptional({ description: 'Last day applications are accepted' })
   @IsOptional()
   @IsDateString()
   applicationDeadline?: string;
 
+  @ApiPropertyOptional({ type: LocationDto })
   @IsOptional()
   @IsObject()
   @ValidateNested()
   @Type(() => LocationDto)
   location?: LocationDto;
 
+  @ApiPropertyOptional({
+    type: 'array',
+    items: { $ref: '#/components/schemas/CreatePositionDto' },
+    minItems: 1,
+  })
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
@@ -120,28 +179,39 @@ export class CreateOpportunityDto {
  * allowed here; the global pipe's `forbidNonWhitelisted` rejects attempts.
  */
 export class UpdateOpportunityDto {
+  @ApiPropertyOptional({ example: 'Ramadan food distribution', maxLength: 200 })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   title?: string;
 
+  @ApiPropertyOptional({
+    example: 'Help distribute meal boxes in Algiers',
+    maxLength: 2000,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(2000)
   description?: string;
 
+  @ApiPropertyOptional({ type: String, format: 'ObjectId' })
   @IsOptional()
   @IsMongoId()
   categoryId?: string;
 
+  @ApiPropertyOptional({ description: 'ISO date' })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
+  @ApiPropertyOptional({
+    description: 'ISO date (forward-only once published)',
+  })
   @IsOptional()
   @IsDateString()
   applicationDeadline?: string;
 
+  @ApiPropertyOptional({ type: LocationDto })
   @IsOptional()
   @IsObject()
   @ValidateNested()
@@ -150,59 +220,96 @@ export class UpdateOpportunityDto {
 }
 
 export class OpportunityFeedQueryDto {
+  @ApiPropertyOptional({
+    description: 'Keyword on title/description',
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   q?: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    format: 'ObjectId',
+    description: 'Skill category id',
+  })
   @IsOptional()
   @IsMongoId()
   categoryId?: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    format: 'ObjectId',
+    description: 'Skill id',
+  })
   @IsOptional()
   @IsMongoId()
   skillId?: string;
 
+  @ApiPropertyOptional({ example: '16', description: 'Wilaya code' })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   wilayaId?: string;
 
+  @ApiPropertyOptional({ example: '1601', description: 'Municipality code' })
   @IsOptional()
   @IsString()
   @MaxLength(40)
   municipalityId?: string;
 
+  @ApiPropertyOptional({ description: 'Start-date lower bound (ISO)' })
   @IsOptional()
   @IsDateString()
   from?: string;
 
+  @ApiPropertyOptional({ description: 'Start-date upper bound (ISO)' })
   @IsOptional()
   @IsDateString()
   to?: string;
 
+  @ApiPropertyOptional({
+    description: 'Only opportunities with at least one open seat',
+    type: 'boolean',
+  })
   @IsOptional()
   @IsBooleanString()
   hasOpenPositions?: string;
 
+  @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()
   @IsString()
   cursor?: string;
 
+  @ApiPropertyOptional({ description: 'Page size (default 20, max 50)' })
   @IsOptional()
   @IsString()
   limit?: string;
 }
 
 export class OwnOpportunityQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by opportunity status',
+    enum: [
+      'draft',
+      'published',
+      'in_progress',
+      'completed',
+      'closed',
+      'cancelled',
+    ],
+  })
   @IsOptional()
   @IsString()
   status?: string;
 
+  @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()
   @IsString()
   cursor?: string;
 
+  @ApiPropertyOptional({ description: 'Page size (default 20, max 50)' })
   @IsOptional()
   @IsString()
   limit?: string;
@@ -210,10 +317,12 @@ export class OwnOpportunityQueryDto {
 
 /** Recommended feed query (roadmap S12): S1 cursor paging only. */
 export class RecommendedQueryDto {
+  @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()
   @IsString()
   cursor?: string;
 
+  @ApiPropertyOptional({ description: 'Page size (default 20, max 50)' })
   @IsOptional()
   @IsString()
   limit?: string;

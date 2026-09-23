@@ -8,7 +8,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { ApplicationsService } from './applications.service';
@@ -25,11 +30,24 @@ import {
  * `/applications/:applicationId` so the static path wins over the parameter
  * route.
  */
+@ApiBearerAuth()
 @ApiTags('applications')
 @Controller()
 export class ApplicationsController {
   constructor(private readonly applications: ApplicationsService) {}
 
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
+  @ApiParam({
+    name: 'positionId',
+    description: 'The position id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('opportunities/:opportunityId/positions/:positionId/applications')
   @Roles('volunteer')
   @ApiOperation({ summary: 'Apply to an open position' })
@@ -51,6 +69,12 @@ export class ApplicationsController {
     return this.applications.listMyApplications(account, query);
   }
 
+  @ApiParam({
+    name: 'applicationId',
+    description: 'The application id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Get('applications/:applicationId')
   @ApiOperation({ summary: 'Application detail (own volunteer or owning org)' })
   get(
@@ -60,6 +84,12 @@ export class ApplicationsController {
     return this.applications.getApplication(account, applicationId);
   }
 
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Get('opportunities/:opportunityId/applications')
   @Roles('organization')
   @ApiOperation({ summary: 'List an owned opportunity applications' })
@@ -75,6 +105,12 @@ export class ApplicationsController {
     );
   }
 
+  @ApiParam({
+    name: 'applicationId',
+    description: 'The application id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('applications/:applicationId/accept')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')
@@ -86,6 +122,12 @@ export class ApplicationsController {
     return this.applications.acceptApplication(account, applicationId);
   }
 
+  @ApiParam({
+    name: 'applicationId',
+    description: 'The application id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('applications/:applicationId/reject')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')
@@ -102,6 +144,12 @@ export class ApplicationsController {
     );
   }
 
+  @ApiParam({
+    name: 'applicationId',
+    description: 'The application id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('applications/:applicationId/withdraw')
   @HttpCode(HttpStatus.OK)
   @Roles('volunteer')

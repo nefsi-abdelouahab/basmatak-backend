@@ -10,7 +10,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   CurrentAccount,
   Public,
@@ -48,6 +53,7 @@ export class OpportunitiesController {
     return this.opportunities.listPublic(query);
   }
 
+  @ApiBearerAuth()
   @Get('opportunities/recommended')
   @Roles('volunteer')
   @ApiOperation({
@@ -60,6 +66,11 @@ export class OpportunitiesController {
     return this.opportunities.getRecommended(account, query);
   }
 
+  @ApiParam({
+    name: 'idOrSlug',
+    description: 'Opportunity id or slug',
+    type: String,
+  })
   @Get('opportunities/:idOrSlug')
   @Public()
   @ApiOperation({ summary: 'Public opportunity detail by id or slug' })
@@ -67,6 +78,7 @@ export class OpportunitiesController {
     return this.opportunities.getByIdOrSlug(idOrSlug);
   }
 
+  @ApiBearerAuth()
   @Post('organizations/me/opportunities')
   @Roles('organization')
   @ApiOperation({ summary: 'Create an opportunity draft with positions' })
@@ -77,6 +89,7 @@ export class OpportunitiesController {
     return this.opportunities.createOpportunity(account, dto);
   }
 
+  @ApiBearerAuth()
   @Get('organizations/me/opportunities')
   @Roles('organization')
   @ApiOperation({
@@ -89,6 +102,11 @@ export class OpportunitiesController {
     return this.opportunities.listOwn(account, query);
   }
 
+  @ApiParam({
+    name: 'slug',
+    description: 'Organization slug',
+    type: String,
+  })
   @Get('organizations/:slug/opportunities')
   @Public()
   @ApiOperation({
@@ -98,6 +116,13 @@ export class OpportunitiesController {
     return this.opportunities.listByOrganizationSlug(slug);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch('opportunities/:opportunityId')
   @Roles('organization')
   @ApiOperation({ summary: 'Update an owned opportunity' })
@@ -109,6 +134,13 @@ export class OpportunitiesController {
     return this.opportunities.updateOpportunity(account, opportunityId, dto);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Delete('opportunities/:opportunityId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles('organization')
@@ -120,6 +152,13 @@ export class OpportunitiesController {
     await this.opportunities.deleteOpportunity(account, opportunityId);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('opportunities/:opportunityId/publish')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')
@@ -131,6 +170,13 @@ export class OpportunitiesController {
     return this.opportunities.publishOpportunity(account, opportunityId);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('opportunities/:opportunityId/close')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')
@@ -142,6 +188,13 @@ export class OpportunitiesController {
     return this.opportunities.closeOpportunity(account, opportunityId);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('opportunities/:opportunityId/cancel')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')
@@ -153,6 +206,13 @@ export class OpportunitiesController {
     return this.opportunities.cancelOpportunity(account, opportunityId);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('opportunities/:opportunityId/complete')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')
