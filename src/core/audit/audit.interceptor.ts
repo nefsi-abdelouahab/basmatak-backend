@@ -37,14 +37,18 @@ export class AuditInterceptor implements NestInterceptor {
       originalUrl?: string;
       url?: string;
       token?: AccountToken;
+      user?: AccountToken;
       ip?: string;
       headers?: Record<string, string | undefined>;
     }>();
 
     const method = request.method.toUpperCase();
     const path = request.originalUrl ?? request.url ?? '';
+    // The JWT strategy attaches the account as `req.user`; `req.token` is kept
+    // as a fallback for direct/unit invocations and older flows.
+    const account = (request.user ?? request.token) as AccountToken | undefined;
     const isAdminAction =
-      request.token?.role === 'admin' || path.startsWith('/api/v1/admin');
+      account?.role === 'admin' || path.startsWith('/api/v1/admin');
     const isSensitiveMutation =
       (method === 'PATCH' || method === 'DELETE') &&
       SENSITIVE_PREFIXES.some((prefix) => path.startsWith(prefix));
@@ -54,9 +58,7 @@ export class AuditInterceptor implements NestInterceptor {
     }
 
     const entry = this.resolveEntity(path);
-    const actorId = request.token?.sub
-      ? new Types.ObjectId(request.token.sub)
-      : null;
+    const actorId = account?.sub ? new Types.ObjectId(account.sub) : null;
 
     const doc: AuditLogEntry = {
       actorId,

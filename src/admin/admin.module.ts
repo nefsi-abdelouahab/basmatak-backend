@@ -22,8 +22,28 @@ import {
   VolunteerProfileSchema,
   VolunteerProfilesCollection,
 } from '../volunteers/schemas/volunteer-profile.schema';
+import {
+  AuditLogsCollection,
+  AuditLogSchema,
+} from '../core/audit/audit-log.schema';
+import {
+  SystemSettingsCollection,
+  SystemSettingSchema,
+} from '../core/settings/system-setting.schema';
+import { ReviewSchema, ReviewsCollection } from '../reviews/review.schema';
+import { ReportSchema, ReportsCollection } from '../reports/report.schema';
+import { AdminAuditController } from './audit.controller';
+import { AdminAuditService } from './audit.service';
+import { AdminOpportunitiesController } from './opportunities.controller';
+import { AdminOpportunitiesService } from './opportunities.service';
 import { AdminOrganizationsController } from './organizations.controller';
 import { AdminOrganizationsService } from './organizations.service';
+import { AdminReportsController } from './reports.controller';
+import { AdminReportsService } from './reports.service';
+import { AdminReviewsController } from './reviews.controller';
+import { AdminReviewsService } from './reviews.service';
+import { AdminSettingsController } from './settings.controller';
+import { AdminSettingsService } from './settings.service';
 import { AdminStatsController } from './stats.controller';
 import { AdminStatsService } from './stats.service';
 import { AdminUsersController } from './users.controller';
@@ -32,13 +52,14 @@ import { AdminVolunteersController } from './volunteers.controller';
 import { AdminVolunteersService } from './volunteers.service';
 
 /**
- * Admin feature module (inventory §2.20 first half, roadmap S15): stats
+ * Admin feature module (inventory §2.20, roadmap S15 + S16 Part B): stats
  * overview, users/volunteers/organizations listing, user + organization
- * account-status control, and the organization-verification approve/reject
- * decision. Write access only to `users.status` and `organizations.*` through
- * StatusTransitionService. On boot it registers the `user` account whitelist;
- * the `organization` account pairs are appended to the S5 registration in
- * OrganizationsModule (design D4).
+ * account-status control, organization-verification decisions, plus the
+ * Part B surface — opportunity listing/force-close, review hiding, report
+ * triage, audit-log browsing, and settings management. Write access goes
+ * through StatusTransitionService where a state machine exists. On boot it
+ * registers the `user` account whitelist; the `organization` account pairs
+ * and `report` whitelist are registered by their owning modules.
  */
 @Module({
   imports: [
@@ -52,6 +73,10 @@ import { AdminVolunteersService } from './volunteers.service';
       { name: VolunteerProfilesCollection, schema: VolunteerProfileSchema },
       { name: OpportunitiesCollection, schema: OpportunitySchema },
       { name: SubmissionsCollection, schema: SubmissionSchema },
+      { name: ReviewsCollection, schema: ReviewSchema },
+      { name: ReportsCollection, schema: ReportSchema },
+      { name: AuditLogsCollection, schema: AuditLogSchema },
+      { name: SystemSettingsCollection, schema: SystemSettingSchema },
     ]),
   ],
   controllers: [
@@ -59,12 +84,22 @@ import { AdminVolunteersService } from './volunteers.service';
     AdminUsersController,
     AdminVolunteersController,
     AdminOrganizationsController,
+    AdminOpportunitiesController,
+    AdminReviewsController,
+    AdminReportsController,
+    AdminAuditController,
+    AdminSettingsController,
   ],
   providers: [
     AdminStatsService,
     AdminUsersService,
     AdminVolunteersService,
     AdminOrganizationsService,
+    AdminOpportunitiesService,
+    AdminReviewsService,
+    AdminReportsService,
+    AdminAuditService,
+    AdminSettingsService,
   ],
 })
 export class AdminModule implements OnModuleInit {

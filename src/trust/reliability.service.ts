@@ -85,11 +85,15 @@ export class ReliabilityService implements OnModuleInit, OnModuleDestroy {
         this.submissionModel.find({ organizationId: orgId }).lean().exec(),
         this.verificationModel.find({ organizationId: orgId }).lean().exec(),
         this.reviewModel
-          .find({ organizationId: orgId })
+          .find({ organizationId: orgId, status: { $ne: 'hidden' } })
           .select('rating')
           .lean()
           .exec(),
-        this.reviewModel.find({}).select('rating').lean().exec(),
+        this.reviewModel
+          .find({ status: { $ne: 'hidden' } })
+          .select('rating')
+          .lean()
+          .exec(),
       ]);
 
     const computed = this.deriveMetrics(
