@@ -46,7 +46,11 @@ export const ALLOWED_LINK_HOSTS = [
   'drive.google.com',
 ] as const;
 
-/** Rejects non-http(s) URLs and any host outside the allowlist (subdomains ok). */
+/**
+ * Rejects non-http(s) URLs and any host outside the allowlist. Hosts match
+ * exactly or as a subdomain of an allowlist entry, EXCEPT `youtu.be`, which is
+ * exact-match only (no subdomains — SSRF-guard tightening, S19).
+ */
 export function assertAllowedLinkHost(url: string): string {
   let parsed: URL;
   try {
@@ -66,9 +70,12 @@ export function assertAllowedLinkHost(url: string): string {
     );
   }
   const host = parsed.hostname.toLowerCase();
-  const allowed = ALLOWED_LINK_HOSTS.some(
-    (allowedHost) => host === allowedHost || host.endsWith(`.${allowedHost}`),
-  );
+  const allowed = ALLOWED_LINK_HOSTS.some((allowedHost) => {
+    if (allowedHost === 'youtu.be') {
+      return host === allowedHost;
+    }
+    return host === allowedHost || host.endsWith(`.${allowedHost}`);
+  });
   if (!allowed) {
     throw new BusinessException(
       'LINK_HOST_NOT_ALLOWED',

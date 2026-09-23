@@ -46,6 +46,9 @@ describe('media vocabulary (S8 F6 untyped-free run)', () => {
       const attempts = [
         'https://evil.example.com/x',
         'https://youtube.com.evil.com/x',
+        // youtu.be is exact-match only: no subdomains may smuggle a link (S19)
+        'https://www.youtu.be/abc',
+        'https://youtu.be.evil.com/x',
         'http://localhost:8080/x',
         'ftp://youtube.com/x',
         'javascript:alert(1)',

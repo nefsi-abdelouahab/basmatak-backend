@@ -125,7 +125,7 @@ describe('AuthService', () => {
     expect(tokens.user.role).toBe('volunteer');
   });
 
-  it('rotates the session on refresh and rejects the old refresh token', async () => {
+  it('rotates the session into a rotatedAt tombstone and revokes all on replay', async () => {
     const { refreshToken } = await registerVolunteer();
 
     const rotated = await service.refresh(refreshToken);
@@ -134,17 +134,77 @@ describe('AuthService', () => {
     const oldSession = await sessionModel
       .findOne({ refreshTokenHash: sha256(refreshToken) })
       .exec();
-    expect(oldSession).toBeNull();
+    expect(oldSession).not.toBeNull();
+    expect(oldSession!.rotatedAt).toBeInstanceOf(Date);
 
     const newSession = await sessionModel
       .findOne({ refreshTokenHash: sha256(rotated.refreshToken) })
       .exec();
     expect(newSession).not.toBeNull();
+    expect(newSession!.rotatedAt).toBeUndefined();
 
+    await expect(service.refresh(refreshToken)).rejects.toMatchObject({
+      status: 401,
+      code: 'REFRESH_TOKEN_REUSE_DETECTED',
+    });
+    const remaining = await sessionModel.countDocuments({}).exec();
+    expect(remaining).toBe(0);
+  });
+
+  it('concurrent refreshes cannot both win and the loser reports reuse', async () => {
+    const { refreshToken } = await registerVolunteer();
+
+    const results = await Promise.allSettled([
+      service.refresh(refreshToken),
+      service.refresh(refreshToken),
+    ]);
+    const fulfilled = results.filter((r) => r.status === 'fulfilled');
+    const rejected = results.filter((r) => r.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    const reason = (rejected[0] as PromiseRejectedResult).reason;
+    expect(reason).toMatchObject({
+      status: 401,
+      code: 'REFRESH_TOKEN_REUSE_DETECTED',
+    });
+    // The loser's revoke-all may complete before or after the winner creates
+    // its new session, so the surviving count is at most the winner's row.
+    expect(await sessionModel.countDocuments({})).toBeLessThanOrEqual(1);
+  });
+
+  it('rejects an expired refresh token without a reuse signal', async () => {
+    const { refreshToken } = await registerVolunteer();
+    await sessionModel.updateOne(
+      { refreshTokenHash: sha256(refreshToken) },
+      { $set: { expiresAt: new Date(Date.now() - 1_000) } },
+    );
     await expect(service.refresh(refreshToken)).rejects.toMatchObject({
       status: 401,
       code: 'INVALID_REFRESH_TOKEN',
     });
+    expect(await sessionModel.countDocuments({})).toBe(1);
+  });
+
+  it('listSessions surfaces only live sessions after a rotation', async () => {
+    const { refreshToken } = await registerVolunteer();
+    const doc = await sessionModel.findOne({}).exec();
+    const userId = doc!.userId.toString();
+
+    const before = await service.listSessions(userId);
+    expect(before).toHaveLength(1);
+
+    await service.refresh(refreshToken);
+
+    const after = await service.listSessions(userId);
+    expect(after).toHaveLength(1);
+    expect(after[0].id).not.toBe(doc!._id.toString());
+    expect(await sessionModel.countDocuments({})).toBe(2);
+  });
+
+  it('declares the TTL index on sessions.expiresAt for tombstone cleanup', () => {
+    expect(
+      (SessionSchema.path('expiresAt').options as { index?: unknown }).index,
+    ).toEqual({ expires: 0 });
   });
 
   it('logout deletes the session row', async () => {

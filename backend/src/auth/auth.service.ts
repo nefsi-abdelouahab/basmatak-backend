@@ -132,11 +132,36 @@ export class AuthService {
   async refresh(rawRefreshToken: string): Promise<AuthTokens> {
     const now = new Date();
     const hash = this.tokenUtil.hash(rawRefreshToken);
+
+    // Only un-rotated rows are eligible; tombstones (rotatedAt set) fail the
+    // lookup so a replay maps to reuse detection below (S19).
     const session = await this.sessionModel
-      .findOne({ refreshTokenHash: hash })
+      .findOne({ refreshTokenHash: hash, rotatedAt: null })
       .lean()
       .exec();
-    if (!session || session.expiresAt.getTime() <= now.getTime()) {
+    if (!session) {
+      const existing = await this.sessionModel
+        .findOne({ refreshTokenHash: hash })
+        .select('userId')
+        .lean()
+        .exec();
+      if (existing) {
+        // A presented token that matches a consumed row has been replayed:
+        // revoke every session for the victim user (S19).
+        await this.logoutAll(existing.userId.toString());
+        throw new BusinessException(
+          'REFRESH_TOKEN_REUSE_DETECTED',
+          'Refresh token reuse detected; all sessions were revoked',
+          401,
+        );
+      }
+      throw new BusinessException(
+        'INVALID_REFRESH_TOKEN',
+        'The refresh token is invalid or expired',
+        401,
+      );
+    }
+    if (session.expiresAt.getTime() <= now.getTime()) {
       throw new BusinessException(
         'INVALID_REFRESH_TOKEN',
         'The refresh token is invalid or expired',
@@ -153,7 +178,23 @@ export class AuthService {
     }
     this.users.assertActive(user);
 
-    await this.sessionModel.deleteOne({ _id: session._id }).exec();
+    // Atomic claim: only the first consumer of this row rotates it. A null
+    // result here means the row was consumed concurrently — treat as reuse.
+    const claimed = await this.sessionModel
+      .findOneAndUpdate(
+        { _id: session._id, rotatedAt: null },
+        { $set: { rotatedAt: now } },
+      )
+      .lean()
+      .exec();
+    if (!claimed) {
+      await this.logoutAll(user._id.toString());
+      throw new BusinessException(
+        'REFRESH_TOKEN_REUSE_DETECTED',
+        'Refresh token reuse detected; all sessions were revoked',
+        401,
+      );
+    }
     return this.issueSession(user);
   }
 
@@ -179,7 +220,7 @@ export class AuthService {
     }>
   > {
     const sessions = await this.sessionModel
-      .find({ userId })
+      .find({ userId, rotatedAt: null })
       .sort({ createdAt: -1 })
       .select('_id createdAt expiresAt lastUsedAt')
       .lean()

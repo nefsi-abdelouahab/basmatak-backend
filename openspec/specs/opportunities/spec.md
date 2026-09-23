@@ -4,7 +4,7 @@
 TBD - created by archiving change opportunities. Update Purpose after archive.
 ## Requirements
 ### Requirement: Opportunities collection
-The system SHALL provide an `opportunities` collection with `organizationId`, `slug` (unique, generated server-side via the canonical `src/common/slug` pipeline per A12), `title`/`description`, `categoryId`, embedded `positions` (each with `title`, `description`, `requiredCount`, `filledCount` default `0`, `requiredSkills` as an array of `skillId` refs), `status` (`draft | published | in_progress | completed | closed | cancelled`, default `draft`), `startDate` (optional), `applicationDeadline` (optional), and `location { wilayaId, municipalityId, coordinates }`. Indexes SHALL include unique `slug`, `(status, startDate)`, `(organizationId, status)`, 2dsphere `location.coordinates`, text on `title, description`, and `positions.requiredSkills.skillId` per §3.
+The system SHALL provide an `opportunities` collection with `organizationId`, `slug` (unique, generated server-side via the canonical `src/common/slug` pipeline per A12), `title`/`description`, `categoryId`, embedded `positions` (each with `title`, `description`, `requiredCount`, `filledCount` default `0`, `requiredSkills` as an array of `skillId` refs), `status` (`draft | published | in_progress | completed | closed | cancelled`, default `draft`), `startDate` (optional), `applicationDeadline` (optional), and `location { wilayaId, municipalityId, coordinates }`. Indexes SHALL include unique `slug`, `(status, startDate)`, `(status, categoryId)`, `(status, location.wilayaId)`, `(status, location.municipalityId)`, `(organizationId, status)`, 2dsphere `location.coordinates`, text on `title, description` (reserved per the F11 decision; not referenced by queries), and `positions.requiredSkills.skillId` per §3. Per the F11 canonical decision, keyword search SHALL be implemented as `$regex` bounded by an early `categoryId` equality, and geo filtering SHALL be implemented via the indexed `location` equality fields; no query SHALL reference the text index.
 
 #### Scenario: Slug uniqueness enforced
 - **WHEN** two opportunity rows attempt the same `slug`
@@ -14,6 +14,10 @@ The system SHALL provide an `opportunities` collection with `organizationId`, `s
 #### Scenario: Indexes back the feed and lifecycle queries
 - **WHEN** opportunities are queried by status and startDate, by organization and status, by geo coordinates, by keyword, or by a required skill
 - **THEN** each of those query shapes is served by a corresponding index in the collection
+
+#### Scenario: Feed search decision is index-backed
+- **WHEN** the public feed filters by status together with `categoryId`, `location.wilayaId`, `location.municipalityId`, keyword (`$regex` with an early `categoryId` bound when provided), or `startDate`
+- **THEN** an `explain()`-asserted plan shows the query led by a corresponding `(status, …)` compound index with no collection scan
 
 ### Requirement: Opportunity lifecycle state machine
 The system SHALL register the `opportunity` entity whitelist in `StatusTransitionRegistry` at module bootstrap with the §5 machine: `draft → published`, `published → in_progress`, `in_progress → completed`, `published | in_progress → closed`, and `published | in_progress → cancelled`. Participant activation (`accepted → active`, the job path, §7 decision 7) SHALL also be registered as an `opportunity` entity transition so the job asserts it through `StatusTransitionService`. Every route-driven transition SHALL go through `StatusTransitionService.assert('opportunity', opportunityId, from, to, actor)`, which writes `status_histories`.

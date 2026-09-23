@@ -30,4 +30,17 @@ describe('App (e2e)', () => {
     expect(typeof res.body.code).toBe('string');
     expect(typeof res.body.message).toBe('string');
   });
+
+  it('rejects a DTO carrying a stray unknown field (whitelist)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: 'stray@example.com',
+        password: 'Password123!',
+        role: 'admin',
+      })
+      .expect(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(res.body.statusCode).toBe(400);
+  });
 });

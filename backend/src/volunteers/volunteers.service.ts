@@ -611,6 +611,13 @@ export class VolunteersService {
       .map((profile) => profile.avatar as Types.ObjectId);
     const publicAvatars = await this.resolvePublicMediaIds(avatarIds);
 
+    // S19 N+1 pass: load skills for the whole page in two bounded queries
+    // instead of awaiting `loadPublicSkills` once per card.
+    const skillOwners = profiles
+      .filter((profile) => profile.publicProfile.showSkills)
+      .map((profile) => profile.userId);
+    const skillsByOwner = await this.loadPublicSkillsForOwners(skillOwners);
+
     const cards: TalentCard[] = [];
     for (const profile of profiles) {
       const flags = profile.publicProfile;
@@ -623,7 +630,7 @@ export class VolunteersService {
             ? { wilayaId: profile.location.wilayaId }
             : null,
         skills: flags.showSkills
-          ? await this.loadPublicSkills(profile.userId.toString())
+          ? (skillsByOwner.get(profile.userId.toString()) ?? [])
           : null,
         avatar:
           flags.showAvatar &&
@@ -634,6 +641,57 @@ export class VolunteersService {
       });
     }
     return cards;
+  }
+
+  /**
+   * Batch skill loading for a page of talent cards (S19): one `volunteer_skills`
+   * query for the whole page plus one `skills` catalog query for the distinct
+   * ids — a constant query count regardless of page size. Per-owner ordering
+   * (`isPrimary` then `createdAt`) is preserved by the grouped global sort.
+   */
+  private async loadPublicSkillsForOwners(
+    userIds: Types.ObjectId[],
+  ): Promise<Map<string, TalentSkill[]>> {
+    const owners = Array.from(new Set(userIds.map((id) => id.toString())));
+    if (owners.length === 0) {
+      return new Map();
+    }
+    const rows = await this.volunteerSkillModel
+      .find({
+        volunteerId: { $in: owners.map((id) => new Types.ObjectId(id)) },
+      })
+      .sort({ volunteerId: 1, isPrimary: -1, createdAt: 1 })
+      .exec();
+    if (rows.length === 0) {
+      return new Map();
+    }
+    const catalog = await this.skillsCatalogModel
+      .find({
+        _id: { $in: rows.map((row) => row.skillId) },
+        active: true,
+      })
+      .exec();
+    const catalogById = new Map(
+      catalog.map((skill) => [skill._id.toString(), skill]),
+    );
+    const skillsByOwner = new Map<string, TalentSkill[]>();
+    for (const row of rows) {
+      const skill = catalogById.get(row.skillId.toString());
+      if (!skill) {
+        continue;
+      }
+      const ownerKey = row.volunteerId.toString();
+      const list = skillsByOwner.get(ownerKey) ?? [];
+      list.push({
+        skillId: row.skillId.toString(),
+        nameAr: skill.nameAr,
+        nameFr: skill.nameFr,
+        level: row.level,
+        isPrimary: row.isPrimary,
+      });
+      skillsByOwner.set(ownerKey, list);
+    }
+    return skillsByOwner;
   }
 
   /** Skilled-user intersection: both `skillId` and `categoryId` narrow the set. */

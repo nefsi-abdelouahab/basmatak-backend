@@ -14,7 +14,13 @@ import {
   AuditLogsCollection,
 } from './audit-log.schema';
 
-const SENSITIVE_PREFIXES = ['/api/v1/organizations/', '/api/v1/volunteers/'];
+const SENSITIVE_PREFIXES = [
+  '/api/v1/organizations/',
+  '/api/v1/volunteers/',
+  // Submissions status changes recompute the reliability score and the
+  // publish-gate counts (§0 sensitive list; S19 audit posture).
+  '/api/v1/submissions/',
+];
 
 /**
  * Writes `audit_logs` for every admin action and for PATCH/DELETE on

@@ -13,7 +13,8 @@ export interface SupabaseStorageOptions {
   bucket: string;
 }
 
-const SIGNED_URL_TTL_SECONDS = 3600;
+/** Signed read URLs expire in 15 minutes (S19 hardening; roadmap bound). */
+const SIGNED_URL_TTL_SECONDS = 900;
 
 /**
  * Production provider: Supabase Storage on the free tier (§7 decision 3).

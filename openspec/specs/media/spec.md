@@ -53,11 +53,19 @@ The system SHALL expose `POST /media/:mediaId/confirm` (authenticated, owner onl
 - **THEN** the response is `404`
 
 ### Requirement: External link media
-The system SHALL expose `POST /media/links` (authenticated) accepting `{ url, purpose, visibility }`, creating a `media` row with `type=link` and the given `url`. The host SHALL be validated against an allowlist (`youtube.com`, `youtu.be`, `drive.google.com`); any other host SHALL be rejected with `400`. The caller becomes the `ownerId`.
+The system SHALL expose `POST /media/links` (authenticated) accepting `{ url, purpose, visibility }`, creating a `media` row with `type=link` and the given `url`. The URL SHALL be validated as an `http(s)` URL whose host equals an allowlist entry (`youtube.com`, `youtu.be`, `drive.google.com`) or is a subdomain of one, with `youtu.be` matched exactly (no subdomains). Any other host, scheme, or malformed URL SHALL be rejected with `400` and business code `LINK_HOST_NOT_ALLOWED`. The caller becomes the `ownerId`.
 
 #### Scenario: Allowed host accepted
 - **WHEN** an authenticated user registers a `youtube.com` (or `youtu.be` / `drive.google.com`) link
 - **THEN** a `media` row with `type=link` is created
+
+#### Scenario: Subdomain of an allowlisted host accepted
+- **WHEN** the URL host is a subdomain of an allowlisted entry (e.g. `www.youtube.com`)
+- **THEN** the link is accepted
+
+#### Scenario: Allowlist bypass attempts rejected
+- **WHEN** the URL host is a look-alike suffix (e.g. `youtube.com.evil.com`), a subdomain of `youtu.be`, a foreign host, a non-`http(s)` scheme, or a malformed URL
+- **THEN** the request fails with `400 LINK_HOST_NOT_ALLOWED`
 
 #### Scenario: Disallowed host rejected
 - **WHEN** the URL host is not in the allowlist
@@ -144,7 +152,7 @@ The system SHALL provide a `canReadMedia(actor, media)` helper that encodes the 
 - **THEN** it grants read
 
 ### Requirement: Storage provider interface
-The system SHALL define a `StorageProvider` interface with `createPresignedUpload(storageKey, mimeType)` returning a presigned upload URL, `objectMetadata(storageKey)` returning the stored object's actual mime/size (service-role metadata read), and `createSignedReadUrl(storageKey)` returning a signed read URL. Implementations SHALL include `SupabaseStorageProvider` (default, via `@supabase/supabase-js`) and `LocalStorageProvider` (dev-only when `STORAGE_PROVIDER=local`, writing to a gitignored `./storage` directory with fake signed URLs), plus a test double usable by tests with no external credentials.
+The system SHALL define a `StorageProvider` interface with `createPresignedUpload(storageKey, mimeType)` returning a presigned upload URL, `objectMetadata(storageKey)` returning the stored object's actual mime/size (service-role metadata read), and `createSignedReadUrl(storageKey)` returning a signed read URL. Signed read URLs SHALL expire within 15 minutes (900 seconds) of issuance; presigned upload URLs SHALL expire within 15 minutes where the provider exposes an expiry knob, and their TTL SHALL be documented at the contract level otherwise. Implementations SHALL include `SupabaseStorageProvider` (default, via `@supabase/supabase-js`) and `LocalStorageProvider` (dev-only when `STORAGE_PROVIDER=local`, writing to a gitignored `./storage` directory with fake signed URLs), plus a test double usable by tests with no external credentials.
 
 #### Scenario: Provider chosen by env
 - **WHEN** `STORAGE_PROVIDER=local`
@@ -158,6 +166,10 @@ The system SHALL define a `StorageProvider` interface with `createPresignedUploa
 #### Scenario: Presigned flow shape
 - **WHEN** an upload is registered
 - **THEN** the provider yields a writable upload URL and, at confirm, the actual stored mime/size from object metadata
+
+#### Scenario: Short-lived signed URLs
+- **WHEN** a signed read URL (or a presigned upload URL where the provider supports expiry) is issued
+- **THEN** the generated URL expires no later than 15 minutes (900 seconds) from issuance
 
 ### Requirement: Media ownership assertion helper
 The system SHALL expose `MediaOwnership.assertFor(mediaId, actor, purpose)` (consumed by invited sessions' routes) that resolves the media row and validates existence (not deleted), ownership by `actor`, and the media's `purpose`; any failure SHALL surface as a `404`/`403`/business error so callers rarely branch. Version 1 exists as an ObjectId-format checker seam (`MediaOwnership`); this session provides the real assertion helper.
