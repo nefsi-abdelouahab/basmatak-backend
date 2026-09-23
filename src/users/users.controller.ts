@@ -5,9 +5,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { BusinessException } from '../common/exceptions/business.exception';
 import { CurrentAccount } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { AuthService, UserPayload } from '../auth/auth.service';
@@ -48,5 +50,28 @@ export class UsersController {
   async deleteMe(@CurrentAccount() account: AccountToken): Promise<void> {
     await this.users.softDelete(account.sub);
     await this.auth.logoutAll(account.sub);
+  }
+
+  @Get('me/sessions')
+  @ApiOperation({ summary: "List the caller's own active sessions" })
+  listSessions(@CurrentAccount() account: AccountToken) {
+    return this.auth.listSessions(account.sub);
+  }
+
+  @Delete('me/sessions/:sessionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Revoke one of the caller's own sessions" })
+  async revokeSession(
+    @CurrentAccount() account: AccountToken,
+    @Param('sessionId') sessionId: string,
+  ): Promise<void> {
+    const removed = await this.auth.removeSession(account.sub, sessionId);
+    if (!removed) {
+      throw new BusinessException(
+        'SESSION_NOT_FOUND',
+        'Session not found',
+        404,
+      );
+    }
   }
 }
