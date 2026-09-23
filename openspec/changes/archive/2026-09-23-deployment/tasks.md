@@ -39,4 +39,4 @@
 - [x] 6.1 From `backend/`: `npm run build`; `npm run lint`; `npm test`; `npm run test:e2e` — all green.
 - [x] 6.2 From the repo root: `openspec validate deployment` and `openspec validate --all --strict` pass.
 - [x] 6.3 `openspec archive deployment -y` archives the change cleanly.
-- [ ] 6.4 Commit locally `chore(deploy): Render + Atlas config, scheduler notes, keep-alive workflow` — stage only this change's files (`render.yaml`, `.github/workflows/keep-alive.yml`, `docs/DEPLOY.md`, `backend/README.md`, the two e2e specs, `openspec/changes/deployment/*`, the archived folder); never `git add -A`.
+- [x] 6.4 Commit locally `chore(deploy): Render + Atlas config, scheduler notes, keep-alive workflow` — stage only this change's files (`render.yaml`, `.github/workflows/keep-alive.yml`, `docs/DEPLOY.md`, `backend/README.md`, the two e2e specs, `openspec/changes/deployment/*`, the archived folder); never `git add -A`.
