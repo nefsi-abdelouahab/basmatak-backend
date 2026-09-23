@@ -105,9 +105,15 @@ export const OpportunitySchema: Schema<OpportunityModel> = createSchema({
 });
 
 // Indexes (inventory §3). Text and 2dsphere are mutually exclusive in a
-// single query (F11); Session 19 records the canonical feed choice.
+// single query (F11); Session 19 records the canonical feed choice: keyword
+// via bounded $regex with an early status/category bound, geo via the indexed
+// `location` equality fields. The text index stays reserved (unqueried) and
+// the `(status, …)` compounds serve feed/geo/startDate lookups.
 OpportunitySchema.index({ slug: 1 }, { unique: true });
 OpportunitySchema.index({ status: 1, startDate: 1 });
+OpportunitySchema.index({ status: 1, categoryId: 1 });
+OpportunitySchema.index({ status: 1, 'location.wilayaId': 1 });
+OpportunitySchema.index({ status: 1, 'location.municipalityId': 1 });
 OpportunitySchema.index({ organizationId: 1, status: 1 });
 OpportunitySchema.index({ 'location.coordinates': '2dsphere' });
 OpportunitySchema.index({ title: 'text', description: 'text' });

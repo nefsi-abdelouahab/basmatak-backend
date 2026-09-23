@@ -128,4 +128,10 @@ export const VolunteerProfileSchema: Schema<VolunteerProfileModel> =
 VolunteerProfileSchema.index({ userId: 1 }, { unique: true });
 VolunteerProfileSchema.index({ username: 1 }, { unique: true });
 VolunteerProfileSchema.index({ 'location.municipalityId': 1 });
-VolunteerProfileSchema.index({ 'publicProfile.enabled': 1 });
+// The compound single leading `publicProfile.enabled` serves the talents
+// feed's enabled-only filter and its prefix search; it replaces the lone
+// `publicProfile.enabled` index (S19 index review).
+VolunteerProfileSchema.index({
+  'publicProfile.enabled': 1,
+  'location.municipalityId': 1,
+});

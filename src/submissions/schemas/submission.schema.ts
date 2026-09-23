@@ -90,7 +90,10 @@ export const SubmissionSchema: Schema<SubmissionModel> = createSchema({
 
 // Indexes (inventory §3): one submission per participation; the org inbox
 // filters `(opportunityId, status)`; the volunteer's own list filters
-// `(volunteerId, status)`.
+// `(volunteerId, status)`; the `(organizationId, status)` gate-aggregation
+// index serves the publish-gate pending distinct and reliability's org-scoped
+// reads (S19 index review).
 SubmissionSchema.index({ participantId: 1 }, { unique: true });
 SubmissionSchema.index({ opportunityId: 1, status: 1 });
 SubmissionSchema.index({ volunteerId: 1, status: 1 });
+SubmissionSchema.index({ organizationId: 1, status: 1 });

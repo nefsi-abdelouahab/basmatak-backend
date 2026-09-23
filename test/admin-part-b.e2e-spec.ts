@@ -380,11 +380,20 @@ describe('admin e2e (Part B: opportunities, reviews, reports, audit, settings)',
         .send({ status: 'closed' })
         .expect(200);
 
-      const byActor = await request(info.app.getHttpServer())
-        .get(`${ADMIN_AUDIT_LOGS}?actor=${adminId}`)
-        .set(auth(adminToken))
-        .expect(200);
-      const paths = byActor.body.items.map((row: { path: string }) => row.path);
+      let paths: string[] = [];
+      for (let attempt = 0; attempt < 50; attempt += 1) {
+        const byActor = await request(info.app.getHttpServer())
+          .get(`${ADMIN_AUDIT_LOGS}?actor=${adminId}`)
+          .set(auth(adminToken))
+          .expect(200);
+        paths = byActor.body.items.map((row: { path: string }) => row.path);
+        if (
+          paths.includes(`/api/v1/admin/opportunities/${opportunityId}/status`)
+        ) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
       expect(paths).toContain(
         `/api/v1/admin/opportunities/${opportunityId}/status`,
       );

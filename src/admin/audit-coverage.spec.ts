@@ -127,4 +127,55 @@ describe('AuditInterceptor admin coverage (inventory §2.20)', () => {
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(await auditModel.countDocuments({}).exec()).toBe(0);
   });
+
+  it.each([
+    ['PATCH', '/api/v1/organizations/507f1f77bcf86cd799439020'],
+    ['DELETE', '/api/v1/volunteers/507f1f77bcf86cd799439021'],
+    // Reliability/gate write surface: submission status changes (S19).
+    ['PATCH', '/api/v1/submissions/507f1f77bcf86cd799439022/status'],
+  ])('audits the §0 sensitive mutation %s %s', async (method, url) => {
+    await lastValueFrom(
+      interceptor.intercept(
+        fakeContext({
+          method,
+          url,
+          token: { sub: ADMIN_SUB, role: 'organization', sessionId: 's' },
+          ip: '10.0.0.1',
+          headers: { 'user-agent': 'jest' },
+        }),
+        callHandler,
+      ),
+    );
+
+    await waitFor(
+      async () => (await auditModel.countDocuments({}).exec()) === 1,
+    );
+    const row = await auditModel.findOne({}).exec();
+    expect(row).toMatchObject({ action: method, method, path: url });
+  });
+
+  it('audits an admin candidate approval', async () => {
+    await lastValueFrom(
+      interceptor.intercept(
+        fakeContext({
+          method: 'POST',
+          url: '/api/v1/admin/organizations/507f1f77bcf86cd799439023/approve',
+          token: { sub: ADMIN_SUB, role: 'admin', sessionId: 's' },
+          ip: '10.0.0.2',
+          headers: {},
+        }),
+        callHandler,
+      ),
+    );
+
+    await waitFor(
+      async () => (await auditModel.countDocuments({}).exec()) === 1,
+    );
+    const row = await auditModel.findOne({}).exec();
+    expect(row).toMatchObject({
+      action: 'admin',
+      method: 'POST',
+      path: '/api/v1/admin/organizations/507f1f77bcf86cd799439023/approve',
+    });
+  });
 });

@@ -167,6 +167,36 @@ describe('auth e2e — main flow app (gate off)', () => {
       .expect(401);
   });
 
+  it('replayed refresh token revokes every session with REUSE_DETECTED (S19)', async () => {
+    const registered = await register({
+      email: 'reuse@example.com',
+      password: 'Password123!',
+    });
+
+    const rotated = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: registered.refreshToken });
+    expect(rotated.status).toBe(200);
+
+    const replay = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: registered.refreshToken });
+    expect(replay.status).toBe(401);
+    expect(replay.body.code).toBe('REFRESH_TOKEN_REUSE_DETECTED');
+
+    // Every session for the victim user is gone, including the rotated one.
+    const afterRevoke = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: rotated.body.refreshToken });
+    expect(afterRevoke.status).toBe(401);
+
+    // A fresh login still works — only this contestant's sessions were killed.
+    const relogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'reuse@example.com', password: 'Password123!' });
+    expect(relogin.status).toBe(200);
+  });
+
   it('registers an organization with the organization role', async () => {
     const response = await request(app.getHttpServer())
       .post(ORGANIZATION_REGISTER_PATH)

@@ -1,12 +1,14 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import { BusinessException } from '../../common/exceptions/business.exception';
 
 /**
  * Guards `POST /api/v1/internal/jobs/run` with `X-Jobs-Key`, compared in
- * constant time against the `JOBS_KEY` env var (inventory §2.21).
+ * constant time against the `JOBS_KEY` env var (inventory §2.21). Both sides
+ * are SHA-256-hashed first so the comparison is always over equal-length
+ * digests and leaks neither key content nor key length (S19 hardening).
  */
 @Injectable()
 export class JobsKeyGuard implements CanActivate {
@@ -24,7 +26,8 @@ export class JobsKeyGuard implements CanActivate {
       );
     }
 
-    const provided = request.header('X-Jobs-Key');
+    const raw = request.header('X-Jobs-Key');
+    const provided = Array.isArray(raw) ? raw.join(',') : raw;
     if (!provided || !this.safeEqual(secret, provided)) {
       throw new BusinessException(
         'UNAUTHORIZED',
@@ -36,11 +39,8 @@ export class JobsKeyGuard implements CanActivate {
   }
 
   private safeEqual(a: string, b: string): boolean {
-    const aBuf = Buffer.from(a, 'utf8');
-    const bBuf = Buffer.from(b, 'utf8');
-    if (aBuf.length !== bBuf.length) {
-      return false;
-    }
+    const aBuf = createHash('sha256').update(a, 'utf8').digest();
+    const bBuf = createHash('sha256').update(b, 'utf8').digest();
     return timingSafeEqual(aBuf, bBuf);
   }
 }

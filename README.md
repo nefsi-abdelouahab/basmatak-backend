@@ -52,3 +52,9 @@ The only database rig for every unit and e2e test lives in `test/utils/test-db.t
 - Roadmap: [`docs/ROADMAP.md`](../docs/ROADMAP.md)
 - Source of truth for scope: [`backend-inventory.md`](../backend-inventory.md)
 - OpenSpec changes: `openspec/changes/` (see `openspec status`)
+
+## Infrastructure notes
+
+- Atlas network rule `0.0.0.0/0` is a **temporary-at-MVP** convenience so the
+  app can connect from anywhere. Restrict the allowlist to known static IPs /
+  office ranges before production.
