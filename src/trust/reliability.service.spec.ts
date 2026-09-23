@@ -171,6 +171,58 @@ describe('ReliabilityService (D6/D7)', () => {
     });
   });
 
+  describe('6.4 hidden reviews (S16 admin moderation)', () => {
+    it('excludes status=hidden reviews from org and platform averages via computeFor', async () => {
+      const anotherOrgId = new Types.ObjectId();
+      const reviewModel = handle.connection.model<ReviewModel>(
+        ReviewsCollection,
+        ReviewSchema,
+      );
+      await reviewModel.insertMany([
+        // org: 4 (visible) + 5 (hidden) → visible-only average 4
+        {
+          submissionId: new Types.ObjectId(),
+          organizationId,
+          volunteerId: new Types.ObjectId(),
+          rating: 4,
+        },
+        {
+          submissionId: new Types.ObjectId(),
+          organizationId,
+          volunteerId: new Types.ObjectId(),
+          rating: 4,
+        },
+        {
+          submissionId: new Types.ObjectId(),
+          organizationId,
+          volunteerId: new Types.ObjectId(),
+          rating: 5,
+          status: 'hidden',
+        },
+        // platform: 5 (visible) + 1 (hidden) → visible-only average 5
+        {
+          submissionId: new Types.ObjectId(),
+          organizationId: anotherOrgId,
+          volunteerId: new Types.ObjectId(),
+          rating: 5,
+        },
+        {
+          submissionId: new Types.ObjectId(),
+          organizationId: anotherOrgId,
+          volunteerId: new Types.ObjectId(),
+          rating: 2,
+          status: 'hidden',
+        },
+      ]);
+
+      const reliability = await service.computeFor(organizationId);
+
+      // If hidden reviews leaked in: org avg 4.5 > platform avg 3 → anomaly true.
+      // Visible-only: org avg 4 < platform avg 5 → anomaly false.
+      expect(reliability.anomaly).toBe(false);
+    });
+  });
+
   describe('6.2 persistence + 6.4 job registration', () => {
     it('persists computed metrics into organizations.reliability with lastRefreshedAt', async () => {
       const model = handle.connection.model<OrganizationModel>(
