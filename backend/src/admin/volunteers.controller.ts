@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/auth.decorators';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import { VolunteersQueryDto } from './dto/admin-query.dto';
@@ -8,6 +8,7 @@ import {
   AdminVolunteerRow,
 } from './volunteers.service';
 
+@ApiBearerAuth()
 @ApiTags('admin (volunteers)')
 @Controller('admin/volunteers')
 @Roles('admin')

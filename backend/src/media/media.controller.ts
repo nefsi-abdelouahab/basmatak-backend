@@ -10,7 +10,12 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentAccount, Public } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
@@ -31,6 +36,7 @@ const CONFIRM_LIMIT = { default: { limit: 60, ttl: 60_000 } };
 export class MediaController {
   constructor(private readonly media: MediaService) {}
 
+  @ApiBearerAuth()
   @Post('uploads')
   @Throttle(UPLOAD_LIMIT)
   @ApiOperation({ summary: 'Request a presigned upload URL (intent)' })
@@ -41,6 +47,13 @@ export class MediaController {
     return this.media.createUploadIntent(account.sub, dto);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'mediaId',
+    description: 'The media id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post(':mediaId/confirm')
   @HttpCode(HttpStatus.OK)
   @Throttle(CONFIRM_LIMIT)
@@ -52,6 +65,7 @@ export class MediaController {
     return this.media.confirm(account, mediaId);
   }
 
+  @ApiBearerAuth()
   @Post('links')
   @Throttle(LINK_LIMIT)
   @ApiOperation({ summary: 'Register an external link as media' })
@@ -62,6 +76,12 @@ export class MediaController {
     return this.media.createLink(account, dto);
   }
 
+  @ApiParam({
+    name: 'mediaId',
+    description: 'The media id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Get(':mediaId')
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
@@ -75,6 +95,13 @@ export class MediaController {
     return this.media.read(account, mediaId);
   }
 
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'mediaId',
+    description: 'The media id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Delete(':mediaId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft-delete owned media (F6 guard)' })

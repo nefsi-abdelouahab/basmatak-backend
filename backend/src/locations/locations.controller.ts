@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Public } from '../common/decorators/auth.decorators';
 import { setReferenceCacheHeader } from '../common/http/cache-header';
@@ -22,6 +22,12 @@ export class LocationsController {
     return this.locations.findWilayas();
   }
 
+  @ApiParam({
+    name: 'wilayaId',
+    description: 'Wilaya code (2 digits)',
+    type: String,
+    example: '16',
+  })
   @Get('wilayas/:wilayaId/municipalities')
   @Public()
   @ApiOperation({ summary: "List a wilaya's municipalities, ordered by code" })

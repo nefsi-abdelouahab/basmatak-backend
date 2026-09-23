@@ -1,7 +1,7 @@
 # locations Specification
 
 ## Purpose
-TBD - created by archiving change reference-data. Update Purpose after archive.
+Reference data for wilayas and municipalities (seeded, two-level hierarchy), served publicly and maintained by admin endpoints.
 ## Requirements
 ### Requirement: Locations collection
 The system SHALL provide a `locations` collection for reference geography with fields `code` (official administrative code), `type` (`wilaya | municipality`), `parentCode` (optional string — set for municipalities to their wilaya's `code`), `nameAr`, `nameFr`, and `legacyId` (optional). Indexes SHALL be a unique index on `code` and a `(type, parentCode)` index. A municipality SHALL reference its wilaya by `parentCode`; a wilaya SHALL have no `parentCode`.

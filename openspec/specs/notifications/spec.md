@@ -1,8 +1,7 @@
 # notifications Specification
 
 ## Purpose
-TBD - created by archiving change notifications. Update Purpose after archive.
-
+Notifications: in-app notifications created by domain events over an in-process EventEmitter (new application, accept/reject, submission submitted/verified/rejected, org verification result, opportunity cancelled, gate locked), read via cursor-paginated listing and per-user read/unread tracking.
 ## Requirements
 ### Requirement: Notifications collection
 The system SHALL maintain a `notifications` collection owned by the notifications module (inventory §3, module #19, P1 in-app only). Each document SHALL carry `userId` (the recipient's `users._id`), `type` (the originating domain-event name, e.g. `application.accepted`), an optional `payload` (the event data copied through so the UI can render context), `isRead` (boolean, default `false`), `readAt` (set when the row is marked read, otherwise absent), and an optional `dedupeKey` backing idempotency. Documents SHALL be timestamped (Schema `toJSON` transforms `_id` to string, `versionKey:false`, as per the S1 base options). Indexes SHALL include `(userId, isRead, createdAt)` per §3 and a unique index on `dedupeKey` (partial, so rows without a key are allowed). Database rows SHALL be created either from a domain event through the event bus or inside a Mongo transaction through the `NOTIFICATIONS_REPOSITORY` seam — never both for the same flow (F4 dedupe rule).

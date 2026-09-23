@@ -1,7 +1,7 @@
 # status-transitions Specification
 
 ## Purpose
-TBD - created by archiving change foundation. Update Purpose after archive.
+A shared `StatusTransitionService` driving every entity's state machine from per-entity whitelists, recording transitions in `status_histories` and enforcing transition guards on opportunity, application, submission, review and organization-verification flows.
 ## Requirements
 ### Requirement: Status transition service
 The system SHALL provide a `StatusTransitionService` with a single entry point `assert(entityType, entityId, from, to, actor)` that validates the requested transition against a per-entity whitelist map, writes a `status_histories` entry when valid, and returns that entry.

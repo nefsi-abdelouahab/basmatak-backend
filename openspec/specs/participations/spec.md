@@ -1,7 +1,7 @@
 # participations Specification
 
 ## Purpose
-TBD - created by archiving change applications-and-participation. Update Purpose after archive.
+Participations ("My Tasks"): accepted volunteers attached to an opportunity position, the volunteer's participation list, withdraw (decrements `filledCount`), and org listing/removal of participants.
 ## Requirements
 ### Requirement: task_participants collection
 The system SHALL maintain a `task_participants` collection owned by the participations module, with `opportunityId`, `positionId` (the embedded position's `_id`), `applicationId` (unique — one participant per accepted application), `organizationId`, `volunteerId`, `status` (`accepted | active | completed | withdrawn | removed`, default `accepted`), an optional `reason` (set by organization removal), and timestamps. Indexes SHALL include unique `applicationId`, `(volunteerId, status)`, and `(opportunityId, positionId)` (per §3). A participant row is created only by the accept application transaction (S7) — never directly by routes — and its state machine is `accepted → active → completed` with `accepted | active → withdrawn | removed`, where `accepted → active` is performed by the S6 `opportunityStartTicker` job and `accepted → completed` by the S11 verify transaction.

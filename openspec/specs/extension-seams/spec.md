@@ -1,7 +1,7 @@
 # extension-seams Specification
 
 ## Purpose
-TBD - created by archiving change foundation. Update Purpose after archive.
+Extension seams made explicit so later modules plug in without editing earlier code: `RegistrationExtrasService` (volunteer/org profile creation), the publish-gate query, the portfolio query adapter, and media ownership resolution.
 ## Requirements
 ### Requirement: Extension seam convention
 The system SHALL define the extension-seam convention: when a module needs a capability owned by a later session, it SHALL depend on an interface with an inert default implementation provided in `src/common/seams/`, and the owning session swaps in the real provider. The convention is documented in `design.md`.
@@ -11,7 +11,7 @@ The system SHALL define the extension-seam convention: when a module needs a cap
 - **THEN** it replaces the inert default via Nest DI without changing the depending module's code
 
 ### Requirement: Publish gate seam
-The system SHALL provide a `PublishGateService` interface with an inert default that reports the gate unlocked unless `PUBLISH_GATE_ENABLED=true`, in which case the default reports locked via `PUBLISH_GATE_LOCKED` for the demo path. From Session 6 onward the opportunities publish route SHALL be the consumer of this seam: `POST /opportunities/:opportunityId/publish` SHALL call `evaluate(org)` before applying the `draft → published` transition and SHALL turn a locked result into `409` with business code `PUBLISH_GATE_LOCKED`. The seam's swap-in contract (Session 13): the trust layer SHALL replace the inert default with the real counter without changing the opportunities module's code (Nest DI provider override), respecting A7.
+The system SHALL provide a `PublishGateService` interface with an inert default that reports the gate unlocked unless `PUBLISH_GATE_ENABLED=true`, in which case the default reports locked via `PUBLISH_GATE_LOCKED` for the demo path. From Session 6 onward the opportunities publish route SHALL be the consumer of this seam: `POST /opportunities/:opportunityId/publish` SHALL call `evaluate(org)` before applying the `draft → published` transition and SHALL turn a locked result into `409` with business code `PUBLISH_GATE_LOCKED`. The seam's swap-in contract (Session 13): the trust layer SHALL replace the inert default with the real counter without changing the opportunities module's code (Nest DI provider override), respecting A7. `PUBLISH_GATE_ENABLED=true` SHALL keep acting as a manual lock override on top of the real counter.
 
 #### Scenario: Inert default unlocked
 - **WHEN** `PUBLISH_GATE_ENABLED` is unset or `false` and `evaluate(org)` is called
@@ -29,6 +29,18 @@ The system SHALL provide a `PublishGateService` interface with an inert default 
 #### Scenario: Real gate swaps in without module changes
 - **WHEN** Session 13 provides the real publish-gate provider
 - **THEN** it replaces the inert default via DI and the opportunities module's publish route behavior stays source-compatible
+
+#### Scenario: Real gate replaces the default
+- **WHEN** a submission enters `submitted`/`under_review` for an organization's opportunity and the pending count reaches the configured threshold
+- **THEN** `evaluate(org)` reports locked (drafts and decided submissions excluded from the count)
+
+#### Scenario: Whole opportunity unlock
+- **WHEN** an opportunity's last pending submission is decided
+- **THEN** the opportunity no longer contributes to the pending count and the gate may unlock
+
+#### Scenario: Demo lock override still works
+- **WHEN** `PUBLISH_GATE_ENABLED=true`
+- **THEN** the gate reports locked regardless of the pending count
 
 ### Requirement: Portfolio query seam
 

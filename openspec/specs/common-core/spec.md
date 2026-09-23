@@ -1,7 +1,7 @@
 # common-core Specification
 
 ## Purpose
-TBD - created by archiving change foundation. Update Purpose after archive.
+Foundation (Session 1): NestJS bootstrap wiring, configuration, Mongoose base, global guards (auth/roles/throttler), exception filters and pipes, `BusinessException` + machine codes, global prefix, security headers, request/log context, and the in-memory event bus.
 ## Requirements
 ### Requirement: Bootstrap configuration
 The system SHALL load environment configuration from `process.env` and an optional `.env` file via `@nestjs/config`, exposing typed configuration for the app settings used across modules.

@@ -1,7 +1,7 @@
 # auth Specification
 
 ## Purpose
-TBD - created by archiving change auth-and-users. Update Purpose after archive.
+Authentication and account lifecycle: self-registration for volunteer and organization accounts, login with JWT access/refresh tokens, rotated hashed sessions, email verification, password reset, and password changes. Defines the `AuthGuard`, role decorators and the current-account plumbing all protected routes rely on.
 ## Requirements
 ### Requirement: Account registration
 The system SHALL allow public self-registration for `volunteer` and `organization` accounts via `POST /auth/register/volunteer` and `POST /auth/register/organization`. Registration SHALL create a `users` document (with a `bcrypt`-hashed password), immediately create a session and issue access/refresh tokens, create an `email_verify` verification token and send a verification email. The request body SHALL NOT be able to set `role` or `status` (enforced by DTO whitelist + `forbidNonWhitelisted`); the role is fixed by the route. After registration, profile creation for `volunteer_profiles` (Session 4) and `organizations` (Session 5) SHALL be delegated through the `RegistrationExtrasService` seam with an inert default.
@@ -46,27 +46,41 @@ The system SHALL authenticate an existing `users` document via `POST /auth/login
 - **THEN** subsequent requests are rejected with `429`
 
 ### Requirement: Refresh token rotation
-The system SHALL support `POST /auth/refresh`: it hashes the presented refresh token, looks up the `sessions` row, verifies it is unexpired and its user is not suspended/deleted, then SHALL rotate the session (revoke the old row and insert a new session with a fresh refresh token hash and pushed expiry) and return a new access/refresh pair.
+The system SHALL support `POST /auth/refresh`: it hashes the presented refresh token, looks up the `sessions` row, verifies it is unexpired and its user is not suspended/deleted, then SHALL rotate the session (mark the consumed row as rotated with a `rotatedAt` timestamp, insert a new session with a fresh refresh token hash and pushed expiry) and return a new access/refresh pair. Rows already rotated SHALL NOT satisfy the lookup, and consumption of a row SHALL be atomic against concurrent replays. When a presented refresh token matches a row that was already consumed (reuse detection), the system SHALL revoke every session belonging to that user and respond `401 REFRESH_TOKEN_REUSE_DETECTED`. The `sessions` collection SHALL keep `expiresAt` TTL indexes so tombstones are cleaned, and `listSessions` SHALL surface only un-rotated sessions.
 
 #### Scenario: Successful refresh rotates the session
 - **WHEN** `POST /auth/refresh` is called with a valid unexpired refresh token
 - **THEN** a new access/refresh pair is returned
-- **AND** the presented refresh token is revoked and a new session row stores the hash of the new refresh token
+- **AND** the consumed row is marked with `rotatedAt` and a new session row stores the hash of the new refresh token
 
-#### Scenario: Replayed refresh token rejected
-- **WHEN** a previously rotated (revoked) refresh token is presented again
-- **THEN** the response is `401` and no new session is created
+#### Scenario: Concurrent refreshes cannot both succeed
+- **WHEN** the same refresh token is presented concurrently by two requests
+- **THEN** at most one request succeeds with a fresh pair
+- **AND** the loser is treated as a reuse and responds `401 REFRESH_TOKEN_REUSE_DETECTED` with every session for the user revoked
+
+#### Scenario: Replayed refresh token revokes all sessions
+- **WHEN** a previously rotated refresh token is presented again
+- **THEN** the response is `401 REFRESH_TOKEN_REUSE_DETECTED`
+- **AND** every session belonging to the user is revoked
 
 #### Scenario: Expired refresh token rejected
 - **WHEN** the presented refresh token's session `expiresAt` is in the past
-- **THEN** the response is `401`
+- **THEN** the response is `401` and no new session is created for that token
+
+#### Scenario: Tombstones stay out of the listing
+- **WHEN** a user refreshes and then calls `listSessions`
+- **THEN** the consumed row is absent and only the new live session is surfaced
 
 ### Requirement: Logout
-The system SHALL support `POST /auth/logout` (authenticated) which deletes the caller's current `sessions` row identified by the access token's `sessionId`. The full-session revocation variant (`/auth/logout-all`) is deferred to Phase 2.
+The system SHALL support `POST /auth/logout` (authenticated) which deletes the caller's current `sessions` row identified by the access token's `sessionId`. The system SHALL support `POST /auth/logout-all` (authenticated) which deletes every session row for the caller's user (full-session revocation).
 
 #### Scenario: Current session revoked
 - **WHEN** an authenticated user calls `POST /auth/logout`
 - **THEN** the session referenced by the access token is deleted
+
+#### Scenario: All sessions revoked
+- **WHEN** an authenticated user calls `POST /auth/logout-all`
+- **THEN** every session row for that user (including the current one) is deleted
 
 ### Requirement: Email verification
 The system SHALL support one-shot email verification via `POST /auth/verify-email`: the presented token is hashed and atomically consumed against a current, unconsumed `verification_tokens` row of type `email_verify`; on success the user's `emailVerifiedAt` is set and the token is marked consumed. Replay of a consumed token SHALL fail.

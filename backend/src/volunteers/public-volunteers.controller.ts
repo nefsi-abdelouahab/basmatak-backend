@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { Public } from '../common/decorators/auth.decorators';
 import { PublicExperiencesQueryDto, TalentsQueryDto } from './dto/talents.dto';
@@ -23,6 +23,11 @@ export class PublicVolunteersController {
     return this.volunteers.listPublicTalents(query);
   }
 
+  @ApiParam({
+    name: 'username',
+    description: 'Volunteer username',
+    type: String,
+  })
   @Get('volunteers/:username')
   @Public()
   @ApiOperation({ summary: 'Public volunteer profile by username (A5 gating)' })
@@ -38,6 +43,11 @@ export class PublicVolunteersController {
     return profile;
   }
 
+  @ApiParam({
+    name: 'username',
+    description: 'Volunteer username',
+    type: String,
+  })
   @Get('volunteers/:username/experiences')
   @Public()
   @ApiOperation({
@@ -63,6 +73,11 @@ export class PublicVolunteersController {
     );
   }
 
+  @ApiParam({
+    name: 'username',
+    description: 'Volunteer username',
+    type: String,
+  })
   @Get('volunteers/:username/portfolio')
   @Public()
   @ApiOperation({

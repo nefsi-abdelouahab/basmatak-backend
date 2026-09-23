@@ -1,7 +1,7 @@
 # portfolio Specification
 
 ## Purpose
-TBD - created by archiving change portfolio. Update Purpose after archive.
+Portfolio: volunteer portfolio items with title, description, own-media attachments and per-item visibility, plus ordering and deletion; public portfolio surface only shows `public` items.
 ## Requirements
 ### Requirement: Portfolio items collection
 

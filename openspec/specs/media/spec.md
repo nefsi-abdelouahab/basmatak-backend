@@ -1,7 +1,7 @@
 # media Specification
 
 ## Purpose
-TBD - created by archiving change media. Update Purpose after archive.
+Media: image/video file uploads and external links via a pluggable storage provider, signed URLs, per-purpose visibility, and delete guarding (blocked when attached to a verified experience).
 ## Requirements
 ### Requirement: Media collection
 The system SHALL provide a `media` collection storing metadata only (file bytes are stored in object storage via the `StorageProvider`; nothing but metadata is written to MongoDB). The schema SHALL include `ownerId` (ObjectId), `purpose` (enum: `avatar | organization_logo | verification_document | submission_evidence | portfolio_item`), `visibility` (enum: `public | private`), `type` (`file | link`), `storageKey` (unique, for `file` media), `filename`, `mimeType`, `size`, `url` (for `link` media), and optional `submissionId`/`portfolioItemId` references, plus `deletedAt` (optional, soft-delete marker) and timestamps. Indexes SHALL include unique `storageKey`, `ownerId`, `submissionId`, and `portfolioItemId`.

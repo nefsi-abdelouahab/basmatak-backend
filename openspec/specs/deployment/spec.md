@@ -1,7 +1,7 @@
 # deployment Specification
 
 ## Purpose
-TBD - created by archiving change deployment. Update Purpose after archive.
+Production deployment: the Render blueprint (`render.yaml`), keep-alive workflow, `docs/DEPLOY.md` runbook with environmental contract, and the local production-boot smoke path.
 ## Requirements
 ### Requirement: Production configuration manifest
 The deployment SHALL ship a `render.yaml` at the repository root that describes a Render web service for the backend: runtime Node ~20, build command `npm ci && npm run build`, start command `npm run start:prod`, the Free instance type, and `envVars` covering every environment variable the application reads (the `.env.example` list) including `NODE_ENV=production`. `PORT` SHALL NOT be listed in `envVars`, because Render injects it and the app reads `process.env.PORT`.

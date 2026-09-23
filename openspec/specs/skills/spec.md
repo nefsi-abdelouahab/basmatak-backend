@@ -1,7 +1,7 @@
 # skills Specification
 
 ## Purpose
-TBD - created by archiving change reference-data. Update Purpose after archive.
+Reference data for skill categories and skills (seeded, ordered, active-only), served publicly and maintained by admin endpoints with deactivate-instead-of-delete semantics.
 ## Requirements
 ### Requirement: Skill categories collection
 The system SHALL provide a `skill_categories` collection with `slug` (unique), `nameAr`, `nameFr`, `order`, and `active` (default `true`). Indexes SHALL be a unique index on `slug` and an index on `order`.

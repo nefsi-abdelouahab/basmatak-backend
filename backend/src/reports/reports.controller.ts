@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentAccount } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CreateReportDto } from './dto/create-report.dto';
@@ -15,6 +15,7 @@ const REPORT_LIMIT = { default: { limit: 5, ttl: 60_000 } };
 export class ReportsController {
   constructor(private readonly reports: ReportsService) {}
 
+  @ApiBearerAuth()
   @Post()
   @Throttle(REPORT_LIMIT)
   @ApiOperation({ summary: 'Report an entity (any logged-in role)' })

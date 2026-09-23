@@ -1,7 +1,7 @@
 # opportunities Specification
 
 ## Purpose
-TBD - created by archiving change opportunities. Update Purpose after archive.
+Opportunities: the published task posts along with their positions, the draft→published→in_progress→completed/closed/cancelled lifecycle state machine, the public feed with faceted filters, recommended feed, and the org-owned create/edit/publish/lifecycle routes.
 ## Requirements
 ### Requirement: Opportunities collection
 The system SHALL provide an `opportunities` collection with `organizationId`, `slug` (unique, generated server-side via the canonical `src/common/slug` pipeline per A12), `title`/`description`, `categoryId`, embedded `positions` (each with `title`, `description`, `requiredCount`, `filledCount` default `0`, `requiredSkills` as an array of `skillId` refs), `status` (`draft | published | in_progress | completed | closed | cancelled`, default `draft`), `startDate` (optional), `applicationDeadline` (optional), and `location { wilayaId, municipalityId, coordinates }`. Indexes SHALL include unique `slug`, `(status, startDate)`, `(status, categoryId)`, `(status, location.wilayaId)`, `(status, location.municipalityId)`, `(organizationId, status)`, 2dsphere `location.coordinates`, text on `title, description` (reserved per the F11 decision; not referenced by queries), and `positions.requiredSkills.skillId` per §3. Per the F11 canonical decision, keyword search SHALL be implemented as `$regex` bounded by an early `categoryId` equality, and geo filtering SHALL be implemented via the indexed `location` equality fields; no query SHALL reference the text index.

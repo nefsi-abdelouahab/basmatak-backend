@@ -1,7 +1,7 @@
 # applications Specification
 
 ## Purpose
-TBD - created by archiving change applications-and-participation. Update Purpose after archive.
+Applications: volunteer applications to specific positions, one active application per position, accept (transactional: creates a task participant and increments `filledCount`), reject with reason, and withdraw.
 ## Requirements
 ### Requirement: applications collection
 The system SHALL maintain an `applications` collection owned by the applications module, with `opportunityId`, `positionId` (the embedded position's `_id` within the opportunity), `volunteerId`, `organizationId`, `status` (`pending | accepted | rejected | withdrawn`, default `pending`), an optional `message`, and timestamps. Indexes SHALL include a partial unique `(positionId, volunteerId)` restricted to `status in (pending, accepted)` (per §3, this is the dedupe key that prevents a second live application), plus `(opportunityId, status)` and `(volunteerId, status)`. A reference to the embedded position SHALL identify a position by its `_id` inside the opportunity document; the seat counters (`requiredCount`/`filledCount`) SHALL be read and mutated on the embedded position document itself, never duplicated in the application.

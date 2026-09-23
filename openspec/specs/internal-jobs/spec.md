@@ -1,7 +1,7 @@
 # internal-jobs Specification
 
 ## Purpose
-TBD - created by archiving change foundation. Update Purpose after archive.
+The `POST /internal/jobs/run` idempotent tick endpoint (guarded by the `X-Jobs-Key` secret) that starts opportunities and activates participants at `startDate`; the seam seeded for future reliability recomputation. Called by an external free scheduler.
 ## Requirements
 ### Requirement: Internal jobs endpoint
 The system SHALL expose `POST /api/v1/internal/jobs/run` that executes the registered job handlers, guarded by the `X-Jobs-Key` header compared in constant time against the `JOBS_KEY` env var.

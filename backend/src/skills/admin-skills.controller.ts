@@ -1,10 +1,16 @@
 import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Roles } from '../common/decorators/auth.decorators';
 import { CreateSkillDto, UpdateSkillDto } from './dto/skill.dto';
 import { SkillModel } from './schemas/skill.schema';
 import { SkillsService } from './skills.service';
 
+@ApiBearerAuth()
 @ApiTags('skills (admin)')
 @Controller('admin/skills')
 @Roles('admin')
@@ -17,6 +23,12 @@ export class AdminSkillsController {
     return this.skills.createSkill(dto);
   }
 
+  @ApiParam({
+    name: 'id',
+    description: 'The skill id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch(':id')
   @ApiOperation({ summary: 'Update a skill (active:false deactivates)' })
   update(

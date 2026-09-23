@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -10,6 +15,7 @@ import {
 } from './dto/admin-part-b.dto';
 import { AdminOpportunitiesService } from './opportunities.service';
 
+@ApiBearerAuth()
 @ApiTags('admin (opportunities)')
 @Controller('admin/opportunities')
 @Roles('admin')
@@ -24,6 +30,12 @@ export class AdminOpportunitiesController {
     return this.opportunities.list(query);
   }
 
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch(':opportunityId/status')
   @ApiOperation({ summary: 'Force close/cancel an opportunity' })
   setStatus(

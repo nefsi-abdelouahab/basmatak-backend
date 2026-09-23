@@ -1,7 +1,7 @@
 # audit-logging Specification
 
 ## Purpose
-TBD - created by archiving change foundation. Update Purpose after archive.
+Audit logging: an `audit_logs` collection written by an interceptor for admin actions and sensitive organization/volunteer operations, browsable through the admin audit-logs endpoint with actor/entity/date filters.
 ## Requirements
 ### Requirement: Audit interceptor
 The system SHALL provide an `AuditInterceptor` that writes `audit_logs` entries for: every admin action, and `PATCH`/`DELETE` requests on organization and volunteer resources.

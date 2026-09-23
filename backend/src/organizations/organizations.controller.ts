@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Public } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -24,12 +29,14 @@ export class OrganizationsController {
     return this.organizations.listPublic();
   }
 
+  @ApiBearerAuth()
   @Get('me')
   @ApiOperation({ summary: "Read the caller's own organization" })
   getOwn(@CurrentAccount() account: AccountToken) {
     return this.organizations.getOwn(account);
   }
 
+  @ApiBearerAuth()
   @Patch('me')
   @ApiOperation({ summary: "Update the caller's own organization" })
   updateOwn(
@@ -39,6 +46,7 @@ export class OrganizationsController {
     return this.organizations.updateOwn(account, dto);
   }
 
+  @ApiBearerAuth()
   @Post('me/verification')
   @ApiOperation({ summary: 'Submit (or resubmit) verification documents' })
   submitVerification(
@@ -48,6 +56,7 @@ export class OrganizationsController {
     return this.organizations.submitVerification(account, dto.documents);
   }
 
+  @ApiBearerAuth()
   @Get('me/verification')
   @ApiOperation({
     summary: "Latest verification status of the caller's organization",
@@ -56,6 +65,11 @@ export class OrganizationsController {
     return this.organizations.getVerificationStatus(account);
   }
 
+  @ApiParam({
+    name: 'slug',
+    description: 'Organization slug',
+    type: String,
+  })
   @Get(':slug')
   @Public()
   @ApiOperation({ summary: 'Public organization profile by slug' })
@@ -63,6 +77,11 @@ export class OrganizationsController {
     return this.organizations.getPublicBySlug(slug);
   }
 
+  @ApiParam({
+    name: 'slug',
+    description: 'Organization slug',
+    type: String,
+  })
   @Get(':slug/opportunities')
   @Public()
   @ApiOperation({ summary: 'Public opportunities of an organization' })

@@ -1,7 +1,7 @@
 # volunteers Specification
 
 ## Purpose
-TBD - created by archiving change volunteer-profiles. Update Purpose after archive.
+Volunteer profiles: identity fields, bio, location, avatar/banner, public-profile privacy switches, skills, availability schedule, and the dashboard stats view. Includes the guest-visible public profile and talents discovery surface.
 ## Requirements
 ### Requirement: Volunteer profiles collection
 The system SHALL provide a `volunteer_profiles` collection with a unique `userId`, a unique `username`, profile fields (full name, biographical fields, `birthDate`, `location` as `{ wilayaId, municipalityId }`, `avatar` and `banner` as `mediaId` object references), `stats` (with `completedTasks`, `verifiedExperiences`, `volunteerHours`), and a `publicProfile` object with `enabled`, `showAvatar`, `showBiography`, `showLocation`, `showSkills`, `showExperiences`, `showAvailability`, `showPortfolio` — all booleans. Indexes SHALL include unique `userId`, unique `username`, `location.municipalityId`, and the compound `(publicProfile.enabled, location.municipalityId)` — whose leading `publicProfile.enabled` equality serves the talents feed's enabled-only filter (replacing any lone `publicProfile.enabled` index).

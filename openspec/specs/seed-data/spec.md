@@ -1,7 +1,7 @@
 # seed-data Specification
 
 ## Purpose
-TBD - created by archiving change seed-data. Update Purpose after archive.
+Idempotent seed scripts for locations, skills, the bootstrap admin account, and a demo organization with sample opportunities, driven by `src/scripts/seed.ts` and npm `seed:*` scripts.
 ## Requirements
 ### Requirement: Canonical location reference data
 The system SHALL seed a complete Algerian administrative dataset: all 58 wilayas (codes 01–58) and all municipalities, each with `code`, `nameAr`, `nameFr`, and `parentCode` (for municipalities), sourced from the canonical `locations` payload. The seed MUST be idempotent: re-running it MUST NOT change record counts or create duplicates, keyed by unique code.

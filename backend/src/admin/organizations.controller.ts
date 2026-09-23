@@ -7,7 +7,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -28,6 +33,7 @@ import {
  * listing MUST be declared before any `:organizationId` route (route-order
  * trap, same discipline as `organizations/me`).
  */
+@ApiBearerAuth()
 @ApiTags('admin (organizations)')
 @Controller('admin/organizations')
 @Roles('admin')
@@ -50,6 +56,12 @@ export class AdminOrganizationsController {
     return this.organizations.list(query);
   }
 
+  @ApiParam({
+    name: 'organizationId',
+    description: 'The organization id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch(':organizationId/status')
   @ApiOperation({ summary: 'Suspend or reinstate an organization account' })
   setStatus(
@@ -60,6 +72,12 @@ export class AdminOrganizationsController {
     return this.organizations.setStatus(account, organizationId, dto.status);
   }
 
+  @ApiParam({
+    name: 'organizationId',
+    description: 'The organization id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post(':organizationId/verification/approve')
   @ApiOperation({ summary: 'Approve the pending verification (F1 decision)' })
   approve(
@@ -69,6 +87,12 @@ export class AdminOrganizationsController {
     return this.organizations.approve(account, organizationId);
   }
 
+  @ApiParam({
+    name: 'organizationId',
+    description: 'The organization id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post(':organizationId/verification/reject')
   @ApiOperation({ summary: 'Reject the pending verification with a reason' })
   reject(

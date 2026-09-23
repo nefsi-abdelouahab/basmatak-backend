@@ -9,7 +9,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -22,11 +27,18 @@ import { SubmissionsService } from './submissions.service';
 /**
  * Submissions controller (inventory §2.12, roadmap S10 Part A).
  */
+@ApiBearerAuth()
 @ApiTags('submissions')
 @Controller()
 export class SubmissionsController {
   constructor(private readonly submissions: SubmissionsService) {}
 
+  @ApiParam({
+    name: 'participationId',
+    description: 'The participation id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('participations/:participationId/submissions')
   @Roles('volunteer')
   @ApiOperation({
@@ -49,6 +61,12 @@ export class SubmissionsController {
     return this.submissions.listMine(account, query);
   }
 
+  @ApiParam({
+    name: 'submissionId',
+    description: 'The submission id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Get('submissions/:submissionId')
   @ApiOperation({
     summary: 'Submission detail (own volunteer or owning organization)',
@@ -60,6 +78,12 @@ export class SubmissionsController {
     return this.submissions.getDetail(account, submissionId);
   }
 
+  @ApiParam({
+    name: 'submissionId',
+    description: 'The submission id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Patch('submissions/:submissionId')
   @Roles('volunteer')
   @ApiOperation({ summary: 'Edit a draft (rejected returns to draft)' })
@@ -71,6 +95,12 @@ export class SubmissionsController {
     return this.submissions.updateDraft(account, submissionId, dto);
   }
 
+  @ApiParam({
+    name: 'submissionId',
+    description: 'The submission id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('submissions/:submissionId/submit')
   @HttpCode(HttpStatus.OK)
   @Roles('volunteer')
@@ -95,6 +125,12 @@ export class SubmissionsController {
     return this.submissions.listForOrganization(account, query);
   }
 
+  @ApiParam({
+    name: 'submissionId',
+    description: 'The submission id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('submissions/:submissionId/start-review')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')

@@ -8,7 +8,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -21,6 +26,7 @@ import { ParticipationsService } from './participations.service';
 /**
  * Participations controller (inventory §2.10, roadmap S7): "My Tasks".
  */
+@ApiBearerAuth()
 @ApiTags('participations')
 @Controller()
 export class ParticipationsController {
@@ -36,6 +42,12 @@ export class ParticipationsController {
     return this.participations.listMyParticipations(account, query);
   }
 
+  @ApiParam({
+    name: 'participationId',
+    description: 'The participation id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Get('participations/:participationId')
   @ApiOperation({
     summary: 'Participation detail (own volunteer or owning org)',
@@ -47,6 +59,12 @@ export class ParticipationsController {
     return this.participations.getParticipation(account, participationId);
   }
 
+  @ApiParam({
+    name: 'participationId',
+    description: 'The participation id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('participations/:participationId/withdraw')
   @HttpCode(HttpStatus.OK)
   @Roles('volunteer')
@@ -60,6 +78,12 @@ export class ParticipationsController {
     return this.participations.withdrawParticipation(account, participationId);
   }
 
+  @ApiParam({
+    name: 'participationId',
+    description: 'The participation id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Post('participations/:participationId/remove')
   @HttpCode(HttpStatus.OK)
   @Roles('organization')
@@ -78,6 +102,12 @@ export class ParticipationsController {
     );
   }
 
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
   @Get('opportunities/:opportunityId/participants')
   @Roles('organization')
   @ApiOperation({ summary: 'List active participants of an owned opportunity' })
