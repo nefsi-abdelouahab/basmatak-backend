@@ -53,4 +53,4 @@ Each task 5–15 minutes. Tests are required per task group. All backend paths a
 - [x] 9.1 E2E trust flow: verify + review write + `409` duplicate + both lists + gate lock at 3 pending opportunities → publish blocked `PUBLISH_GATE_LOCKED` → decide a whole opportunity → unlocked + public reliability read + `opportunity.started` ticker still notifies participants.
 - [x] 9.2 Run backend build, lint, unit tests, and the new E2E specs; fix failures.
 - [x] 9.3 Run `openspec validate trust-layer` and `openspec status --change trust-layer`; confirm all artifacts pass.
-- [ ] 9.4 Commit the change (no push).
+- [x] 9.4 Commit the change (no push).
