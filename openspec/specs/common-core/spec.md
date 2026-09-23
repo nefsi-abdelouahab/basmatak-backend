@@ -15,6 +15,10 @@ The system SHALL load environment configuration from `process.env` and an option
 - **THEN** the Mongoose connection uses the local dev default `mongodb://127.0.0.1:27017/basmatak`
 - **AND** `PORT` defaults to a sensible development port
 
+#### Scenario: Platform-injected port in production
+- **WHEN** the application runs with `NODE_ENV=production` and `PORT` is set by the hosting platform (Render)
+- **THEN** the app listens on that `PORT` value (`process.env.PORT`) instead of the development default
+
 ### Requirement: Logging with configurable level
 The system SHALL provide an app-wide `Logger` whose output level is controlled by `LOG_LEVEL`.
 
@@ -154,11 +158,15 @@ The system SHALL apply `helmet` security headers globally with a Content-Securit
 - **THEN** the `Content-Security-Policy` header reflects the strict defaults and does not authorize third-party origins
 
 ### Requirement: Health endpoint
-The system SHALL expose `GET /api/v1/health` returning service liveness.
+The system SHALL expose `GET /api/v1/health` returning service liveness, including as the warm-up probe for the free hosting platform and external scheduler.
 
 #### Scenario: Liveness response
 - **WHEN** `GET /api/v1/health` is called
 - **THEN** it returns `200` with `{ status: 'ok', version }`
+
+#### Scenario: Render and scheduler warm-up in production
+- **WHEN** the application runs with `NODE_ENV=production` and Render (or the keep-alive workflow) pings `GET /api/v1/health`
+- **THEN** it answers `200` with `{ status: 'ok', version }` and no secret values in the response or headers
 
 ### Requirement: Secret hygiene
 The system SHALL NOT log the values of secret environment variables (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JOBS_KEY`, `MONGO_URI`, Supabase URL/anonymity keys, mail user/password) nor include them in error responses, headers, or response payloads; logs SHALL reference such variables by name only. This SHALL be guarded by a codebase-wide grep audit and a boot-time assertion in the test suite that verifies logs emitted during bootstrap contain no secret values.

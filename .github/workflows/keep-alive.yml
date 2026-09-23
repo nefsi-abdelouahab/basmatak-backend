@@ -1,0 +1,25 @@
+name: Keep-alive scheduler
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  jobs-run:
+    name: Ping internal jobs endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/v1/internal/jobs/run
+        shell: bash
+        run: |
+          curl -sS -X POST \
+            -H "X-Jobs-Key: ${{ secrets.JOBS_KEY }}" \
+            --retry 3 --retry-delay 20 --retry-connrefused \
+            --max-time 120 \
+            "https://${{ vars.RENDER_SERVICE_URL }}/api/v1/internal/jobs/run" \
+            || echo "jobs run returned non-zero (host warming up); keep-alive achieved"
+        # Free hosts sleep after ~15 min idle and cold-start in ~1 min; a
+        # timeout on a cold host is expected and must not fail the workflow —
+        # the ping effect is the point (also drives the scheduler tick).
+        continue-on-error: true

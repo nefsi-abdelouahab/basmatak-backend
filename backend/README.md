@@ -58,3 +58,17 @@ The only database rig for every unit and e2e test lives in `test/utils/test-db.t
 - Atlas network rule `0.0.0.0/0` is a **temporary-at-MVP** convenience so the
   app can connect from anywhere. Restrict the allowlist to known static IPs /
   office ranges before production.
+
+## Deployment
+
+Render Free + Atlas M0 + a free external scheduler. Full human-run click-path,
+env table, scheduler/keep-alive setup and free-tier rules live in
+[`docs/DEPLOY.md`](../docs/DEPLOY.md); the machine-checkable Render blueprint is
+[`render.yaml`](../render.yaml).
+
+Local prod smoke (compiled boot against a real `MONGO_URI`):
+
+```bash
+npm run build
+npm run start:prod   # MONGO_URI set (Atlas or local mongod)
+```
