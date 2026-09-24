@@ -4,8 +4,8 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
-  buildCursor,
-  decodeCursor,
+  decodePageCursor,
+  encodePageCursor,
   normalizeLimit,
 } from '../common/pagination/pagination.util';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -27,16 +27,20 @@ export class AdminReportsService {
 
   async list(query: ReportsQueryDto): Promise<CursorPage<ReportModel>> {
     const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
-    const filter: FilterQuery<ReportModel> = {};
+    const decoded = decodePageCursor(query.cursor);
+    const page = decoded?.page ?? 1;
+    const baseFilter: FilterQuery<ReportModel> = {};
     if (query.status) {
-      filter.status = query.status;
+      baseFilter.status = query.status;
     }
-    if (cursor && Types.ObjectId.isValid(cursor)) {
-      filter._id = { $lt: new Types.ObjectId(cursor) };
+    const pageFilter: FilterQuery<ReportModel> = { ...baseFilter };
+    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
+      pageFilter._id = { $lt: new Types.ObjectId(decoded.id) };
     }
+    const total = await this.reportModel.countDocuments(baseFilter).exec();
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
     const rows = await this.reportModel
-      .find(filter)
+      .find(pageFilter)
       .sort({ _id: -1 })
       .limit(limit + 1)
       .exec();
@@ -46,7 +50,16 @@ export class AdminReportsService {
       hasMore && items.length > 0
         ? items[items.length - 1]._id.toString()
         : null;
-    return { items, nextCursor: buildCursor(lastId).cursor, limit };
+    return {
+      items,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'newest' })
+        : null,
+      limit,
+      total,
+      page,
+      pages,
+    };
   }
 
   async resolve(

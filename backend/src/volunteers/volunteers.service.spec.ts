@@ -120,6 +120,7 @@ describe('VolunteersService', () => {
       catalogModel,
       mediaModel,
       experienceModel,
+      portfolioModel,
       ownership,
       new PortfolioQueryService(profileModel, portfolioModel, mediaModel),
     );
@@ -775,6 +776,98 @@ describe('VolunteersService', () => {
         expect.objectContaining({ skillId: activeSkillId.toString() }),
       ]);
       expect(JSON.stringify(card)).not.toContain('municipalityId');
+    });
+
+    it('returns counted metadata and facets consistent with the filtered total', async () => {
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true, showSkills: true },
+      });
+      await service.addSkill(volunteerId, {
+        skillId: activeSkillId.toString(),
+        level: 3,
+      });
+      await service.updateProfile(volunteerId, {
+        location: { wilayaId: '16', municipalityId: '1601' },
+      });
+      await seedSecondVolunteer(true);
+
+      const page = await service.listPublicTalents({ limit: '1' });
+      expect(page.total).toBe(2);
+      expect(page.page).toBe(1);
+      expect(page.pages).toBe(2);
+      expect(page.items).toHaveLength(1);
+      expect(page.nextCursor).not.toBeNull();
+      const wilayaSum = page.facets.wilayas.reduce(
+        (sum, facet) => sum + facet.count,
+        0,
+      );
+      expect(wilayaSum).toBe(page.total);
+      const skillFacet = page.facets.skills.find(
+        (facet) => facet.skillId === activeSkillId.toString(),
+      );
+      expect(skillFacet?.count).toBe(1);
+    });
+
+    it('applies multi-select skillIds/wilayaIds and minExperiences/hasAvailability/portfolio', async () => {
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: true },
+      });
+      await service.addSkill(volunteerId, {
+        skillId: activeSkillId.toString(),
+        level: 3,
+      });
+      await seedSecondVolunteer(true);
+
+      const multiSkill = await service.listPublicTalents({
+        skillIds: `${activeSkillId.toString()},${new Types.ObjectId().toString()}`,
+      });
+      expect(multiSkill.items.map((card) => card.username)).toContain(
+        'volunteer-a',
+      );
+
+      const multiWilaya = await service.listPublicTalents({
+        wilayaIds: '16,31',
+      });
+      expect(multiWilaya.total).toBeGreaterThanOrEqual(1);
+
+      const noneExperienced = await service.listPublicTalents({
+        minExperiences: '1',
+      });
+      expect(noneExperienced.items).toEqual([]);
+
+      await experienceModel.create({
+        _id: new Types.ObjectId(),
+        submissionId: new Types.ObjectId(),
+        volunteerId: new Types.ObjectId(volunteerId),
+        organizationId: new Types.ObjectId(),
+        opportunityId: new Types.ObjectId(),
+        positionId: new Types.ObjectId(),
+        title: 'Fieldwork',
+        description: 'Fieldwork detail',
+        skills: [activeSkillId],
+        duration: 4,
+        evidenceIds: [],
+        verificationCode: 'FIELDWORK_CODE',
+        publicVisibility: 'public',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const experienced = await service.listPublicTalents({
+        minExperiences: '1',
+      });
+      expect(experienced.items.map((card) => card.username)).toContain(
+        'volunteer-a',
+      );
+
+      const withAvailability = await service.listPublicTalents({
+        hasAvailability: 'true',
+      });
+      expect(withAvailability.items).toEqual([]);
+
+      const withPortfolio = await service.listPublicTalents({
+        portfolio: 'true',
+      });
+      expect(withPortfolio.items).toEqual([]);
     });
   });
 

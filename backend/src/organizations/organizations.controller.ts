@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -8,6 +16,7 @@ import {
 import { CurrentAccount, Public } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
+  OrganizationListQueryDto,
   SubmitOrganizationVerificationDto,
   UpdateOrganizationDto,
 } from './dto/organization.dto';
@@ -25,8 +34,8 @@ export class OrganizationsController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List verified, active organizations' })
-  list() {
-    return this.organizations.listPublic();
+  list(@Query() query: OrganizationListQueryDto) {
+    return this.organizations.listPublic(query);
   }
 
   @ApiBearerAuth()

@@ -349,7 +349,8 @@ describe('organizations e2e (public pages + verification documents)', () => {
       const list = await request(info.app.getHttpServer())
         .get(`${ORGS}`)
         .expect(200);
-      expect(list.body).toEqual([]);
+      expect(list.body.items).toEqual([]);
+      expect(list.body.total).toBe(0);
     });
 
     it('serves the profile and empty opportunities once verified and active', async () => {
@@ -369,9 +370,12 @@ describe('organizations e2e (public pages + verification documents)', () => {
       const list = await request(info.app.getHttpServer())
         .get(`${ORGS}`)
         .expect(200);
-      expect(list.body.some((org: { slug: string }) => org.slug === slug)).toBe(
-        true,
-      );
+      expect(
+        (list.body.items as Array<{ slug: string }>).some(
+          (org) => org.slug === slug,
+        ),
+      ).toBe(true);
+      expect(list.body.total).toBeGreaterThanOrEqual(1);
     });
   });
 });

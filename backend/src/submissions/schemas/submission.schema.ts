@@ -29,6 +29,7 @@ export interface Submission {
   organizationId: Types.ObjectId;
   volunteerId: Types.ObjectId;
   deliverables: SubmissionDeliverable[];
+  title?: string;
   description?: string;
   consentConfirmed: boolean;
   evidence: SubmissionEvidence[];
@@ -42,6 +43,7 @@ export class SubmissionModel extends Document implements Submission {
   organizationId!: Types.ObjectId;
   volunteerId!: Types.ObjectId;
   deliverables!: Types.DocumentArray<SubmissionDeliverable>;
+  title?: string;
   description?: string;
   consentConfirmed!: boolean;
   evidence!: Types.DocumentArray<SubmissionEvidence>;
@@ -71,6 +73,7 @@ export const SubmissionSchema: Schema<SubmissionModel> = createSchema({
     default: [],
   },
   description: { type: String, trim: true, maxlength: 5000 },
+  title: { type: String, trim: true, maxlength: 200 },
   consentConfirmed: { type: Boolean, required: true, default: false },
   evidence: {
     type: [

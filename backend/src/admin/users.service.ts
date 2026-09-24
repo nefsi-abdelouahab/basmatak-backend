@@ -4,8 +4,8 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
-  buildCursor,
-  decodeCursor,
+  decodePageCursor,
+  encodePageCursor,
   normalizeLimit,
 } from '../common/pagination/pagination.util';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -39,12 +39,17 @@ export class AdminUsersService {
     if (query.q) {
       filter.email = { $regex: escapeRegex(query.q), $options: 'i' };
     }
+    // Session 8 owns admin-list filters/CSV; Session 7 only ensures the
+    // required counted-page shape (same base filter, cursor-only paging).
     const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
+    const decoded = decodePageCursor(query.cursor);
+    const page = decoded?.page ?? 1;
     const pageFilter: FilterQuery<UserModel> = { ...filter };
-    if (cursor && Types.ObjectId.isValid(cursor)) {
-      pageFilter._id = { $lt: new Types.ObjectId(cursor) };
+    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
+      pageFilter._id = { $lt: new Types.ObjectId(decoded.id) };
     }
+    const total = await this.userModel.countDocuments(filter).exec();
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
     const rows = await this.userModel
       .find(pageFilter)
       .select(PUBLIC_USER_SELECT)
@@ -59,8 +64,13 @@ export class AdminUsersService {
         : null;
     return {
       items,
-      nextCursor: buildCursor(lastId).cursor,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'newest' })
+        : null,
       limit,
+      total,
+      page,
+      pages,
     };
   }
 

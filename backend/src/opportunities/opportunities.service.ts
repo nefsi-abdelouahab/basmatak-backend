@@ -7,9 +7,11 @@ import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import {
-  buildCursor,
-  decodeCursor,
+  decodePageCursor,
+  encodePageCursor,
+  execPage,
   normalizeLimit,
+  toArray,
 } from '../common/pagination/pagination.util';
 import { PublishGateService } from '../common/seams/publish-gate.service';
 import { createWithUniqueSlug, slugifyText } from '../common/slug/slugify.util';
@@ -430,18 +432,54 @@ export class OpportunitiesService {
 
   async listPublic(
     query: OpportunityFeedQueryDto,
+    account?: AccountToken,
   ): Promise<CursorPage<OpportunityModel>> {
     const filter: FilterQuery<OpportunityModel> = { status: 'published' };
-    const categoryId = query.categoryId
-      ? new Types.ObjectId(query.categoryId)
-      : undefined;
 
-    if (query.wilayaId) {
-      filter['location.wilayaId'] = query.wilayaId;
+    const categoryIds = toArray(query.categoryId).map((id) => {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BusinessException(
+          'INVALID_FILTER',
+          `Invalid categoryId filter: ${id}`,
+          400,
+        );
+      }
+      return new Types.ObjectId(id);
+    });
+    const skillIds = toArray(query.skillId).map((id) => {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BusinessException(
+          'INVALID_FILTER',
+          `Invalid skillId filter: ${id}`,
+          400,
+        );
+      }
+      return new Types.ObjectId(id);
+    });
+    const wilayaIds = toArray(query.wilayaId);
+    const municipalityIds = toArray(query.municipalityId);
+
+    if (categoryIds.length === 1) {
+      filter.categoryId = categoryIds[0];
+    } else if (categoryIds.length > 1) {
+      filter.categoryId = { $in: categoryIds };
     }
-    if (query.municipalityId) {
-      filter['location.municipalityId'] = query.municipalityId;
+    if (wilayaIds.length === 1) {
+      filter['location.wilayaId'] = wilayaIds[0];
+    } else if (wilayaIds.length > 1) {
+      filter['location.wilayaId'] = { $in: wilayaIds };
     }
+    if (municipalityIds.length === 1) {
+      filter['location.municipalityId'] = municipalityIds[0];
+    } else if (municipalityIds.length > 1) {
+      filter['location.municipalityId'] = { $in: municipalityIds };
+    }
+    if (skillIds.length === 1) {
+      filter['positions.requiredSkills'] = skillIds[0];
+    } else if (skillIds.length > 1) {
+      filter['positions.requiredSkills'] = { $in: skillIds };
+    }
+
     if (query.from || query.to) {
       const startDate: Record<string, Date> = {};
       if (query.from) {
@@ -451,9 +489,6 @@ export class OpportunitiesService {
         startDate.$lte = new Date(query.to);
       }
       filter.startDate = startDate;
-    }
-    if (query.skillId) {
-      filter['positions.requiredSkills'] = new Types.ObjectId(query.skillId);
     }
     if (query.hasOpenPositions === 'true') {
       filter.$expr = {
@@ -476,17 +511,89 @@ export class OpportunitiesService {
     if (query.q) {
       const pattern = escapeRegex(query.q.trim()).slice(0, 60);
       if (pattern) {
-        const bound = categoryId ? { categoryId } : {};
-        filter.$or = [
-          { ...bound, title: { $regex: pattern, $options: 'i' } },
-          { ...bound, description: { $regex: pattern, $options: 'i' } },
-        ];
+        const regex = { $regex: pattern, $options: 'i' };
+        filter.$or = [{ title: regex }, { description: regex }];
       }
-    } else if (categoryId) {
-      filter.categoryId = categoryId;
     }
 
-    return this.paginate(filter, normalizeLimit(query.limit), query.cursor);
+    if (query.nearMe === 'me') {
+      if (!account || account.role !== 'volunteer') {
+        throw new BusinessException(
+          'NEAR_ME_REQUIRES_VOLUNTEER',
+          'nearMe=me requires an authenticated volunteer',
+          401,
+        );
+      }
+      const profile = await this.volunteerProfileModel
+        .findOne({ userId: new Types.ObjectId(account.sub) })
+        .lean()
+        .exec();
+      const wilaya = profile?.location?.wilayaId;
+      if (!wilaya) {
+        throw new BusinessException(
+          'NEAR_ME_NO_LOCATION',
+          'Volunteer location is not set',
+          400,
+        );
+      }
+      filter['location.wilayaId'] = wilaya;
+    }
+
+    const sortToken = query.sort ?? 'newest';
+    const sortMap: Record<string, Record<string, 1 | -1>> = {
+      newest: { _id: -1 },
+      oldest: { _id: 1 },
+      deadline_asc: { applicationDeadline: 1, _id: 1 },
+      startDate_asc: { startDate: 1, _id: 1 },
+    };
+    const sort = sortMap[sortToken] ?? sortMap.newest;
+
+    return execPage(this.opportunityModel, filter, {
+      limit: query.limit,
+      cursor: query.cursor,
+      sort,
+      sortToken,
+      cursorFilter: (decoded) => {
+        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+          return {};
+        }
+        const id = new Types.ObjectId(decoded.id);
+        if (sortToken === 'oldest') {
+          return { _id: { $gt: id } };
+        }
+        if (sortToken === 'deadline_asc' && decoded.value) {
+          const value = new Date(decoded.value);
+          return {
+            $or: [
+              { applicationDeadline: { $gt: value } },
+              { applicationDeadline: value, _id: { $gt: id } },
+            ],
+          };
+        }
+        if (sortToken === 'startDate_asc' && decoded.value) {
+          const value = new Date(decoded.value);
+          return {
+            $or: [
+              { startDate: { $gt: value } },
+              { startDate: value, _id: { $gt: id } },
+            ],
+          };
+        }
+        return { _id: { $lt: id } };
+      },
+      valueExtractor: (item: OpportunityModel) => {
+        if (sortToken === 'deadline_asc') {
+          const value = (item as { applicationDeadline?: Date })
+            .applicationDeadline;
+          return value ? new Date(value).toISOString() : undefined;
+        }
+        if (sortToken === 'startDate_asc') {
+          const value = (item as { startDate?: Date }).startDate;
+          return value ? new Date(value).toISOString() : undefined;
+        }
+        return undefined;
+      },
+    });
   }
 
   async getByIdOrSlug(idOrSlug: string): Promise<OpportunityModel> {
@@ -560,20 +667,35 @@ export class OpportunitiesService {
             .localeCompare(left.opportunity._id.toString()),
       );
 
-    const cursor = decodeCursor(query.cursor);
-    const page = cursor
-      ? open.filter((entry) => entry.opportunity._id.toString() < cursor)
-      : open;
-    const hasMore = page.length > limit;
-    const items = hasMore ? page.slice(0, limit) : page;
+    const decoded = decodePageCursor(query.cursor);
+    const page = decoded?.page ?? 1;
+    let startIndex = 0;
+    if (decoded?.id) {
+      const found = open.findIndex(
+        (entry) => entry.opportunity._id.toString() === decoded.id,
+      );
+      startIndex = found >= 0 ? found + 1 : 0;
+    }
+    const total = open.length;
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
+    const window = open.slice(startIndex, startIndex + limit + 1);
+    const hasMore = window.length > limit;
+    const items = (hasMore ? window.slice(0, limit) : window).map(
+      (entry) => entry.opportunity,
+    );
     const lastId =
       hasMore && items.length > 0
-        ? items[items.length - 1].opportunity._id.toString()
+        ? items[items.length - 1]._id.toString()
         : null;
     return {
-      items: items.map((entry) => entry.opportunity),
-      nextCursor: buildCursor(lastId).cursor,
+      items,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'recommended' })
+        : null,
       limit,
+      total,
+      page,
+      pages,
     };
   }
 
@@ -606,7 +728,37 @@ export class OpportunitiesService {
     if (query.status) {
       filter.status = query.status;
     }
-    return this.paginate(filter, normalizeLimit(query.limit), query.cursor);
+    if (query.q) {
+      const pattern = escapeRegex(query.q.trim()).slice(0, 60);
+      if (pattern) {
+        const regex = { $regex: pattern, $options: 'i' };
+        filter.$or = [
+          { title: regex },
+          { description: regex },
+          { 'positions.title': regex },
+          { 'location.wilayaId': regex },
+          { 'location.municipalityId': regex },
+        ];
+      }
+    }
+    const sortToken = query.sort ?? 'newest';
+    const sort: Record<string, 1 | -1> =
+      sortToken === 'oldest' ? { _id: 1 } : { _id: -1 };
+    return execPage(this.opportunityModel, filter, {
+      limit: query.limit,
+      cursor: query.cursor,
+      sort,
+      sortToken,
+      cursorFilter: (decoded) => {
+        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+          return {};
+        }
+        const id = new Types.ObjectId(decoded.id);
+        return sortToken === 'oldest'
+          ? { _id: { $gt: id } }
+          : { _id: { $lt: id } };
+      },
+    });
   }
 
   /** Published opportunities of a verified+active org (shadows S5's empty stub). */
@@ -618,38 +770,9 @@ export class OpportunitiesService {
       .exec();
   }
 
-  private async paginate(
-    filter: FilterQuery<OpportunityModel>,
-    limit: number,
-    rawCursor: string | undefined,
-  ): Promise<CursorPage<OpportunityModel>> {
-    const cursor = decodeCursor(rawCursor);
-    const pageFilter: FilterQuery<OpportunityModel> = { ...filter };
-    if (cursor) {
-      pageFilter._id = { $lt: new Types.ObjectId(cursor) };
-    }
-    const rows = await this.opportunityModel
-      .find(pageFilter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return {
-      items,
-      nextCursor: buildCursor(lastId).cursor,
-      limit,
-    };
-  }
-
   /***************************************************************************
    * Positions CRUD
-   **************************************************************************/
-
+   ***************************************************************************/
   private async assertPositionsEditable(
     opportunity: OpportunityModel,
   ): Promise<void> {

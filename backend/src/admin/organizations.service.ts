@@ -6,8 +6,8 @@ import { DomainEvents } from '../common/constants/domain-events';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
-  buildCursor,
-  decodeCursor,
+  decodePageCursor,
+  encodePageCursor,
   normalizeLimit,
 } from '../common/pagination/pagination.util';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -55,13 +55,19 @@ export class AdminOrganizationsService {
     query: OrganizationsListQueryDto,
   ): Promise<CursorPage<OrganizationModel>> {
     const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
-    const filter: FilterQuery<OrganizationModel> = {};
-    if (cursor && Types.ObjectId.isValid(cursor)) {
-      filter._id = { $lt: new Types.ObjectId(cursor) };
+    const decoded = decodePageCursor(query.cursor);
+    const page = decoded?.page ?? 1;
+    const baseFilter: FilterQuery<OrganizationModel> = {};
+    const pageFilter: FilterQuery<OrganizationModel> = { ...baseFilter };
+    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
+      pageFilter._id = { $lt: new Types.ObjectId(decoded.id) };
     }
+    const total = await this.organizationModel
+      .countDocuments(baseFilter)
+      .exec();
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
     const rows = await this.organizationModel
-      .find(filter)
+      .find(pageFilter)
       .sort({ _id: -1 })
       .limit(limit + 1)
       .exec();
@@ -73,8 +79,13 @@ export class AdminOrganizationsService {
         : null;
     return {
       items,
-      nextCursor: buildCursor(lastId).cursor,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'newest' })
+        : null,
       limit,
+      total,
+      page,
+      pages,
     };
   }
 
@@ -88,8 +99,7 @@ export class AdminOrganizationsService {
   ): Promise<CursorPage<Record<string, unknown>>> {
     const status = query.status ?? 'pending';
     const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
-    return this.paginateVerifications(status, limit, cursor);
+    return this.paginateVerifications(status, limit, query.cursor);
   }
 
   async setStatus(
@@ -279,14 +289,16 @@ export class AdminOrganizationsService {
   private async paginateVerifications(
     status: string,
     limit: number,
-    rawCursor: string | null,
+    cursor: string | undefined | null,
   ): Promise<CursorPage<Record<string, unknown>>> {
+    const decoded = decodePageCursor(cursor);
+    const page = decoded?.page ?? 1;
     const baseFilter: FilterQuery<OrganizationVerificationModel> = { status };
     const pageFilter: FilterQuery<OrganizationVerificationModel> = {
       ...baseFilter,
     };
-    if (rawCursor && Types.ObjectId.isValid(rawCursor)) {
-      const last = await this.verificationModel.findById(rawCursor).exec();
+    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
+      const last = await this.verificationModel.findById(decoded.id).exec();
       if (last) {
         pageFilter.$or = [
           { submittedAt: { $gt: last.submittedAt } },
@@ -297,17 +309,21 @@ export class AdminOrganizationsService {
         ];
       }
     }
+    const total = await this.verificationModel
+      .countDocuments(baseFilter)
+      .exec();
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
     const rows = await this.verificationModel
       .find(pageFilter)
       .sort({ submittedAt: 1, _id: 1 })
       .limit(limit + 1)
       .exec();
     const hasMore = rows.length > limit;
-    const page = hasMore ? rows.slice(0, limit) : rows;
+    const slice = hasMore ? rows.slice(0, limit) : rows;
 
     const organizations = await this.organizationModel
       .find({
-        _id: { $in: page.map((row) => row.organizationId) },
+        _id: { $in: slice.map((row) => row.organizationId) },
       })
       .exec();
     const organizationById = new Map(
@@ -317,16 +333,23 @@ export class AdminOrganizationsService {
       ]),
     );
 
-    const items = page.map((row) => ({
+    const items = slice.map((row) => ({
       ...row.toJSON(),
       organization: organizationById.get(row.organizationId.toString()) ?? null,
     }));
     const lastId =
-      hasMore && page.length > 0 ? page[page.length - 1]._id.toString() : null;
+      hasMore && slice.length > 0
+        ? slice[slice.length - 1]._id.toString()
+        : null;
     return {
       items,
-      nextCursor: buildCursor(lastId).cursor,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'oldest' })
+        : null,
       limit,
+      total,
+      page,
+      pages,
     };
   }
 }

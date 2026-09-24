@@ -40,7 +40,7 @@ The system SHALL register the `opportunity` entity whitelist in `StatusTransitio
 - **THEN** it validates against the registered whitelist rather than a not-registered error
 
 ### Requirement: Public feed
-The system SHALL expose public `GET /opportunities` returning only opportunities whose status is exactly `published` (per §2.8 "Published only"), ordered by recency, with cursor-based pagination (default limit 20, max 50 per §0). Filters SHALL be supported: `q` (matches title/description, capped by a filter bound so the text index is not required for correctness — F11), `categoryId`, `skillId` (an opportunity whose positions include the skill), `wilayaId`, `municipalityId`, `from`/`to` (startDate bounds), and `hasOpenPositions` (true = at least one position with `filledCount < requiredCount`).
+The system SHALL expose public `GET /opportunities` returning only opportunities whose status is exactly `published` (per §2.8 "Published only"), with cursor-based pagination (default limit 20, max 50 per §0) and the counted cursor-page metadata. Filters SHALL be supported: `q` (matches title/description, capped by a filter bound so the text index is not required for correctness — F11), `categoryId`, `skillId` (an opportunity whose positions include the skill), `wilayaId`, `municipalityId`, `from`/`to` (startDate bounds), and `hasOpenPositions` (true = at least one position with `filledCount < requiredCount`). Inputs represented by the feed’s multi-select filters SHALL accept comma-separated values, parsed consistently, with all selected filter constraints applied. `sort` SHALL accept only the feed’s server-defined whitelist and unknown values SHALL be rejected by DTO validation. An authenticated volunteer passing `nearMe=me` SHALL have the feed restricted using that caller’s volunteer-location wilaya. The `from`/`to` handling SHALL support the roadmap’s current-week and weekend windows using day-of-week boundaries.
 
 #### Scenario: Published opportunities listed
 - **WHEN** a guest calls `GET /opportunities` with no filters
@@ -53,6 +53,22 @@ The system SHALL expose public `GET /opportunities` returning only opportunities
 #### Scenario: Filters narrow the feed
 - **WHEN** a guest calls the feed with `q`, `categoryId`, `skillId`, `wilayaId`, `municipalityId`, `from`, `to`, or `hasOpenPositions=true`
 - **THEN** only matching opportunities are returned, and `hasOpenPositions=true` keeps only opportunities having at least one position with `filledCount < requiredCount`
+
+#### Scenario: Multi-select filters apply together
+- **WHEN** a caller supplies comma-separated values for a supported feed multi-select filter
+- **THEN** the values are parsed as separate selected constraints and the returned total and items reflect the combined filter
+
+#### Scenario: Near-me uses the caller’s wilaya
+- **WHEN** an authenticated volunteer calls `GET /opportunities?nearMe=me`
+- **THEN** the list contains only published opportunities matching that volunteer’s resolved wilaya
+
+#### Scenario: Date-window filters use calendar bounds
+- **WHEN** a caller supplies `from`/`to` for a current-week or weekend feed window
+- **THEN** only published opportunities whose start dates fall within those day-of-week bounds are returned
+
+#### Scenario: Sort values are validated
+- **WHEN** a caller supplies a `sort` value outside the feed whitelist
+- **THEN** validation rejects the request
 
 #### Scenario: Pagination clamps and pages by cursor
 - **WHEN** a guest requests `limit` greater than 50
@@ -105,15 +121,19 @@ The system SHALL expose `POST /organizations/me/opportunities` (authenticated, o
 - **THEN** the request is rejected by validation
 
 ### Requirement: List own opportunities
-The system SHALL expose `GET /organizations/me/opportunities` (authenticated, organization role) returning all of the owning organization's opportunities across every status, newest first, cursor-paginated (default 20, max 50). Each returned opportunity SHALL include its `registryId`.
+The system SHALL expose `GET /organizations/me/opportunities` (authenticated, organization role) returning all of the owning organization's opportunities across every status, cursor-paginated (default limit 20, max 50) with counted cursor-page metadata. Each returned opportunity SHALL include its `registryId`. The list SHALL accept `q` across the roadmap’s title, location, and skill search surface and a validated `sort` value from its server-defined whitelist, while retaining the existing optional status filter and ownership isolation.
 
 #### Scenario: All statuses returned
 - **WHEN** an organization account calls `GET /organizations/me/opportunities`
 - **THEN** the response lists its own opportunities in every status, including drafts, each carrying its `OPP-` registry identifier
 
-#### Scenario: Other organizations isolated
-- **WHEN** an organization account calls the route
-- **THEN** it only ever sees opportunities whose `organizationId` matches its own organization
+#### Scenario: Search and sort narrow only own rows
+- **WHEN** an organization supplies `q` or a valid `sort` value
+- **THEN** only matching opportunities belonging to that organization are returned in the selected permitted order
+
+#### Scenario: Unknown sort is rejected
+- **WHEN** an organization supplies an unlisted `sort` value
+- **THEN** validation rejects the request
 
 ### Requirement: Update opportunity
 The system SHALL expose `PATCH /opportunities/:opportunityId` (authenticated, organization role, owning org only). Before publish the editable set SHALL be the full profile (title, description, categoryId, startDate, applicationDeadline, location); after publish it SHALL be limited to a small safe set (e.g. description, applicationDeadline forward-only) and only while the opportunity has no `accepted` participants. `slug`, `organizationId`, `status`, and `positions` SHALL NOT be settable from the body.

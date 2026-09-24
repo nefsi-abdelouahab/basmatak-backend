@@ -6,14 +6,10 @@ import { DomainEvents } from '../common/constants/domain-events';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
-import {
-  buildCursor,
-  decodeCursor,
-  normalizeLimit,
-} from '../common/pagination/pagination.util';
+import { execPage, toArray } from '../common/pagination/pagination.util';
 import { MediaOwnership } from '../common/seams/media-ownership';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
-import { MediaModel } from '../media/schemas/media.schema';
+import { MediaModel, MediaCollection } from '../media/schemas/media.schema';
 import { MediaService } from '../media/media.service';
 import {
   OpportunityModel,
@@ -34,6 +30,7 @@ import {
   UpdateSubmissionDto,
 } from './dto/submission.dto';
 import {
+  SUBMISSION_STATUSES,
   SubmissionModel,
   SubmissionsCollection,
 } from './schemas/submission.schema';
@@ -84,6 +81,8 @@ export class SubmissionsService {
     private readonly opportunityModel: Model<OpportunityModel>,
     @InjectModel(OrganizationsCollection)
     private readonly organizationModel: Model<OrganizationModel>,
+    @InjectModel(MediaCollection)
+    private readonly mediaModel: Model<MediaModel>,
     private readonly organizations: OrganizationsService,
     private readonly media: MediaService,
     private readonly mediaOwnership: MediaOwnership,
@@ -147,29 +146,49 @@ export class SubmissionsService {
     return rows;
   }
 
-  private async paginate<T extends { _id: Types.ObjectId }>(
-    filter: FilterQuery<T>,
-    limit: number,
-    rawCursor: string | undefined,
-    model: Model<T>,
-  ): Promise<CursorPage<T>> {
-    const cursor = decodeCursor(rawCursor);
-    const pageFilter: FilterQuery<T> = { ...filter };
-    if (cursor) {
-      pageFilter._id = { $lt: new Types.ObjectId(cursor) };
+  private paginateSubmissions(
+    filter: FilterQuery<SubmissionModel>,
+    query: { limit?: string; cursor?: string; sort?: string },
+  ): Promise<CursorPage<SubmissionModel>> {
+    const sortToken = query.sort ?? 'newest';
+    const sort: Record<string, 1 | -1> =
+      sortToken === 'oldest' ? { _id: 1 } : { _id: -1 };
+    return execPage(this.submissionModel, filter, {
+      limit: query.limit,
+      cursor: query.cursor,
+      sort,
+      sortToken,
+      cursorFilter: (decoded) => {
+        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+          return {};
+        }
+        const id = new Types.ObjectId(decoded.id);
+        return sortToken === 'oldest'
+          ? { _id: { $gt: id } }
+          : { _id: { $lt: id } };
+      },
+    });
+  }
+
+  /** Parses comma-separated status filters, validating against the whitelist. */
+  private parseStatuses(raw: string | undefined): string[] | undefined {
+    if (raw === undefined) {
+      return undefined;
     }
-    const rows = await model
-      .find(pageFilter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return { items, nextCursor: buildCursor(lastId).cursor, limit };
+    const values = toArray(raw);
+    if (values.length === 0) {
+      return undefined;
+    }
+    for (const value of values) {
+      if (!SUBMISSION_STATUSES.includes(value as never)) {
+        throw new BusinessException(
+          'INVALID_FILTER',
+          `Invalid submission status filter: ${value}`,
+          400,
+        );
+      }
+    }
+    return values;
   }
 
   /***************************************************************************
@@ -179,6 +198,7 @@ export class SubmissionsService {
   async createForParticipation(
     account: AccountToken,
     participationId: string,
+    title?: string,
   ): Promise<SubmissionModel> {
     if (!Types.ObjectId.isValid(participationId)) {
       throw new BusinessException(
@@ -240,6 +260,7 @@ export class SubmissionsService {
         positionId: participant.positionId,
         organizationId: participant.organizationId,
         volunteerId: participant.volunteerId,
+        title: title?.trim() ? title.trim().slice(0, 200) : undefined,
         deliverables: [
           {
             title: position.title,
@@ -302,6 +323,7 @@ export class SubmissionsService {
     }
 
     const patch = {
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
       ...(dto.description !== undefined
         ? { description: dto.description }
         : {}),
@@ -429,15 +451,11 @@ export class SubmissionsService {
     const filter: FilterQuery<SubmissionModel> = {
       volunteerId: new Types.ObjectId(account.sub),
     };
-    if (query.status) {
-      filter.status = query.status;
+    const statuses = this.parseStatuses(query.status);
+    if (statuses) {
+      filter.status = statuses.length === 1 ? statuses[0] : { $in: statuses };
     }
-    return this.paginate(
-      filter,
-      normalizeLimit(query.limit),
-      query.cursor,
-      this.submissionModel,
-    );
+    return this.paginateSubmissions(filter, query);
   }
 
   async getDetail(
@@ -530,18 +548,66 @@ export class SubmissionsService {
     const filter: FilterQuery<SubmissionModel> = {
       organizationId: organization._id,
     };
-    if (query.status) {
-      filter.status = query.status;
+    const statuses = this.parseStatuses(query.status);
+    if (statuses) {
+      filter.status = statuses.length === 1 ? statuses[0] : { $in: statuses };
     }
     if (query.opportunityId) {
       filter.opportunityId = new Types.ObjectId(query.opportunityId);
     }
-    return this.paginate(
-      filter,
-      normalizeLimit(query.limit),
-      query.cursor,
-      this.submissionModel,
-    );
+    if (query.q) {
+      const pattern = query.q
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .slice(0, 60);
+      if (pattern) {
+        const regex = { $regex: pattern, $options: 'i' };
+        filter.$or = [
+          { title: regex },
+          { description: regex },
+          { 'deliverables.title': regex },
+        ];
+      }
+    }
+    if (query.format) {
+      const mediaIds = await this.resolveFormatMediaIds(query.format);
+      filter['evidence.mediaId'] =
+        mediaIds.length > 0
+          ? { $in: mediaIds }
+          : new Types.ObjectId('000000000000000000000000');
+    }
+    return this.paginateSubmissions(filter, query);
+  }
+
+  /**
+   * Evidence-format lookup (approved vocab: image, video, document, link),
+   * matched against the media kind/type. Bounded to 1000 media rows.
+   */
+  private async resolveFormatMediaIds(
+    format: string,
+  ): Promise<Types.ObjectId[]> {
+    let mediaFilter: FilterQuery<MediaModel>;
+    if (format === 'image') {
+      mediaFilter = { type: 'file', mimeType: { $regex: '^image/' } };
+    } else if (format === 'video') {
+      mediaFilter = {
+        $or: [
+          { type: 'link' },
+          { type: 'file', mimeType: { $regex: '^video/' } },
+        ],
+      };
+    } else if (format === 'document') {
+      mediaFilter = { type: 'file', mimeType: { $regex: '^application/' } };
+    } else {
+      mediaFilter = { type: 'link' };
+    }
+    const rows = await this.mediaModel
+      .find(mediaFilter)
+      .select('_id')
+      .limit(1000)
+      .lean()
+      .exec();
+    return rows.map((row) => row._id);
   }
 
   /***************************************************************************

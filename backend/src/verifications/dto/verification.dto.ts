@@ -1,6 +1,8 @@
 import {
+  IsDateString,
   IsIn,
   IsInt,
+  IsMongoId,
   IsOptional,
   IsString,
   Max,
@@ -77,4 +79,24 @@ export class ExperienceListQueryDto {
   @IsOptional()
   @IsString()
   limit?: string;
+
+  @ApiPropertyOptional({ type: String, format: 'ObjectId' })
+  @IsOptional()
+  @IsMongoId()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ type: String, format: 'ObjectId' })
+  @IsOptional()
+  @IsMongoId()
+  skillId?: string;
+
+  @ApiPropertyOptional({ description: 'Created-at lower bound (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @ApiPropertyOptional({ description: 'Created-at upper bound (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 }

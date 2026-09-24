@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import {
-  buildCursor,
-  decodeCursor,
+  decodePageCursor,
+  encodePageCursor,
   normalizeLimit,
 } from '../common/pagination/pagination.util';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -40,26 +40,30 @@ export class AdminVolunteersService {
     query: VolunteersQueryDto,
   ): Promise<CursorPage<AdminVolunteerRow>> {
     const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
-    const filter: Record<string, unknown> = {};
-    if (cursor && Types.ObjectId.isValid(cursor)) {
-      filter._id = { $lt: new Types.ObjectId(cursor) };
+    const decoded = decodePageCursor(query.cursor);
+    const page = decoded?.page ?? 1;
+    const baseFilter: FilterQuery<VolunteerProfileModel> = {};
+    const pageFilter: FilterQuery<VolunteerProfileModel> = { ...baseFilter };
+    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
+      pageFilter._id = { $lt: new Types.ObjectId(decoded.id) };
     }
+    const total = await this.volunteerModel.countDocuments(baseFilter).exec();
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
     const profiles = await this.volunteerModel
-      .find(filter)
+      .find(pageFilter)
       .sort({ _id: -1 })
       .limit(limit + 1)
       .exec();
     const hasMore = profiles.length > limit;
-    const page = hasMore ? profiles.slice(0, limit) : profiles;
+    const sliced = hasMore ? profiles.slice(0, limit) : profiles;
 
     const users = await this.userModel
-      .find({ _id: { $in: page.map((profile) => profile.userId) } })
+      .find({ _id: { $in: sliced.map((profile) => profile.userId) } })
       .select('_id email phone role status createdAt')
       .exec();
     const userById = new Map(users.map((user) => [user._id.toString(), user]));
 
-    const items = page.map((profile) => ({
+    const items = sliced.map((profile) => ({
       profile,
       user: userById.get(profile.userId.toString()) ?? null,
     }));
@@ -69,8 +73,13 @@ export class AdminVolunteersService {
         : null;
     return {
       items,
-      nextCursor: buildCursor(lastId).cursor,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'newest' })
+        : null,
       limit,
+      total,
+      page,
+      pages,
     };
   }
 }

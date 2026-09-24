@@ -4,14 +4,11 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
-import {
-  buildCursor,
-  decodeCursor,
-  normalizeLimit,
-} from '../common/pagination/pagination.util';
+import { execPage } from '../common/pagination/pagination.util';
 import { MediaModel, MediaCollection } from '../media/schemas/media.schema';
 import { MediaService } from '../media/media.service';
 import { ReviewModel, ReviewsCollection } from '../reviews/review.schema';
+import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
 import {
   VolunteerProfileModel,
   VolunteerProfilesCollection,
@@ -43,6 +40,8 @@ export class ExperiencesService {
     private readonly mediaModel: Model<MediaModel>,
     @InjectModel(ReviewsCollection)
     private readonly reviewModel: Model<ReviewModel>,
+    @InjectModel(SkillsCollection)
+    private readonly skillModel: Model<SkillModel>,
     private readonly media: MediaService,
   ) {}
 
@@ -57,24 +56,60 @@ export class ExperiencesService {
     const filter: FilterQuery<VolunteerExperienceModel> = {
       volunteerId: new Types.ObjectId(account.sub),
     };
-    const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
-    const pageFilter: FilterQuery<VolunteerExperienceModel> = { ...filter };
-    if (cursor) {
-      pageFilter._id = { $lt: new Types.ObjectId(cursor) };
+    if (query.skillId) {
+      filter.skills = new Types.ObjectId(query.skillId);
     }
-    const rows = await this.experienceModel
-      .find(pageFilter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return { items, nextCursor: buildCursor(lastId).cursor, limit };
+    if (query.categoryId) {
+      const skills = await this.skillModel
+        .find({
+          categoryId: new Types.ObjectId(query.categoryId),
+          active: true,
+        })
+        .select('_id')
+        .lean()
+        .exec();
+      const ids = skills.map((row) => row._id);
+      const categoryCondition = {
+        skills: {
+          $in:
+            ids.length > 0
+              ? ids
+              : [new Types.ObjectId('000000000000000000000000')],
+        },
+      };
+      if (query.skillId) {
+        // Must match both the explicit skill and the category set (AND).
+        filter.$and = [
+          { skills: new Types.ObjectId(query.skillId) },
+          categoryCondition,
+        ];
+        delete filter.skills;
+      } else {
+        filter.skills = categoryCondition.skills;
+      }
+    }
+    if (query.from || query.to) {
+      const createdAt: Record<string, Date> = {};
+      if (query.from) {
+        createdAt.$gte = new Date(query.from);
+      }
+      if (query.to) {
+        createdAt.$lte = new Date(query.to);
+      }
+      filter.createdAt = createdAt;
+    }
+    return execPage(this.experienceModel, filter, {
+      limit: query.limit,
+      cursor: query.cursor,
+      sort: { _id: -1 },
+      sortToken: 'newest',
+      cursorFilter: (decoded) => {
+        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+          return {};
+        }
+        return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+      },
+    });
   }
 
   async getDetail(

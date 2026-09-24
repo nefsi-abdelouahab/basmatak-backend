@@ -3,6 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SkillsModule } from '../skills/skills.module';
 import { MediaCollection, MediaSchema } from '../media/schemas/media.schema';
 import {
+  PortfolioItemsCollection,
+  PortfolioItemSchema,
+} from '../portfolio/schemas/portfolio-item.schema';
+import {
   VolunteerExperiencesCollection,
   VolunteerExperienceSchema,
 } from '../verifications/schemas/volunteer-experience.schema';
@@ -43,6 +47,10 @@ import { VolunteersService } from './volunteers.service';
         schema: VolunteerAvailabilitySchema,
       },
       { name: MediaCollection, schema: MediaSchema },
+      {
+        name: PortfolioItemsCollection,
+        schema: PortfolioItemSchema,
+      },
       {
         name: VolunteerExperiencesCollection,
         schema: VolunteerExperienceSchema,

@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { BusinessException } from '../common/exceptions/business.exception';
+import { CursorPage } from '../common/pagination/paginated.interface';
+import { execPage } from '../common/pagination/pagination.util';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import { UsersService } from '../users/users.service';
-import { UpdateOrganizationDto } from './dto/organization.dto';
+import {
+  OrganizationListQueryDto,
+  UpdateOrganizationDto,
+} from './dto/organization.dto';
 import { MediaOwnership } from '../common/seams/media-ownership';
 import {
   OrganizationsCollection,
@@ -36,11 +41,37 @@ export class OrganizationsService {
     private readonly mediaOwnership: MediaOwnership,
   ) {}
 
-  async listPublic(): Promise<OrganizationModel[]> {
-    return this.organizationModel
-      .find({ verificationStatus: 'verified', status: 'active' })
-      .sort({ slug: 1 })
-      .exec();
+  async listPublic(
+    query?: OrganizationListQueryDto,
+  ): Promise<CursorPage<OrganizationModel>> {
+    const filter: FilterQuery<OrganizationModel> = {
+      verificationStatus: 'verified',
+      status: 'active',
+    };
+    if (query?.q) {
+      const pattern = query.q
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .slice(0, 60);
+      if (pattern) {
+        const regex = { $regex: pattern, $options: 'i' };
+        filter.$or = [{ nameAr: regex }, { nameFr: regex }, { slug: regex }];
+      }
+    }
+    // Note: `query.page` (roadmap input) is intentionally ignored — pagination
+    // stays cursor-based; `page` is returned as response metadata only.
+    return execPage(this.organizationModel, filter, {
+      limit: query?.limit,
+      cursor: query?.cursor,
+      sort: { _id: -1 },
+      sortToken: 'newest',
+      cursorFilter: (decoded) => {
+        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+          return {};
+        }
+        return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+      },
+    });
   }
 
   /** Public seam (S12 contract): org only when verified AND active, else null. */

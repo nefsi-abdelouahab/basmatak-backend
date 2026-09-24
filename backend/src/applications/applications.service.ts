@@ -6,11 +6,7 @@ import { DomainEvents } from '../common/constants/domain-events';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
-import {
-  buildCursor,
-  decodeCursor,
-  normalizeLimit,
-} from '../common/pagination/pagination.util';
+import { execPage } from '../common/pagination/pagination.util';
 import {
   APPLICATION_INBOX_JOINER,
   ApplicationInboxJoiner,
@@ -152,32 +148,28 @@ export class ApplicationsService {
     return application;
   }
 
-  private async paginate(
+  private paginateSorted(
     filter: FilterQuery<ApplicationModel>,
-    limit: number,
-    rawCursor: string | undefined,
+    query: { limit?: string; cursor?: string; sort?: string },
   ): Promise<CursorPage<ApplicationModel>> {
-    const cursor = decodeCursor(rawCursor);
-    const pageFilter: FilterQuery<ApplicationModel> = { ...filter };
-    if (cursor) {
-      pageFilter._id = { $lt: new Types.ObjectId(cursor) };
-    }
-    const rows = await this.applicationModel
-      .find(pageFilter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return {
-      items,
-      nextCursor: buildCursor(lastId).cursor,
-      limit,
-    };
+    const sortToken = query.sort ?? 'newest';
+    const sort: Record<string, 1 | -1> =
+      sortToken === 'oldest' ? { _id: 1 } : { _id: -1 };
+    return execPage(this.applicationModel, filter, {
+      limit: query.limit,
+      cursor: query.cursor,
+      sort,
+      sortToken,
+      cursorFilter: (decoded) => {
+        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+          return {};
+        }
+        const id = new Types.ObjectId(decoded.id);
+        return sortToken === 'oldest'
+          ? { _id: { $gt: id } }
+          : { _id: { $lt: id } };
+      },
+    });
   }
 
   /***************************************************************************
@@ -321,7 +313,17 @@ export class ApplicationsService {
     if (query.status) {
       filter.status = query.status;
     }
-    return this.paginate(filter, normalizeLimit(query.limit), query.cursor);
+    if (query.from || query.to) {
+      const createdAt: Record<string, Date> = {};
+      if (query.from) {
+        createdAt.$gte = new Date(query.from);
+      }
+      if (query.to) {
+        createdAt.$lte = new Date(query.to);
+      }
+      filter.createdAt = createdAt;
+    }
+    return this.paginateSorted(filter, query);
   }
 
   async getApplication(
@@ -375,7 +377,7 @@ export class ApplicationsService {
     if (query.status) {
       filter.status = query.status;
     }
-    return this.paginate(filter, normalizeLimit(query.limit), query.cursor);
+    return this.paginateSorted(filter, query);
   }
 
   /**
@@ -417,17 +419,16 @@ export class ApplicationsService {
         filter.$and = and;
       }
     }
-    const page = await this.paginate(
-      filter,
-      normalizeLimit(query.limit),
-      query.cursor,
-    );
+    const page = await this.paginateSorted(filter, query);
     const rows = page.items as unknown as ApplicationInboxRow[];
     const enriched = await this.inboxJoiner.enrich(organization._id, rows);
     return {
       items: enriched,
       nextCursor: page.nextCursor,
       limit: page.limit,
+      total: page.total,
+      page: page.page,
+      pages: page.pages,
     };
   }
 

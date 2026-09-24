@@ -2,7 +2,9 @@ export interface CursorPage<T> {
   items: T[];
   nextCursor: string | null;
   limit: number;
-  total?: number;
+  total: number;
+  page: number;
+  pages: number;
 }
 
 export interface CursorState {

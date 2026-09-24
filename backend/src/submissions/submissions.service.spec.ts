@@ -215,6 +215,7 @@ describe('SubmissionsService (S10 Part A)', () => {
       participantModel,
       opportunityModel,
       organizationModel,
+      handle.connection.model<MediaModel>(MediaCollection, MediaSchema),
       organizations,
       mediaService,
       mediaOwnership,

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, FilterQuery, Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import {
   NOTIFICATIONS_REPOSITORY,
   NotificationsRepository,
@@ -8,11 +8,7 @@ import {
 } from '../applications/notifications.repository';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { CursorPage } from '../common/pagination/paginated.interface';
-import {
-  buildCursor,
-  decodeCursor,
-  normalizeLimit,
-} from '../common/pagination/pagination.util';
+import { execPage } from '../common/pagination/pagination.util';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
 import { NotificationPrefsService } from './notification-prefs.service';
 import { buildNotificationKey } from './notifications-key.util';
@@ -122,30 +118,22 @@ export class NotificationsService {
     rawLimit: string | undefined,
     rawCursor: string | undefined,
   ): Promise<CursorPage<NotificationModel>> {
-    const limit = normalizeLimit(rawLimit);
-    const cursor = decodeCursor(rawCursor);
-    const filter: FilterQuery<NotificationModel> = {
-      userId: new Types.ObjectId(userId),
-    };
-    if (cursor) {
-      filter._id = { $lt: new Types.ObjectId(cursor) };
-    }
-    const rows = await this.notificationModel
-      .find(filter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return {
-      items,
-      nextCursor: buildCursor(lastId).cursor,
-      limit,
-    };
+    return execPage(
+      this.notificationModel,
+      { userId: new Types.ObjectId(userId) },
+      {
+        limit: rawLimit,
+        cursor: rawCursor,
+        sort: { _id: -1 },
+        sortToken: 'newest',
+        cursorFilter: (decoded) => {
+          if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+            return {};
+          }
+          return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+        },
+      },
+    );
   }
 
   async unreadCount(userId: string): Promise<{ count: number }> {
