@@ -184,7 +184,15 @@ describe('media e2e (S8) — presigned uploads, confirm, links, visibility, F6 d
       visibility: 'private',
     });
 
-    await get(undefined, `/media/${publicStream.body.mediaId}`).expect(404);
+    // Guest × public → 200 (d4/3.1: guests read public media — inventory §6
+    // matrix, design d4 F3/3.1; supersedes the old guest-always-404).
+    const guestPublic = await get(
+      undefined,
+      `/media/${publicStream.body.mediaId}`,
+    ).expect(200);
+    expect(guestPublic.body.url).toContain('read');
+    // Guest × private → 404 (guests read ONLY public — d4/3.1).
+    await get(undefined, `/media/${privateStream.body.mediaId}`).expect(404);
 
     const strangerPublic = await get(
       strangerToken,

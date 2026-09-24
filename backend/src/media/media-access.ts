@@ -34,11 +34,14 @@ export class MediaAccessService {
     if (media.deletedAt) {
       return false;
     }
-    if (!actor || !actor.sub) {
-      return false;
-    }
+    // Guests SHALL read `visibility=public` media (inventory §6, design d4/3.1):
+    // the public check precedes the guest deny so an unauthenticated read of
+    // public media is allowed (guest × private still 404 — see `read()`).
     if (media.visibility === 'public') {
       return true;
+    }
+    if (!actor || !actor.sub) {
+      return false;
     }
     if (actor.role === 'admin') {
       return true;

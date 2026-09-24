@@ -190,3 +190,27 @@ The system SHALL expose `MediaOwnership.assertFor(mediaId, actor, purpose)` (con
 - **WHEN** the media's purpose differs from the requested purpose
 - **THEN** the assertion fails (purpose error)
 
+### Requirement: Media purpose documentation and consumers
+
+The system SHALL document the three new media purposes and the field that consumes each: `opportunity_cover` ↔ consumed by the `coverMediaId` field on `opportunity` documents; `organization_cover` ↔ consumed by the `coverMediaId` field on `organization` documents; `organization_document` ↔ consumed by the `annualReportMediaId` field on `organization` documents claims/opportunities (annual report attachment). This documentation SHALL live in the media docs alongside the existing purpose list.
+
+#### Scenario: Opportunity cover documented with consumer
+
+- **WHEN** a developer reads the media docs for `opportunity_cover`
+- **THEN** the doc lists `opportunity_cover` and names its consumer field `opportunities.coverMediaId`
+
+#### Scenario: Organization cover documented with consumer
+
+- **WHEN** a developer reads the media docs for `organization_cover`
+- **THEN** the doc lists `organization_cover` and names its consumer field `organizations.coverMediaId`
+
+#### Scenario: Organization document documented with consumer
+
+- **WHEN** a developer reads the media docs for `organization_document`
+- **THEN** the doc lists `organization_document` and names its consumer field `organizations.annualReportMediaId`
+
+#### Scenario: Private-by-default evidence documented
+
+- **WHEN** a developer reads the media docs for `submission_evidence`
+- **THEN** the doc states that uploads default to `visibility=private` and that the owning organization may read private evidence attached to submissions on its own opportunities
+
