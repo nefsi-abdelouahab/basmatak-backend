@@ -54,6 +54,9 @@ export const MediaSchema: Schema<MediaModel> = createSchema({
       'verification_document',
       'submission_evidence',
       'portfolio_item',
+      'opportunity_cover',
+      'organization_cover',
+      'organization_document',
     ],
   },
   visibility: {

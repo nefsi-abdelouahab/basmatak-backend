@@ -32,8 +32,17 @@ describe('MediaAccessService (§6 private-media matrix)', () => {
     service = new MediaAccessService(denialSeam);
   });
 
-  it('denies guests and deleted rows regardless of visibility', async () => {
-    expect(await service.canRead(undefined, media({}))).toBe(false);
+  it('denies guests only on private/deleted rows — public media SHALL be guest-readable (d4/3.1)', async () => {
+    // Guest × public → allow (unauthenticated read of public is the §6
+    // "first row" of the matrix): the old pre-decision behaviour (guest=always
+    // false) is superseded by F3/§6 — see matrix test regression 4.1.
+    expect(
+      await service.canRead(undefined, media({ visibility: 'public' })),
+    ).toBe(true);
+    // Guest × private → 404 (deny), regardless of deletion.
+    expect(
+      await service.canRead(undefined, media({ visibility: 'private' })),
+    ).toBe(false);
     expect(
       await service.canRead(
         actor(),
@@ -46,6 +55,12 @@ describe('MediaAccessService (§6 private-media matrix)', () => {
         media({ visibility: 'public', deletedAt: new Date() }),
       ),
     ).toBe(false);
+  });
+
+  it('allows a guest on public media (d4/3.1: public precedes guest-deny)', async () => {
+    expect(
+      await service.canRead(undefined, media({ visibility: 'public' })),
+    ).toBe(true);
   });
 
   it('grants any authenticated actor on public media', async () => {

@@ -11,6 +11,7 @@ import { MediaAccessService } from './media-access';
 import {
   isAllowedUpload,
   assertAllowedLinkHost,
+  defaultVisibilityForPurpose,
   MediaPurpose,
 } from './media.constants';
 import { PostLinkMediaDto, PostUploadMediaDto } from './dto/media.dto';
@@ -56,7 +57,7 @@ export class MediaService {
     const row = await this.mediaModel.create({
       ownerId: new Types.ObjectId(ownerId),
       purpose: dto.purpose,
-      visibility: dto.visibility ?? 'public',
+      visibility: dto.visibility ?? defaultVisibilityForPurpose(dto.purpose),
       type: 'file',
       storageKey,
       filename: dto.filename,
@@ -108,7 +109,7 @@ export class MediaService {
     return this.mediaModel.create({
       ownerId: new Types.ObjectId(actor.sub),
       purpose: dto.purpose,
-      visibility: dto.visibility ?? 'public',
+      visibility: dto.visibility ?? defaultVisibilityForPurpose(dto.purpose),
       type: 'link',
       url,
     });
@@ -118,14 +119,17 @@ export class MediaService {
     actor: AccountToken | undefined,
     mediaId: string,
   ): Promise<MediaReadResult> {
-    if (!actor?.sub) {
-      throw new BusinessException('MEDIA_NOT_FOUND', 'Media not found', 404);
-    }
     const media = await this.ownership.findById(mediaId);
     if (!media) {
       throw new BusinessException('MEDIA_NOT_FOUND', 'Media not found', 404);
     }
     if (!(await this.access.canRead(actor, media))) {
+      // Guest × private stays 404 (guests read ONLY public — d4/3.1: delete/404
+      // precedes deny, guests × public are allowed earlier in `canRead`); an
+      // authenticated stranger × private is a denial → 403.
+      if (!actor?.sub) {
+        throw new BusinessException('MEDIA_NOT_FOUND', 'Media not found', 404);
+      }
       throw new BusinessException(
         'MEDIA_ACCESS_DENIED',
         'You cannot read this media',

@@ -1,8 +1,17 @@
 import { BusinessException } from '../common/exceptions/business.exception';
 
 /**
- * Media vocabulary (inventory §3 `media`, roadmap S8). The typed enums close
- * F6's untyped-free run (`MediaPurpose`/`MediaVisibility` were strings).
+ * Media purposes (inventory §2.11 vs §3 `media`, roadmap S8 F3). Each purpose
+ * is the upload/link "intent type", independent of §6 `visibility`. Consumer
+ * fields (S9/S11 attach rows): `opportunity_cover` ↔ `opportunities.coverMediaId`;
+ * `organization_cover` ↔ `organizations.coverMediaId`;
+ * `organization_document` ↔ `organizations.annualReportMediaId`.
+ *
+ * Purpose → default visibility (§6 matrix, S8 F3/F17):
+ * - `submission_evidence` uploads default `private` (evidence is sensitive
+ *   until approved; only the submission owner/org may read it) — see
+ *   `defaultVisibilityForPurpose`.
+ * - every other purpose defaults `public` (owner + signed-upload preserved).
  */
 export const MEDIA_PURPOSES = [
   'avatar',
@@ -10,11 +19,25 @@ export const MEDIA_PURPOSES = [
   'verification_document',
   'submission_evidence',
   'portfolio_item',
+  'opportunity_cover',
+  'organization_cover',
+  'organization_document',
 ] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
 export const MEDIA_VISIBILITIES = ['public', 'private'] as const;
 export type MediaVisibility = (typeof MEDIA_VISIBILITIES)[number];
+
+/**
+ * §6 default visibility for a purpose (design d4/3.1, S8 F3/F17): evidence
+ * uploads default `private` (see the matrix on `MEDIA_PURPOSES`); every other
+ * purpose defaults `public`. Applied only when the caller omits `visibility`.
+ */
+export function defaultVisibilityForPurpose(
+  purpose: MediaPurpose,
+): MediaVisibility {
+  return purpose === 'submission_evidence' ? 'private' : 'public';
+}
 
 export const MEDIA_TYPES = ['file', 'link'] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
