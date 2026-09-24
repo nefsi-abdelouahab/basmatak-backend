@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -30,6 +31,7 @@ import {
   UpdateOpportunityDto,
 } from './dto/opportunity.dto';
 import { OpportunitiesService } from './opportunities.service';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 /**
  * Opportunities controller (inventory §2.8, roadmap S6).
@@ -48,9 +50,13 @@ export class OpportunitiesController {
 
   @Get('opportunities')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Public feed (published only, cursor paginated)' })
-  feed(@Query() query: OpportunityFeedQueryDto) {
-    return this.opportunities.listPublic(query);
+  feed(
+    @Query() query: OpportunityFeedQueryDto,
+    @CurrentAccount() account?: AccountToken,
+  ) {
+    return this.opportunities.listPublic(query, account);
   }
 
   @ApiBearerAuth()

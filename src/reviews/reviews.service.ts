@@ -5,8 +5,8 @@ import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import {
-  buildCursor,
-  decodeCursor,
+  decodePageCursor,
+  encodePageCursor,
   normalizeLimit,
 } from '../common/pagination/pagination.util';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
@@ -96,11 +96,14 @@ export class ReviewsService {
     query: ReviewListQueryDto,
   ): Promise<CursorPage<ReviewModel>> {
     const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
+    const decoded = decodePageCursor(query.cursor);
+    const page = decoded?.page ?? 1;
     const pageFilter: FilterQuery<ReviewModel> = { ...filter };
-    if (cursor) {
-      pageFilter._id = { $lt: new Types.ObjectId(cursor) };
+    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
+      pageFilter._id = { $lt: new Types.ObjectId(decoded.id) };
     }
+    const total = await this.reviewModel.countDocuments(filter).exec();
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
     const rows = await this.reviewModel
       .find(pageFilter)
       .sort({ _id: -1 })
@@ -112,7 +115,16 @@ export class ReviewsService {
       hasMore && items.length > 0
         ? items[items.length - 1]._id.toString()
         : null;
-    return { items, nextCursor: buildCursor(lastId).cursor, limit };
+    return {
+      items,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'newest' })
+        : null,
+      limit,
+      total,
+      page,
+      pages,
+    };
   }
 
   /***************************************************************************
@@ -205,6 +217,8 @@ export class ReviewsService {
         nextCursor: page.nextCursor,
         limit: page.limit,
         total: page.total,
+        page: page.page,
+        pages: page.pages,
       };
     }
     const organizationIds = [
@@ -241,6 +255,8 @@ export class ReviewsService {
         nextCursor: page.nextCursor,
         limit: page.limit,
         total: page.total,
+        page: page.page,
+        pages: page.pages,
       };
     }
     const submissionIds = [

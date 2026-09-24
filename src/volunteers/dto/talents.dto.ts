@@ -1,10 +1,21 @@
-import { IsMongoId, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBooleanString,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
+export const TALENT_SORTS = ['newest', 'oldest', 'experiences_desc'] as const;
+
+export type TalentSort = (typeof TALENT_SORTS)[number];
+
 /**
- * Public talents feed query (roadmap S12). Bounded `q`, facet filters
- * (`skillId`, `categoryId`, `wilayaId`) and S1 cursor paging (`cursor`,
- * `limit` as a string, clamped by the pagination util).
+ * Public talents feed query (roadmap S12 + Session 7). Bounded `q`, facet filters
+ * (`skillId`, `categoryId`, `wilayaId`) plus Session 7 multi-select
+ * (`skillIds`, `wilayaIds`), thresholds (`minExperiences`, `hasAvailability`,
+ * `portfolio`), validated `sort`, and S1 cursor paging (`cursor`, `limit`).
  */
 export class TalentsQueryDto {
   @ApiPropertyOptional({
@@ -18,27 +29,79 @@ export class TalentsQueryDto {
 
   @ApiPropertyOptional({
     type: String,
-    format: 'ObjectId',
-    description: 'Skill id',
+    description: 'Skill id(s); single or comma-separated multi-select',
   })
   @IsOptional()
-  @IsMongoId()
+  @IsString()
+  @MaxLength(1000)
   skillId?: string;
 
   @ApiPropertyOptional({
     type: String,
-    format: 'ObjectId',
-    description: 'Skill category id',
+    description: 'Skill category id(s); single or comma-separated',
   })
   @IsOptional()
-  @IsMongoId()
+  @IsString()
+  @MaxLength(1000)
   categoryId?: string;
 
-  @ApiPropertyOptional({ description: '2-digit wilaya code', example: '16' })
+  @ApiPropertyOptional({
+    description: 'Wilaya code(s); single or comma-separated multi-select',
+    example: '16',
+  })
   @IsOptional()
   @IsString()
-  @MaxLength(40)
+  @MaxLength(500)
   wilayaId?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Multi-select skill ids (comma-separated)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  skillIds?: string;
+
+  @ApiPropertyOptional({
+    description: 'Multi-select wilaya codes (comma-separated)',
+    example: '16,31',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  wilayaIds?: string;
+
+  @ApiPropertyOptional({
+    description: 'Minimum verified experiences (roadmap talents filter)',
+  })
+  @IsOptional()
+  @IsString()
+  minExperiences?: string;
+
+  @ApiPropertyOptional({
+    description: 'Only volunteers with availability set',
+    type: 'boolean',
+  })
+  @IsOptional()
+  @IsBooleanString()
+  hasAvailability?: string;
+
+  @ApiPropertyOptional({
+    description: 'Only volunteers with at least one portfolio item',
+    type: 'boolean',
+  })
+  @IsOptional()
+  @IsBooleanString()
+  portfolio?: string;
+
+  @ApiPropertyOptional({
+    description: 'Server-defined sort whitelist',
+    enum: TALENT_SORTS,
+  })
+  @IsOptional()
+  @IsIn(TALENT_SORTS)
+  sort?: TalentSort;
 
   @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()

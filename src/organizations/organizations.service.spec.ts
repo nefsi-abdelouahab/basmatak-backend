@@ -242,7 +242,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         status: 404,
       });
       void org;
-      expect(await service.listPublic()).toHaveLength(0);
+      expect((await service.listPublic()).items).toHaveLength(0);
     });
 
     it('exposes the organization once verified and active', async () => {
@@ -258,7 +258,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       const fetched = await service.getPublicOrganization('org-owner');
       expect(fetched).not.toBeNull();
       expect(fetched!.verificationStatus).toBe('verified');
-      expect(await service.listPublic()).toHaveLength(1);
+      expect((await service.listPublic()).items).toHaveLength(1);
       expect(await service.listPublishedOpportunities('org-owner')).toEqual([]);
     });
 

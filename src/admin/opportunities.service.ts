@@ -4,8 +4,8 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
-  buildCursor,
-  decodeCursor,
+  decodePageCursor,
+  encodePageCursor,
   normalizeLimit,
 } from '../common/pagination/pagination.util';
 import { CursorPage } from '../common/pagination/paginated.interface';
@@ -34,13 +34,17 @@ export class AdminOpportunitiesService {
     query: OpportunitiesQueryDto,
   ): Promise<CursorPage<OpportunityModel>> {
     const limit = normalizeLimit(query.limit);
-    const cursor = decodeCursor(query.cursor);
+    const decoded = decodePageCursor(query.cursor);
+    const page = decoded?.page ?? 1;
     const filter: FilterQuery<OpportunityModel> = {};
-    if (cursor && Types.ObjectId.isValid(cursor)) {
-      filter._id = { $lt: new Types.ObjectId(cursor) };
+    const pageFilter: FilterQuery<OpportunityModel> = { ...filter };
+    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
+      pageFilter._id = { $lt: new Types.ObjectId(decoded.id) };
     }
+    const total = await this.opportunityModel.countDocuments(filter).exec();
+    const pages = total === 0 ? 0 : Math.ceil(total / limit);
     const rows = await this.opportunityModel
-      .find(filter)
+      .find(pageFilter)
       .select(
         '_id organizationId slug title description categoryId status startDate applicationDeadline createdAt updatedAt',
       )
@@ -53,7 +57,16 @@ export class AdminOpportunitiesService {
       hasMore && items.length > 0
         ? items[items.length - 1]._id.toString()
         : null;
-    return { items, nextCursor: buildCursor(lastId).cursor, limit };
+    return {
+      items,
+      nextCursor: lastId
+        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'newest' })
+        : null,
+      limit,
+      total,
+      page,
+      pages,
+    };
   }
 
   async setStatus(

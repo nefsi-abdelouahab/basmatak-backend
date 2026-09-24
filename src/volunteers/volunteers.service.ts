@@ -16,10 +16,10 @@ import {
 } from '../verifications/schemas/volunteer-experience.schema';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import {
-  buildCursor,
-  decodeCursor,
+  execPage,
   MAX_LIMIT,
   normalizeLimit,
+  toArray,
 } from '../common/pagination/pagination.util';
 import { TalentsQueryDto } from './dto/talents.dto';
 import {
@@ -45,6 +45,10 @@ import {
   VolunteerAvailabilityModel,
   WeeklySchedule,
 } from './schemas/volunteer-availability.schema';
+import {
+  PortfolioItemModel,
+  PortfolioItemsCollection,
+} from '../portfolio/schemas/portfolio-item.schema';
 
 /** A skill on a public profile / talent card, joined to the catalog (A5-gated). */
 export interface TalentSkill {
@@ -128,6 +132,8 @@ export class VolunteersService {
     private readonly mediaModel: Model<MediaModel>,
     @InjectModel(VolunteerExperiencesCollection)
     private readonly experienceModel: Model<VolunteerExperienceModel>,
+    @InjectModel(PortfolioItemsCollection)
+    private readonly portfolioItemModel: Model<PortfolioItemModel>,
     private readonly mediaOwnership: MediaOwnership,
     private readonly portfolioQuery: PortfolioQueryService,
   ) {}
@@ -449,28 +455,40 @@ export class VolunteersService {
   }
 
   /**
-   * Talents feed over enabled profiles (D2): bounded `q`, skill/category/wilaya
-   * facet filters, S1 cursor paging, public-safety projection only.
+   * Talents feed over enabled profiles (D2 + Session 7): bounded `q`,
+   * skill/category/wilaya facet filters, `minExperiences` / `hasAvailability` /
+   * `portfolio` thresholds, comma-separated multi-select, validated `sort`,
+   * counted cursor paging, skill/wilaya facets from the filtered population,
+   * public-safety projection only. Card mapping stays batched (no N+1).
    */
-  async listPublicTalents(
-    query: TalentsQueryDto,
-  ): Promise<CursorPage<TalentCard>> {
-    const limit = normalizeLimit(query.limit);
+  async listPublicTalents(query: TalentsQueryDto): Promise<
+    CursorPage<TalentCard> & {
+      facets: {
+        skills: Array<{ skillId: string; count: number }>;
+        wilayas: Array<{ wilayaId: string; count: number }>;
+      };
+    }
+  > {
     const filter: FilterQuery<VolunteerProfileModel> = {
       'publicProfile.enabled': true,
     };
-    if (query.wilayaId) {
-      filter['location.wilayaId'] = query.wilayaId;
+
+    const wilayaIds = [...toArray(query.wilayaId), ...toArray(query.wilayaIds)];
+    if (wilayaIds.length === 1) {
+      filter['location.wilayaId'] = wilayaIds[0];
+    } else if (wilayaIds.length > 1) {
+      filter['location.wilayaId'] = { $in: wilayaIds };
     }
+
     const skillUserIds = await this.resolveSkillUserIds(
-      query.skillId,
-      query.categoryId,
+      [...toArray(query.skillId), ...toArray(query.skillIds)],
+      toArray(query.categoryId),
     );
+    const userIdSets: Set<string>[] = [];
     if (skillUserIds) {
-      filter.userId = {
-        $in: [...skillUserIds].map((id) => new Types.ObjectId(id)),
-      };
+      userIdSets.push(skillUserIds);
     }
+
     if (query.q) {
       const pattern = escapeRegex(query.q.trim()).slice(0, 60);
       if (pattern) {
@@ -482,24 +500,92 @@ export class VolunteersService {
         ];
       }
     }
-    const cursor = decodeCursor(query.cursor);
-    if (cursor) {
-      filter._id = { $lt: new Types.ObjectId(cursor) };
+
+    if (query.minExperiences !== undefined) {
+      const min = Number.parseInt(String(query.minExperiences), 10);
+      if (!Number.isFinite(min) || min < 0) {
+        throw new BusinessException(
+          'INVALID_FILTER',
+          'minExperiences must be a non-negative integer',
+          400,
+        );
+      }
+      if (min > 0) {
+        userIdSets.push(await this.volunteerIdsWithMinExperiences(min));
+      }
     }
 
-    const rows = await this.profileModel
-      .find(filter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const cards = await this.mapTalentCards(items);
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return { items: cards, nextCursor: buildCursor(lastId).cursor, limit };
+    if (query.hasAvailability === 'true') {
+      userIdSets.push(await this.volunteerIdsWithAvailability());
+    }
+
+    if (query.portfolio === 'true') {
+      userIdSets.push(await this.volunteerIdsWithPortfolio());
+    }
+
+    if (userIdSets.length > 0) {
+      let intersection = userIdSets[0];
+      for (const set of userIdSets.slice(1)) {
+        intersection = new Set([...intersection].filter((id) => set.has(id)));
+      }
+      filter.userId = {
+        $in: [...intersection].map((id) => new Types.ObjectId(id)),
+      };
+    }
+
+    const sortToken = query.sort ?? 'newest';
+    const sort: Record<string, 1 | -1> =
+      sortToken === 'oldest'
+        ? { _id: 1 }
+        : sortToken === 'experiences_desc'
+          ? { 'stats.verifiedExperiences': -1, _id: -1 }
+          : { _id: -1 };
+
+    const page = await execPage(
+      this.profileModel,
+      filter,
+      {
+        limit: query.limit,
+        cursor: query.cursor,
+        sort,
+        sortToken,
+        cursorFilter: (decoded) => {
+          if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+            return {};
+          }
+          const id = new Types.ObjectId(decoded.id);
+          if (sortToken === 'oldest') {
+            return { _id: { $gt: id } };
+          }
+          if (sortToken === 'experiences_desc' && decoded.value !== undefined) {
+            const value = Number.parseInt(decoded.value, 10);
+            if (Number.isFinite(value)) {
+              return {
+                $or: [
+                  { 'stats.verifiedExperiences': { $lt: value } },
+                  {
+                    'stats.verifiedExperiences': value,
+                    _id: { $lt: id },
+                  },
+                ],
+              };
+            }
+          }
+          return { _id: { $lt: id } };
+        },
+        valueExtractor: (item: VolunteerProfileModel) => {
+          if (sortToken === 'experiences_desc') {
+            return String(item.stats?.verifiedExperiences ?? 0);
+          }
+          return undefined;
+        },
+      },
+      async (rows) => this.mapTalentCards(rows),
+    );
+
+    const facets = await this.talentFacets(filter);
+
+    return { ...page, facets };
   }
 
   /**
@@ -699,16 +785,36 @@ export class VolunteersService {
     return skillsByOwner;
   }
 
-  /** Skilled-user intersection: both `skillId` and `categoryId` narrow the set. */
+  /** Skilled-user intersection: skill ids (OR within) AND category ids narrow the set. */
   private async resolveSkillUserIds(
-    skillId: string | undefined,
-    categoryId: string | undefined,
+    skillIds: string[],
+    categoryIds: string[],
   ): Promise<Set<string> | null> {
     const sets: Set<string>[] = [];
-    if (skillId) {
-      sets.push(await this.volunteerSkillUserIds([skillId]));
+    const validSkillIds = skillIds.map((id) => {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BusinessException(
+          'INVALID_FILTER',
+          `Invalid skillId filter: ${id}`,
+          400,
+        );
+      }
+      return id;
+    });
+    if (validSkillIds.length > 0) {
+      sets.push(await this.volunteerSkillUserIds(validSkillIds));
     }
-    if (categoryId) {
+    const validCategoryIds = categoryIds.map((id) => {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BusinessException(
+          'INVALID_FILTER',
+          `Invalid categoryId filter: ${id}`,
+          400,
+        );
+      }
+      return id;
+    });
+    for (const categoryId of validCategoryIds) {
       const catalog = await this.skillsCatalogModel
         .find({ categoryId: new Types.ObjectId(categoryId), active: true })
         .exec();
@@ -726,6 +832,109 @@ export class VolunteersService {
       intersection = new Set([...intersection].filter((id) => set.has(id)));
     }
     return intersection;
+  }
+
+  /** Volunteer userIds with at least `min` experience rows (indexed lookup). */
+  private async volunteerIdsWithMinExperiences(
+    min: number,
+  ): Promise<Set<string>> {
+    const counts = await this.experienceModel
+      .aggregate([
+        { $group: { _id: '$volunteerId', count: { $sum: 1 } } },
+        { $match: { count: { $gte: min } } },
+        { $project: { _id: 1 } },
+      ])
+      .exec();
+    return new Set(
+      counts.map((row: { _id: Types.ObjectId }) => row._id.toString()),
+    );
+  }
+
+  /** Volunteer userIds with at least one availability slot set. */
+  private async volunteerIdsWithAvailability(): Promise<Set<string>> {
+    const rows = await this.availabilityModel
+      .find({
+        $or: [
+          { 'schedule.monday.0': { $exists: true } },
+          { 'schedule.tuesday.0': { $exists: true } },
+          { 'schedule.wednesday.0': { $exists: true } },
+          { 'schedule.thursday.0': { $exists: true } },
+          { 'schedule.friday.0': { $exists: true } },
+          { 'schedule.saturday.0': { $exists: true } },
+          { 'schedule.sunday.0': { $exists: true } },
+        ],
+      })
+      .select('volunteerId')
+      .lean()
+      .exec();
+    return new Set(rows.map((row) => row.volunteerId.toString()));
+  }
+
+  /** Volunteer userIds with at least one public portfolio item. */
+  private async volunteerIdsWithPortfolio(): Promise<Set<string>> {
+    const rows = await this.portfolioItemModel
+      .find({ visibility: 'public' })
+      .select('volunteerId')
+      .lean()
+      .exec();
+    return new Set(rows.map((row) => row.volunteerId.toString()));
+  }
+
+  /**
+   * Skill/wilaya facet counts from the filtered talent population (one
+   * bounded aggregation per dimension, consistent with the filtered total).
+   */
+  private async talentFacets(
+    filter: FilterQuery<VolunteerProfileModel>,
+  ): Promise<{
+    skills: Array<{ skillId: string; count: number }>;
+    wilayas: Array<{ wilayaId: string; count: number }>;
+  }> {
+    const profiles = await this.profileModel
+      .find(filter)
+      .select('_id userId location.wilayaId')
+      .lean()
+      .exec();
+    const userIds = profiles.map((row) => row.userId.toString());
+    const wilayaCounts = new Map<string, number>();
+    for (const row of profiles) {
+      const wilaya = (row.location as { wilayaId?: string } | undefined)
+        ?.wilayaId;
+      if (!wilaya) {
+        continue;
+      }
+      wilayaCounts.set(wilaya, (wilayaCounts.get(wilaya) ?? 0) + 1);
+    }
+    let skillFacets: Array<{ skillId: string; count: number }> = [];
+    if (userIds.length > 0) {
+      const skillRows = await this.volunteerSkillModel
+        .aggregate([
+          {
+            $match: {
+              volunteerId: {
+                $in: userIds.map((id) => new Types.ObjectId(id)),
+              },
+            },
+          },
+          { $group: { _id: '$skillId', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 50 },
+        ])
+        .exec();
+      skillFacets = skillRows.map(
+        (row: { _id: Types.ObjectId; count: number }) => ({
+          skillId: row._id.toString(),
+          count: row.count,
+        }),
+      );
+    }
+    return {
+      skills: skillFacets,
+      wilayas: [...wilayaCounts.entries()]
+        .map(([wilayaId, count]) => ({ wilayaId, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 50),
+    };
   }
 
   private async volunteerSkillUserIds(
@@ -747,65 +956,64 @@ export class VolunteersService {
     limit: number,
     rawCursor?: string,
   ): Promise<CursorPage<PublicExperienceCard>> {
-    const cursor = decodeCursor(rawCursor);
-    const filter: FilterQuery<VolunteerExperienceModel> = {
+    const baseFilter: FilterQuery<VolunteerExperienceModel> = {
       volunteerId: new Types.ObjectId(volunteerId),
       publicVisibility: 'public',
     };
-    if (cursor) {
-      filter._id = { $lt: new Types.ObjectId(cursor) };
-    }
-    const rows = await this.experienceModel
-      .find(filter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-
-    const evidenceIds = items.flatMap((row) => row.evidenceIds);
-    const publicMedia = evidenceIds.length
-      ? await this.mediaModel
-          .find({
-            _id: { $in: evidenceIds },
-            visibility: 'public',
-            deletedAt: { $exists: false },
-          })
-          .exec()
-      : [];
-    const mediaById = new Map(
-      publicMedia.map((media) => [media._id.toString(), media] as const),
+    return execPage(
+      this.experienceModel,
+      baseFilter,
+      {
+        limit,
+        cursor: rawCursor,
+        sort: { _id: -1 },
+        sortToken: 'newest',
+        cursorFilter: (decoded) => {
+          if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+            return {};
+          }
+          return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+        },
+      },
+      async (rows) => {
+        const evidenceIds = rows.flatMap((row) => row.evidenceIds);
+        const publicMedia = evidenceIds.length
+          ? await this.mediaModel
+              .find({
+                _id: { $in: evidenceIds },
+                visibility: 'public',
+                deletedAt: { $exists: false },
+              })
+              .exec()
+          : [];
+        const mediaById = new Map(
+          publicMedia.map((media) => [media._id.toString(), media] as const),
+        );
+        return rows.map((row) => ({
+          id: row._id.toString(),
+          registryId: row.registryId,
+          title: row.title,
+          description: row.description ?? '',
+          duration: row.duration,
+          skills: row.skills.map((skill) => skill.toString()),
+          evidence: row.evidenceIds.flatMap((id) => {
+            const media = mediaById.get(id.toString());
+            if (!media) {
+              return [];
+            }
+            return [
+              {
+                mediaId: media._id.toString(),
+                type: media.type,
+                mimeType: media.mimeType ?? null,
+                filename: media.filename ?? null,
+                url: media.type === 'link' ? (media.url ?? null) : null,
+              },
+            ];
+          }),
+        }));
+      },
     );
-
-    const cards: PublicExperienceCard[] = items.map((row) => ({
-      id: row._id.toString(),
-      registryId: row.registryId,
-      title: row.title,
-      description: row.description ?? '',
-      duration: row.duration,
-      skills: row.skills.map((skill) => skill.toString()),
-      evidence: row.evidenceIds.flatMap((id) => {
-        const media = mediaById.get(id.toString());
-        if (!media) {
-          return [];
-        }
-        return [
-          {
-            mediaId: media._id.toString(),
-            type: media.type,
-            mimeType: media.mimeType ?? null,
-            filename: media.filename ?? null,
-            url: media.type === 'link' ? (media.url ?? null) : null,
-          },
-        ];
-      }),
-    }));
-
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return { items: cards, nextCursor: buildCursor(lastId).cursor, limit };
   }
 
   private async clearPrimary(userId: string): Promise<void> {

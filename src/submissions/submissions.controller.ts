@@ -18,6 +18,7 @@ import {
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
+  CreateSubmissionDto,
   SubmissionListQueryDto,
   SubmitDto,
   UpdateSubmissionDto,
@@ -47,8 +48,13 @@ export class SubmissionsController {
   create(
     @CurrentAccount() account: AccountToken,
     @Param('participationId') participationId: string,
+    @Body() dto?: CreateSubmissionDto,
   ) {
-    return this.submissions.createForParticipation(account, participationId);
+    return this.submissions.createForParticipation(
+      account,
+      participationId,
+      dto?.title,
+    );
   }
 
   @Get('submissions/me')

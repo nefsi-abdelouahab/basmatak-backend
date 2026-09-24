@@ -6,6 +6,7 @@ import { OpportunitiesModule } from '../opportunities/opportunities.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { ParticipationsModule } from '../participations/participations.module';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { SkillsModule } from '../skills/skills.module';
 import { SubmissionsModule } from '../submissions/submissions.module';
 import { VolunteersModule } from '../volunteers/volunteers.module';
 import { ExperiencesController } from './experiences.controller';
@@ -47,6 +48,7 @@ import { VerificationsService } from './verifications.service';
     VolunteersModule,
     MediaModule,
     NotificationsModule,
+    SkillsModule,
   ],
   controllers: [
     VerificationsController,

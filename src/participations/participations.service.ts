@@ -6,11 +6,7 @@ import { DomainEvents } from '../common/constants/domain-events';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
-import {
-  buildCursor,
-  decodeCursor,
-  normalizeLimit,
-} from '../common/pagination/pagination.util';
+import { execPage } from '../common/pagination/pagination.util';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import {
   OpportunitiesCollection,
@@ -125,32 +121,22 @@ export class ParticipationsService {
     return participant;
   }
 
-  private async paginate(
+  private paginate(
     filter: FilterQuery<TaskParticipantModel>,
-    limit: number,
-    rawCursor: string | undefined,
+    query: { limit?: string; cursor?: string },
   ): Promise<CursorPage<TaskParticipantModel>> {
-    const cursor = decodeCursor(rawCursor);
-    const pageFilter: FilterQuery<TaskParticipantModel> = { ...filter };
-    if (cursor) {
-      pageFilter._id = { $lt: new Types.ObjectId(cursor) };
-    }
-    const rows = await this.participantModel
-      .find(pageFilter)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return {
-      items,
-      nextCursor: buildCursor(lastId).cursor,
-      limit,
-    };
+    return execPage(this.participantModel, filter, {
+      limit: query.limit,
+      cursor: query.cursor,
+      sort: { _id: -1 },
+      sortToken: 'newest',
+      cursorFilter: (decoded) => {
+        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+          return {};
+        }
+        return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+      },
+    });
   }
 
   /***************************************************************************
@@ -167,7 +153,7 @@ export class ParticipationsService {
     if (query.status) {
       filter.status = query.status;
     }
-    return this.paginate(filter, normalizeLimit(query.limit), query.cursor);
+    return this.paginate(filter, query);
   }
 
   async getParticipation(
@@ -217,11 +203,7 @@ export class ParticipationsService {
       opportunityId: new Types.ObjectId(opportunityId),
       status: { $in: ACTIVE_PARTICIPANT_STATUSES },
     };
-    const page = await this.paginate(
-      filter,
-      normalizeLimit(query.limit),
-      query.cursor,
-    );
+    const page = await this.paginate(filter, query);
 
     const volunteerIds = page.items.map(
       (participant) => participant.volunteerId,
@@ -246,7 +228,14 @@ export class ParticipationsService {
           : null,
       };
     });
-    return { items, nextCursor: page.nextCursor, limit: page.limit };
+    return {
+      items,
+      nextCursor: page.nextCursor,
+      limit: page.limit,
+      total: page.total,
+      page: page.page,
+      pages: page.pages,
+    };
   }
 
   /***************************************************************************

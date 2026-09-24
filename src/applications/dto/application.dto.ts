@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsIn,
   IsMongoId,
   IsNotEmpty,
@@ -21,11 +22,25 @@ export class ApplyApplicationDto {
   message?: string;
 }
 
+export const APPLICATION_INBOX_SORTS = ['newest', 'oldest'] as const;
+
+export type ApplicationInboxSort = (typeof APPLICATION_INBOX_SORTS)[number];
+
 export class ApplicationListQueryDto {
   @ApiPropertyOptional({ enum: APPLICATION_STATUSES })
   @IsOptional()
   @IsIn(APPLICATION_STATUSES)
   status?: string;
+
+  @ApiPropertyOptional({ description: 'Created-at lower bound (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @ApiPropertyOptional({ description: 'Created-at upper bound (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 
   @ApiPropertyOptional({
     description: 'Opaque base64 cursor from the previous page',
@@ -85,13 +100,21 @@ export class OrganizationApplicationsQueryDto {
 
   @ApiPropertyOptional({
     description:
-      'Text search over the org\u2019s own opportunity / position titles (caller-name search lands with the Session 17 name join)',
+      'Text search over the org’s own opportunity / position titles (caller-name search lands with the Session 17 name join)',
     maxLength: 100,
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   q?: string;
+
+  @ApiPropertyOptional({
+    description: 'Server-defined sort whitelist',
+    enum: APPLICATION_INBOX_SORTS,
+  })
+  @IsOptional()
+  @IsIn(APPLICATION_INBOX_SORTS)
+  sort?: ApplicationInboxSort;
 
   @ApiPropertyOptional({
     description: 'Opaque base64 cursor from the previous page',

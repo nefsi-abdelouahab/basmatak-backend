@@ -5,6 +5,7 @@ import {
   IsArray,
   IsBooleanString,
   IsDateString,
+  IsIn,
   IsInt,
   IsMongoId,
   IsNumber,
@@ -17,6 +18,19 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export const FEED_SORTS = [
+  'newest',
+  'oldest',
+  'deadline_asc',
+  'startDate_asc',
+] as const;
+
+export type FeedSort = (typeof FEED_SORTS)[number];
+
+export const OWN_OPPORTUNITY_SORTS = ['newest', 'oldest'] as const;
+
+export type OwnOpportunitySort = (typeof OWN_OPPORTUNITY_SORTS)[number];
 
 export class LocationDto {
   @ApiPropertyOptional({ description: 'Wilaya code (01-58)', example: '16' })
@@ -231,32 +245,38 @@ export class OpportunityFeedQueryDto {
 
   @ApiPropertyOptional({
     type: String,
-    format: 'ObjectId',
-    description: 'Skill category id',
+    description: 'Skill category id(s), comma-separated for multi-select',
   })
   @IsOptional()
-  @IsMongoId()
+  @IsString()
+  @MaxLength(500)
   categoryId?: string;
 
   @ApiPropertyOptional({
     type: String,
-    format: 'ObjectId',
-    description: 'Skill id',
+    description: 'Skill id(s), comma-separated for multi-select',
   })
   @IsOptional()
-  @IsMongoId()
+  @IsString()
+  @MaxLength(1000)
   skillId?: string;
 
-  @ApiPropertyOptional({ example: '16', description: 'Wilaya code' })
+  @ApiPropertyOptional({
+    example: '16',
+    description: 'Wilaya code(s), comma-separated for multi-select',
+  })
   @IsOptional()
   @IsString()
-  @MaxLength(40)
+  @MaxLength(500)
   wilayaId?: string;
 
-  @ApiPropertyOptional({ example: '1601', description: 'Municipality code' })
+  @ApiPropertyOptional({
+    example: '1601',
+    description: 'Municipality code(s), comma-separated for multi-select',
+  })
   @IsOptional()
   @IsString()
-  @MaxLength(40)
+  @MaxLength(500)
   municipalityId?: string;
 
   @ApiPropertyOptional({ description: 'Start-date lower bound (ISO)' })
@@ -276,6 +296,22 @@ export class OpportunityFeedQueryDto {
   @IsOptional()
   @IsBooleanString()
   hasOpenPositions?: string;
+
+  @ApiPropertyOptional({
+    description: 'Restrict to the caller volunteer wilaya (`me` only)',
+    enum: ['me'],
+  })
+  @IsOptional()
+  @IsIn(['me'])
+  nearMe?: string;
+
+  @ApiPropertyOptional({
+    description: 'Server-defined sort whitelist',
+    enum: FEED_SORTS,
+  })
+  @IsOptional()
+  @IsIn(FEED_SORTS)
+  sort?: FeedSort;
 
   @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()
@@ -303,6 +339,23 @@ export class OwnOpportunityQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Title/location/skill keyword (own rows)',
+    maxLength: 200,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  q?: string;
+
+  @ApiPropertyOptional({
+    description: 'Server-defined sort whitelist',
+    enum: OWN_OPPORTUNITY_SORTS,
+  })
+  @IsOptional()
+  @IsIn(OWN_OPPORTUNITY_SORTS)
+  sort?: OwnOpportunitySort;
 
   @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()

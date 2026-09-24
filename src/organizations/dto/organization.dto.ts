@@ -40,6 +40,34 @@ export class UpdateOrganizationDto {
   logoMediaId?: string;
 }
 
+export class OrganizationListQueryDto {
+  @ApiPropertyOptional({
+    description: 'Bounded public search (name/slug)',
+    maxLength: 120,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  q?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Legacy roadmap `page` input — accepted but ignored; pagination stays cursor-based and `page` is returned as response metadata',
+  })
+  @IsOptional()
+  @IsString()
+  page?: string;
+
+  @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({ description: 'Page size (default 20, max 50)' })
+  @IsOptional()
+  @IsString()
+  limit?: string;
+}
 export class SubmitOrganizationVerificationDto {
   @ApiProperty({
     description: 'Verification document media ids (at least one)',
