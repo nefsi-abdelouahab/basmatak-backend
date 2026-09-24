@@ -2,6 +2,18 @@ import { Module, OnModuleInit } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { StatusTransitionRegistry } from '../core/status-transitions/status-transition.registry';
 import {
+  StatusHistoryCollection,
+  StatusHistorySchema,
+} from '../core/status-transitions/status-histories.schema';
+import {
+  ApplicationsCollection,
+  ApplicationSchema,
+} from '../applications/schemas/application.schema';
+import {
+  InertOrgFootprintProvider,
+  ORG_FOOTPRINT_PROVIDER,
+} from '../common/seams/org-footprint';
+import {
   OpportunitiesCollection,
   OpportunitySchema,
 } from '../opportunities/schemas/opportunity.schema';
@@ -32,6 +44,16 @@ import {
 } from '../core/settings/system-setting.schema';
 import { ReviewSchema, ReviewsCollection } from '../reviews/review.schema';
 import { ReportSchema, ReportsCollection } from '../reports/report.schema';
+import {
+  TaskParticipantsCollection,
+  TaskParticipantSchema,
+} from '../participations/schemas/task-participant.schema';
+import {
+  VerificationsCollection,
+  VerificationSchema,
+} from '../verifications/schemas/verification.schema';
+import { AdminAnalyticsController } from './analytics.controller';
+import { AdminAnalyticsService } from './analytics.service';
 import { AdminAuditController } from './audit.controller';
 import { AdminAuditService } from './audit.service';
 import { AdminOpportunitiesController } from './opportunities.controller';
@@ -75,11 +97,16 @@ import { AdminVolunteersService } from './volunteers.service';
       { name: SubmissionsCollection, schema: SubmissionSchema },
       { name: ReviewsCollection, schema: ReviewSchema },
       { name: ReportsCollection, schema: ReportSchema },
+      { name: ApplicationsCollection, schema: ApplicationSchema },
+      { name: TaskParticipantsCollection, schema: TaskParticipantSchema },
+      { name: VerificationsCollection, schema: VerificationSchema },
+      { name: StatusHistoryCollection, schema: StatusHistorySchema },
       { name: AuditLogsCollection, schema: AuditLogSchema },
       { name: SystemSettingsCollection, schema: SystemSettingSchema },
     ]),
   ],
   controllers: [
+    AdminAnalyticsController,
     AdminStatsController,
     AdminUsersController,
     AdminVolunteersController,
@@ -91,6 +118,8 @@ import { AdminVolunteersService } from './volunteers.service';
     AdminSettingsController,
   ],
   providers: [
+    AdminAnalyticsService,
+    { provide: ORG_FOOTPRINT_PROVIDER, useClass: InertOrgFootprintProvider },
     AdminStatsService,
     AdminUsersService,
     AdminVolunteersService,
