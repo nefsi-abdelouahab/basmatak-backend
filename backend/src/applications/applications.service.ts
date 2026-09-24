@@ -11,6 +11,11 @@ import {
   decodeCursor,
   normalizeLimit,
 } from '../common/pagination/pagination.util';
+import {
+  APPLICATION_INBOX_JOINER,
+  ApplicationInboxJoiner,
+  ApplicationInboxRow,
+} from '../common/seams/application-inbox-joiner';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import {
@@ -22,6 +27,7 @@ import { OrganizationsService } from '../organizations/organizations.service';
 import {
   ApplicationListQueryDto,
   OpportunityApplicationsQueryDto,
+  OrganizationApplicationsQueryDto,
 } from './dto/application.dto';
 import {
   NOTIFICATIONS_REPOSITORY,
@@ -38,6 +44,12 @@ import {
 
 const OPEN_STATUSES = ['published', 'in_progress'];
 
+const REVIEWABLE_STATUSES = ['pending', 'under_review'];
+
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Applications service (inventory §2.9, roadmap S7). Implements the two real
  * multi-document transactions of this session on the S1 replica-set rig:
@@ -48,6 +60,11 @@ const OPEN_STATUSES = ['published', 'in_progress'];
  *   only after commit.
  * - Withdraw an accepted application (F2): same pattern, deactivating the
  *   participant and freeing the seat atomically.
+ * Session 12 additions: `under_review` state with the org `start-review`
+ * transition (D3), status-aware accept/reject/withdraw valid from `pending`
+ * or `under_review` (D4/D5), the cover-message apply body (D1), and the org
+ * aggregate inbox `GET /organizations/me/applications` whose rows pass
+ * through the `APPLICATION_INBOX_JOINER` seam (D8/D9).
  */
 @Injectable()
 export class ApplicationsService {
@@ -64,6 +81,8 @@ export class ApplicationsService {
     private readonly statusTransitions: StatusTransitionService,
     @Inject(NOTIFICATIONS_REPOSITORY)
     private readonly notifications: NotificationsRepository,
+    @Inject(APPLICATION_INBOX_JOINER)
+    private readonly inboxJoiner: ApplicationInboxJoiner,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -169,6 +188,7 @@ export class ApplicationsService {
     account: AccountToken,
     opportunityId: string,
     positionId: string,
+    message?: string,
   ): Promise<ApplicationModel> {
     if (
       !Types.ObjectId.isValid(opportunityId) ||
@@ -231,6 +251,7 @@ export class ApplicationsService {
         volunteerId: new Types.ObjectId(account.sub),
         organizationId: opportunity.organizationId,
         status: 'pending',
+        message: message?.trim() || undefined,
       });
       this.eventEmitter.emit(DomainEvents.ApplicationCreated, { application });
       return application;
@@ -244,6 +265,46 @@ export class ApplicationsService {
       }
       throw error;
     }
+  }
+
+  /***************************************************************************
+   * Start review
+   **************************************************************************/
+
+  async startReview(
+    account: AccountToken,
+    applicationId: string,
+  ): Promise<ApplicationModel> {
+    const organization = await this.requireOwnOrganization(account);
+    const application = await this.requireById(applicationId);
+    if (application.organizationId.toString() !== organization._id.toString()) {
+      throw new BusinessException(
+        'APPLICATION_NOT_FOUND',
+        'Application not found',
+        404,
+      );
+    }
+
+    const updated = await this.applicationModel.findOneAndUpdate(
+      { _id: application._id, status: 'pending' },
+      { $set: { status: 'under_review' } },
+      { new: true },
+    );
+    if (!updated) {
+      throw new BusinessException(
+        'INVALID_APPLICATION_STATUS',
+        'Only pending applications can be moved to under review',
+        409,
+      );
+    }
+    await this.statusTransitions.assert({
+      entityType: 'application',
+      entityId: application._id,
+      from: 'pending',
+      to: 'under_review',
+      actor: account.sub,
+    });
+    return updated;
   }
 
   /***************************************************************************
@@ -317,6 +378,83 @@ export class ApplicationsService {
     return this.paginate(filter, normalizeLimit(query.limit), query.cursor);
   }
 
+  /**
+   * Org aggregate inbox (RP §2.1#6, D8): applications across the caller's own
+   * opportunities, newest-first, cursor-paginated, name-free until the
+   * Session 17 joiner overrides the `APPLICATION_INBOX_JOINER` token.
+   */
+  async listOrganizationInbox(
+    account: AccountToken,
+    query: OrganizationApplicationsQueryDto,
+  ): Promise<CursorPage<ApplicationInboxRow>> {
+    const organization = await this.requireOwnOrganization(account);
+    const filter: FilterQuery<ApplicationModel> = {
+      organizationId: organization._id,
+    };
+    if (query.status) {
+      filter.status = query.status;
+    }
+    if (query.opportunityId || query.q) {
+      const and: Record<string, unknown>[] = [];
+      if (query.opportunityId) {
+        and.push({
+          opportunityId: new Types.ObjectId(query.opportunityId),
+        });
+      }
+      if (query.q) {
+        and.push({
+          opportunityId: {
+            $in: await this.resolveInboxOpportunityIds(
+              organization._id,
+              query.q,
+            ),
+          },
+        });
+      }
+      if (and.length === 1) {
+        filter.opportunityId = and[0].opportunityId;
+      } else {
+        filter.$and = and;
+      }
+    }
+    const page = await this.paginate(
+      filter,
+      normalizeLimit(query.limit),
+      query.cursor,
+    );
+    const rows = page.items as unknown as ApplicationInboxRow[];
+    const enriched = await this.inboxJoiner.enrich(organization._id, rows);
+    return {
+      items: enriched,
+      nextCursor: page.nextCursor,
+      limit: page.limit,
+    };
+  }
+
+  /** Opportunity ids (org-scoped) whose title or position titles match `q`. */
+  private async resolveInboxOpportunityIds(
+    organizationId: Types.ObjectId,
+    q: string,
+  ): Promise<Types.ObjectId[]> {
+    const pattern = escapeRegex(q.trim()).slice(0, 60);
+    const opportunities = await this.opportunityModel
+      .find({
+        organizationId,
+        $or: [
+          { title: { $regex: pattern, $options: 'i' } },
+          { 'positions.title': { $regex: pattern, $options: 'i' } },
+        ],
+      })
+      .select({ _id: 1 })
+      .limit(200)
+      .exec();
+    const ids = opportunities.map((row) => row._id);
+    if (ids.length === 0) {
+      return [new Types.ObjectId('000000000000000000000000')];
+    }
+    return ids;
+  }
+
   /***************************************************************************
    * Accept (transaction)
    **************************************************************************/
@@ -339,6 +477,14 @@ export class ApplicationsService {
     let acceptedInto: OpportunityModel | null = null;
     try {
       await session.withTransaction(async (txn) => {
+        const currentStatus = application.status;
+        if (!REVIEWABLE_STATUSES.includes(currentStatus)) {
+          throw new BusinessException(
+            'INVALID_APPLICATION_STATUS',
+            'Only pending or under review applications can be accepted',
+            409,
+          );
+        }
         const opportunity = await this.opportunityModel
           .findById(application.opportunityId)
           .session(txn)
@@ -381,7 +527,7 @@ export class ApplicationsService {
 
         const appUpdate = await this.applicationModel
           .updateOne(
-            { _id: application._id, status: 'pending' },
+            { _id: application._id, status: currentStatus },
             { $set: { status: 'accepted' } },
           )
           .session(txn)
@@ -389,7 +535,7 @@ export class ApplicationsService {
         if (appUpdate.matchedCount !== 1) {
           throw new BusinessException(
             'INVALID_APPLICATION_STATUS',
-            'This application is no longer pending',
+            'This application is no longer pending or under review',
             409,
           );
         }
@@ -437,7 +583,7 @@ export class ApplicationsService {
         await this.statusTransitions.assert({
           entityType: 'application',
           entityId: application._id,
-          from: 'pending',
+          from: currentStatus,
           to: 'accepted',
           actor: account.sub,
           session: txn,
@@ -483,22 +629,30 @@ export class ApplicationsService {
         404,
       );
     }
+    const currentStatus = application.status;
+    if (!REVIEWABLE_STATUSES.includes(currentStatus)) {
+      throw new BusinessException(
+        'INVALID_APPLICATION_STATUS',
+        'Only pending or under review applications can be rejected',
+        409,
+      );
+    }
     const updated = await this.applicationModel.findOneAndUpdate(
-      { _id: application._id, status: 'pending' },
+      { _id: application._id, status: currentStatus },
       { $set: { status: 'rejected', reason } },
       { new: true },
     );
     if (!updated) {
       throw new BusinessException(
         'INVALID_APPLICATION_STATUS',
-        'Only pending applications can be rejected',
+        'This application is no longer pending or under review',
         409,
       );
     }
     await this.statusTransitions.assert({
       entityType: 'application',
       entityId: application._id,
-      from: 'pending',
+      from: currentStatus,
       to: 'rejected',
       actor: account.sub,
     });
@@ -528,7 +682,7 @@ export class ApplicationsService {
     if (application.status === 'accepted') {
       return this.withdrawAccepted(account, application);
     }
-    if (application.status !== 'pending') {
+    if (!REVIEWABLE_STATUSES.includes(application.status)) {
       throw new BusinessException(
         'INVALID_APPLICATION_STATUS',
         'This application cannot be withdrawn',
@@ -536,8 +690,9 @@ export class ApplicationsService {
       );
     }
 
+    const currentStatus = application.status;
     const updated = await this.applicationModel.findOneAndUpdate(
-      { _id: application._id, status: 'pending' },
+      { _id: application._id, status: currentStatus },
       { $set: { status: 'withdrawn' } },
       { new: true },
     );
@@ -551,7 +706,7 @@ export class ApplicationsService {
     await this.statusTransitions.assert({
       entityType: 'application',
       entityId: application._id,
-      from: 'pending',
+      from: currentStatus,
       to: 'withdrawn',
       actor: account.sub,
     });

@@ -22,6 +22,7 @@ const VERIFY_EMAIL = '/api/v1/auth/verify-email';
 const ME_OPPORTUNITIES = '/api/v1/organizations/me/opportunities';
 const OPPORTUNITIES = '/api/v1/opportunities';
 const APPLICATIONS = '/api/v1/applications';
+const INBOX = '/api/v1/organizations/me/applications';
 const PARTICIPATIONS = '/api/v1/participations';
 const OBJECT_ID = /^[0-9a-f]{24}$/;
 
@@ -738,6 +739,356 @@ describe('applications & participations e2e (S7)', () => {
       const lose = resA.status === 200 ? b : a;
       expect(await readApplicationStatus(win)).toBe('accepted');
       expect(await readApplicationStatus(lose)).toBe('pending');
+    });
+  });
+
+  describe('backend-v2 application states (session 12)', () => {
+    let v2Org: string;
+    let v2Volunteer: string;
+    let oppA: Record<string, any>;
+    let oppB: Record<string, any>;
+    let posA: string;
+    let posB: string;
+
+    beforeAll(async () => {
+      v2Org = await registerVerifiedOrg('s12-org@example.com');
+      v2Volunteer = await registerVerifiedVolunteer(
+        's12-volunteer@example.com',
+      );
+      oppA = await createOpportunity(v2Org, {
+        title: 'S12 Beach Cleanup',
+        description: 'Coastal cleanup',
+        positions: [
+          { title: 'Bag wrangler', requiredCount: 2, requiredSkills: [] },
+        ],
+      });
+      posA = oppA.positions[0]._id as string;
+      await publishOpportunity(v2Org, oppA._id);
+      oppB = await createOpportunity(v2Org, {
+        title: 'S12 Garden Planting',
+        description: 'Urban garden',
+        positions: [{ title: 'Planter', requiredCount: 1, requiredSkills: [] }],
+      });
+      posB = oppB.positions[0]._id as string;
+      await publishOpportunity(v2Org, oppB._id);
+    });
+
+    it('stores the apply cover message and surfaces it to volunteer and org', async () => {
+      const applied = await request(info.app.getHttpServer())
+        .post(`${OPPORTUNITIES}/${oppA._id}/positions/${posA}/applications`)
+        .set('Authorization', `Bearer ${v2Volunteer}`)
+        .send({ message: '  cover note here  ' })
+        .expect(201);
+      expect(applied.body.message).toBe('cover note here');
+      expect(String(applied.body.volunteerId)).toMatch(OBJECT_ID);
+
+      const mine = await request(info.app.getHttpServer())
+        .get(`${APPLICATIONS}/me`)
+        .set('Authorization', `Bearer ${v2Volunteer}`)
+        .expect(200);
+      const row = mine.body.items.find(
+        (item: any) => item._id === applied.body._id,
+      );
+      expect(row.message).toBe('cover note here');
+
+      const detail = await request(info.app.getHttpServer())
+        .get(`${APPLICATIONS}/${applied.body._id}`)
+        .set('Authorization', `Bearer ${v2Org}`)
+        .expect(200);
+      expect(detail.body.message).toBe('cover note here');
+    });
+
+    it('rejects an oversized cover message with 400', async () => {
+      const volunteer = await registerVerifiedVolunteer(
+        's12-big-msg@example.com',
+      );
+      await request(info.app.getHttpServer())
+        .post(`${OPPORTUNITIES}/${oppA._id}/positions/${posA}/applications`)
+        .set('Authorization', `Bearer ${volunteer}`)
+        .send({ message: 'x'.repeat(2001) })
+        .expect(400);
+    });
+
+    it('rejects a stray apply-body field with 400 (forbidNonWhitelisted)', async () => {
+      const volunteer = await registerVerifiedVolunteer(
+        's12-stray@example.com',
+      );
+      await request(info.app.getHttpServer())
+        .post(`${OPPORTUNITIES}/${oppA._id}/positions/${posA}/applications`)
+        .set('Authorization', `Bearer ${volunteer}`)
+        .send({ extraField: true })
+        .expect(400);
+    });
+
+    describe('start-review', () => {
+      let appId: string;
+
+      beforeAll(async () => {
+        const applied = await request(info.app.getHttpServer())
+          .post(`${OPPORTUNITIES}/${oppB._id}/positions/${posB}/applications`)
+          .set('Authorization', `Bearer ${v2Volunteer}`)
+          .expect(201);
+        appId = applied.body._id as string;
+        await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${appId}/start-review`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+      });
+
+      it('moves a pending application to under_review with one history row', async () => {
+        expect(await readApplicationStatus(appId)).toBe('under_review');
+        expect(
+          await historyCount('application', appId, 'pending', 'under_review'),
+        ).toBe(1);
+      });
+
+      it('rejects a repeated start-review with 409', async () => {
+        const response = await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${appId}/start-review`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(409);
+        expect(response.body.code).toBe('INVALID_APPLICATION_STATUS');
+        expect(
+          await historyCount('application', appId, 'pending', 'under_review'),
+        ).toBe(1);
+      });
+
+      it('treats a foreign org as 404', async () => {
+        const rival = await registerVerifiedOrg('s12-rival-org@example.com');
+        const response = await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${appId}/start-review`)
+          .set('Authorization', `Bearer ${rival}`)
+          .expect(404);
+        expect(response.body.code).toBe('APPLICATION_NOT_FOUND');
+      });
+
+      it('rejects a volunteer caller with 403 (role guard)', async () => {
+        const response = await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${appId}/start-review`)
+          .set('Authorization', `Bearer ${v2Volunteer}`)
+          .expect(403);
+        expect(response.body.code).toBe('FORBIDDEN');
+        expect(await readApplicationStatus(appId)).toBe('under_review');
+      });
+
+      it('accepts the under_review application: seat, participant, one history row', async () => {
+        const response = await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${appId}/accept`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+        expect(response.body.status).toBe('accepted');
+        expect(await readApplicationStatus(appId)).toBe('accepted');
+        expect(await readFilledCount(oppB._id)).toBe(1);
+        expect(
+          await historyCount('application', appId, 'under_review', 'accepted'),
+        ).toBe(1);
+
+        const tasks = await request(info.app.getHttpServer())
+          .get(`${PARTICIPATIONS}/me?status=accepted`)
+          .set('Authorization', `Bearer ${v2Volunteer}`)
+          .expect(200);
+        expect(
+          tasks.body.items.some(
+            (item: any) => String(item.applicationId) === appId,
+          ),
+        ).toBe(true);
+      });
+    });
+
+    describe('reject from under_review', () => {
+      let appId: string;
+
+      beforeAll(async () => {
+        const volunteer = await registerVerifiedVolunteer(
+          's12-review-reject@example.com',
+        );
+        const applied = await request(info.app.getHttpServer())
+          .post(`${OPPORTUNITIES}/${oppA._id}/positions/${posA}/applications`)
+          .set('Authorization', `Bearer ${volunteer}`)
+          .expect(201);
+        appId = applied.body._id as string;
+        await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${appId}/start-review`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+      });
+
+      it('rejects an under_review application with reason and one history row', async () => {
+        const response = await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${appId}/reject`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .send({ reason: 'filled elsewhere' })
+          .expect(200);
+        expect(response.body.status).toBe('rejected');
+        expect(response.body.reason).toBe('filled elsewhere');
+        expect(await readApplicationStatus(appId)).toBe('rejected');
+        expect(
+          await historyCount('application', appId, 'under_review', 'rejected'),
+        ).toBe(1);
+        expect(await readFilledCount(oppA._id)).toBeLessThanOrEqual(2);
+      });
+    });
+
+    describe('org aggregate inbox', () => {
+      let inboxBeach: Record<string, any>;
+      let inboxGarden: Record<string, any>;
+
+      beforeAll(async () => {
+        inboxBeach = await createOpportunity(v2Org, {
+          title: 'S12 Inbox Beach',
+          description: 'Beach rows',
+          positions: [
+            { title: 'Cleaner', requiredCount: 2, requiredSkills: [] },
+          ],
+        });
+        await publishOpportunity(v2Org, inboxBeach._id);
+        inboxGarden = await createOpportunity(v2Org, {
+          title: 'S12 Inbox Garden',
+          description: 'Garden rows',
+          positions: [
+            { title: 'Planter', requiredCount: 2, requiredSkills: [] },
+          ],
+        });
+        await publishOpportunity(v2Org, inboxGarden._id);
+      });
+
+      it('aggregates own applications, filters, and excludes foreign org rows', async () => {
+        const volunteer = await registerVerifiedVolunteer(
+          's12-inbox@example.com',
+        );
+        const onA = await request(info.app.getHttpServer())
+          .post(
+            `${OPPORTUNITIES}/${inboxBeach._id}/positions/${inboxBeach.positions[0]._id}/applications`,
+          )
+          .set('Authorization', `Bearer ${volunteer}`)
+          .send({ message: 'count me in' })
+          .expect(201);
+        const onB = await request(info.app.getHttpServer())
+          .post(
+            `${OPPORTUNITIES}/${inboxGarden._id}/positions/${inboxGarden.positions[0]._id}/applications`,
+          )
+          .set('Authorization', `Bearer ${volunteer}`)
+          .expect(201);
+
+        await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${onB.body._id}/start-review`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+
+        const inbox = await request(info.app.getHttpServer())
+          .get(INBOX)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+        expect(
+          inbox.body.items.some((item: any) => item._id === onA.body._id),
+        ).toBe(true);
+        expect(
+          inbox.body.items.some((item: any) => item._id === onB.body._id),
+        ).toBe(true);
+
+        const underReview = await request(info.app.getHttpServer())
+          .get(`${INBOX}?status=under_review`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+        expect(
+          underReview.body.items.some((item: any) => item._id === onB.body._id),
+        ).toBe(true);
+        expect(
+          underReview.body.items.some((item: any) => item._id === onA.body._id),
+        ).toBe(false);
+
+        const byOpportunity = await request(info.app.getHttpServer())
+          .get(`${INBOX}?opportunityId=${inboxBeach._id}`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+        expect(
+          byOpportunity.body.items.some(
+            (item: any) => item._id === onA.body._id,
+          ),
+        ).toBe(true);
+        expect(
+          byOpportunity.body.items.some(
+            (item: any) => item._id === onB.body._id,
+          ),
+        ).toBe(false);
+
+        const byQ = await request(info.app.getHttpServer())
+          .get(`${INBOX}?q=beach`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+        expect(
+          byQ.body.items.some((item: any) => item._id === onA.body._id),
+        ).toBe(true);
+        expect(
+          byQ.body.items.some((item: any) => item._id === onB.body._id),
+        ).toBe(false);
+      });
+
+      it('never leaks a foreign org application and paginates', async () => {
+        const rival = await registerVerifiedOrg('s12-inbox-rival@example.com');
+        const rivalOpp = await createOpportunity(rival, {
+          title: 'S12 Rival Ops',
+          description: 'Other org',
+          positions: [{ title: 'Rival', requiredCount: 1, requiredSkills: [] }],
+        });
+        await publishOpportunity(rival, rivalOpp._id);
+        const rivalVolunteer = await registerVerifiedVolunteer(
+          's12-rival-vol@example.com',
+        );
+        const rivalApp = await request(info.app.getHttpServer())
+          .post(
+            `${OPPORTUNITIES}/${rivalOpp._id}/positions/${rivalOpp.positions[0]._id}/applications`,
+          )
+          .set('Authorization', `Bearer ${rivalVolunteer}`)
+          .expect(201);
+
+        const inbox = await request(info.app.getHttpServer())
+          .get(INBOX)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+        expect(
+          inbox.body.items.some((item: any) => item._id === rivalApp.body._id),
+        ).toBe(false);
+
+        const rivalInbox = await request(info.app.getHttpServer())
+          .get(INBOX)
+          .set('Authorization', `Bearer ${rival}`)
+          .expect(200);
+        expect(
+          rivalInbox.body.items.every(
+            (item: any) => item._id === rivalApp.body._id,
+          ),
+        ).toBe(true);
+      });
+
+      it('blocks a volunteer caller with 403', async () => {
+        await request(info.app.getHttpServer())
+          .get(INBOX)
+          .set('Authorization', `Bearer ${v2Volunteer}`)
+          .expect(403);
+      });
+
+      it('blocks a duplicate while an application is under_review (widened dedupe index)', async () => {
+        const volunteer = await registerVerifiedVolunteer(
+          's12-dedupe@example.com',
+        );
+        const applied = await request(info.app.getHttpServer())
+          .post(`${OPPORTUNITIES}/${oppA._id}/positions/${posA}/applications`)
+          .set('Authorization', `Bearer ${volunteer}`)
+          .expect(201);
+        await request(info.app.getHttpServer())
+          .post(`${APPLICATIONS}/${applied.body._id}/start-review`)
+          .set('Authorization', `Bearer ${v2Org}`)
+          .expect(200);
+        expect(await readApplicationStatus(applied.body._id)).toBe(
+          'under_review',
+        );
+        const response = await request(info.app.getHttpServer())
+          .post(`${OPPORTUNITIES}/${oppA._id}/positions/${posA}/applications`)
+          .set('Authorization', `Bearer ${volunteer}`)
+          .expect(409);
+        expect(response.body.code).toBe('DUPLICATE_APPLICATION');
+      });
     });
   });
 });

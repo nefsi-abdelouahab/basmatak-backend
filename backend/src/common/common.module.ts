@@ -5,6 +5,12 @@ import { PublishGateService } from './seams/publish-gate.service';
 import { PortfolioQueryService } from './seams/portfolio-query.service';
 import { MediaOwnership } from './seams/media-ownership';
 import {
+  APPLICATION_INBOX_JOINER,
+  InertApplicationInboxJoiner,
+} from './seams/application-inbox-joiner';
+import { CountersCollection, CounterSchema } from './counters/counters.schema';
+import { RegistryIdService } from './counters/registry-id.service';
+import {
   InertRegistrationExtrasService,
   REGISTRATION_EXTRAS_SERVICE,
 } from './seams/registration-extras.service';
@@ -38,6 +44,7 @@ import { TrustPublishGateService } from '../trust/trust-publish-gate.service';
       { name: OrganizationsCollection, schema: OrganizationSchema },
       { name: MediaCollection, schema: MediaSchema },
       { name: PortfolioItemsCollection, schema: PortfolioItemSchema },
+      { name: CountersCollection, schema: CounterSchema },
     ]),
     VolunteersModule,
     TrustModule,
@@ -47,6 +54,7 @@ import { TrustPublishGateService } from '../trust/trust-publish-gate.service';
     { provide: PublishGateService, useClass: TrustPublishGateService },
     PortfolioQueryService,
     MediaOwnership,
+    RegistryIdService,
     InertRegistrationExtrasService,
     OrganizationRegistrationExtrasService,
     VolunteerRegistrationExtrasService,
@@ -54,14 +62,20 @@ import { TrustPublishGateService } from '../trust/trust-publish-gate.service';
       provide: REGISTRATION_EXTRAS_SERVICE,
       useClass: VolunteerRegistrationExtrasService,
     },
+    {
+      provide: APPLICATION_INBOX_JOINER,
+      useClass: InertApplicationInboxJoiner,
+    },
   ],
   exports: [
     AppLogger,
     PublishGateService,
     PortfolioQueryService,
     MediaOwnership,
+    RegistryIdService,
     InertRegistrationExtrasService,
     REGISTRATION_EXTRAS_SERVICE,
+    APPLICATION_INBOX_JOINER,
   ],
 })
 export class CommonModule {}

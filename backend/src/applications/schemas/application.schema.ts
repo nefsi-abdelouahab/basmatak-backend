@@ -5,6 +5,7 @@ export const ApplicationsCollection = 'applications';
 
 export const APPLICATION_STATUSES = [
   'pending',
+  'under_review',
   'accepted',
   'rejected',
   'withdrawn',
@@ -39,8 +40,9 @@ export class ApplicationModel extends Document implements Application {
  * references the embedded position `_id` inside the opportunity document; the
  * seat counters stay on the opportunity. The partial unique index enforces
  * "one live application per (position, volunteer)" where a live application is
- * `pending` or `accepted` (inventory §3); rejected/withdrawn rows are history
- * and never block re-applying.
+ * `pending`, `under_review`, or `accepted` (inventory §3); rejected/withdrawn
+ * rows are history and never block re-applying. `under_review` counts as live
+ * so an application under review still blocks a duplicate.
  */
 export const ApplicationSchema: Schema<ApplicationModel> = createSchema({
   opportunityId: { type: Schema.Types.ObjectId, required: true },
@@ -62,9 +64,10 @@ ApplicationSchema.index(
   {
     unique: true,
     partialFilterExpression: {
-      status: { $in: ['pending', 'accepted'] },
+      status: { $in: ['pending', 'under_review', 'accepted'] },
     },
   },
 );
 ApplicationSchema.index({ opportunityId: 1, status: 1 });
 ApplicationSchema.index({ volunteerId: 1, status: 1 });
+ApplicationSchema.index({ organizationId: 1, status: 1 });

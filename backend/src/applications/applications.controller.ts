@@ -19,7 +19,9 @@ import { AccountToken } from '../common/interfaces/account-token.interface';
 import { ApplicationsService } from './applications.service';
 import {
   ApplicationListQueryDto,
+  ApplyApplicationDto,
   OpportunityApplicationsQueryDto,
+  OrganizationApplicationsQueryDto,
   RejectApplicationDto,
 } from './dto/application.dto';
 
@@ -50,13 +52,21 @@ export class ApplicationsController {
   })
   @Post('opportunities/:opportunityId/positions/:positionId/applications')
   @Roles('volunteer')
-  @ApiOperation({ summary: 'Apply to an open position' })
+  @ApiOperation({
+    summary: 'Apply to an open position (cover message optional)',
+  })
   apply(
     @CurrentAccount() account: AccountToken,
     @Param('opportunityId') opportunityId: string,
     @Param('positionId') positionId: string,
+    @Body() dto: ApplyApplicationDto,
   ) {
-    return this.applications.apply(account, opportunityId, positionId);
+    return this.applications.apply(
+      account,
+      opportunityId,
+      positionId,
+      dto.message,
+    );
   }
 
   @Get('applications/me')
@@ -105,6 +115,19 @@ export class ApplicationsController {
     );
   }
 
+  @Get('organizations/me/applications')
+  @Roles('organization')
+  @ApiOperation({
+    summary:
+      'Aggregate application inbox across the caller\u2019s opportunities',
+  })
+  listInbox(
+    @CurrentAccount() account: AccountToken,
+    @Query() query: OrganizationApplicationsQueryDto,
+  ) {
+    return this.applications.listOrganizationInbox(account, query);
+  }
+
   @ApiParam({
     name: 'applicationId',
     description: 'The application id',
@@ -142,6 +165,25 @@ export class ApplicationsController {
       applicationId,
       dto.reason,
     );
+  }
+
+  @ApiParam({
+    name: 'applicationId',
+    description: 'The application id',
+    type: String,
+    format: 'ObjectId',
+  })
+  @Post('applications/:applicationId/start-review')
+  @HttpCode(HttpStatus.OK)
+  @Roles('organization')
+  @ApiOperation({
+    summary: 'Move a pending application under review (org-owner only)',
+  })
+  startReview(
+    @CurrentAccount() account: AccountToken,
+    @Param('applicationId') applicationId: string,
+  ) {
+    return this.applications.startReview(account, applicationId);
   }
 
   @ApiParam({
