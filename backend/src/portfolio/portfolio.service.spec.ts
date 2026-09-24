@@ -1,4 +1,6 @@
 import { Model, Types } from 'mongoose';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 import { MediaOwnership } from '../common/seams/media-ownership';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import {
@@ -12,6 +14,10 @@ import {
   MediaSchema,
 } from '../media/schemas/media.schema';
 import { PortfolioService } from './portfolio.service';
+import {
+  CreatePortfolioItemDto,
+  UpdatePortfolioItemDto,
+} from './dto/portfolio.dto';
 import {
   PortfolioItemModel,
   PortfolioItemsCollection,
@@ -322,6 +328,129 @@ describe('PortfolioService (S14)', () => {
       const isBackward = finalSequence.join() === backward.join();
       expect(isForward || isBackward).toBe(true);
       expect(titles).toEqual(isBackward ? ['C', 'B', 'A'] : ['A', 'B', 'C']);
+    });
+  });
+
+  describe('metadata (typeLabel/tags)', () => {
+    it('persists normalized metadata on create and returns it in the view', async () => {
+      const item = await service.create(actor(), {
+        title: 'Field log',
+        typeLabel: '  Audio  ',
+        tags: [' Field ', 'Field', 'Recording '],
+      });
+      expect(item).toMatchObject({
+        typeLabel: 'Audio',
+        tags: ['Field', 'Recording'],
+      });
+
+      const row = await portfolioModel.findById(item.id).exec();
+      expect(row!.typeLabel).toBe('Audio');
+      expect(row!.tags).toEqual(['Field', 'Recording']);
+    });
+
+    it('defaults metadata on items without any', async () => {
+      const item = await service.create(actor(), { title: 'Plain' });
+      expect(item.typeLabel).toBeNull();
+      expect(item.tags).toEqual([]);
+
+      const row = await portfolioModel.findById(item.id).exec();
+      expect(row!.typeLabel).toBeUndefined();
+      expect(row!.tags).toEqual([]);
+    });
+
+    it('updates metadata and leaves unsubmitted fields untouched', async () => {
+      const item = await service.create(actor(), {
+        title: 'Before',
+        typeLabel: 'Photo',
+        tags: ['Beach'],
+      });
+      const updated = await service.update(actor(), item.id, {
+        title: 'After',
+        tags: ['Cleanup'],
+      });
+      expect(updated).toMatchObject({
+        title: 'After',
+        typeLabel: 'Photo',
+        tags: ['Cleanup'],
+      });
+    });
+
+    it('returns metadata on listMine', async () => {
+      await service.create(actor(), {
+        title: 'A',
+        typeLabel: 'Video',
+        tags: ['Doc'],
+      });
+      await service.create(actor(), { title: 'B' });
+      const rows = await service.listMine(actor());
+      expect(rows[0]).toMatchObject({ typeLabel: 'Video', tags: ['Doc'] });
+      expect(rows[1]).toMatchObject({ typeLabel: null, tags: [] });
+    });
+  });
+
+  describe('Create/UpdatePortfolioItemDto validation', () => {
+    it('accepts valid metadata', async () => {
+      const dto = plainToInstance(CreatePortfolioItemDto, {
+        title: 'Field log',
+        typeLabel: 'Audio',
+        tags: ['Field', 'Recording'],
+      });
+      expect(await validate(dto)).toHaveLength(0);
+    });
+
+    it('rejects a typeLabel longer than 40 characters', async () => {
+      const dto = plainToInstance(CreatePortfolioItemDto, {
+        title: 'P',
+        typeLabel: 'x'.repeat(41),
+      });
+      expect(await validate(dto)).not.toHaveLength(0);
+    });
+
+    it('rejects more than 10 tags', async () => {
+      const dto = plainToInstance(CreatePortfolioItemDto, {
+        title: 'P',
+        tags: Array.from({ length: 11 }, (_, i) => `tag-${i}`),
+      });
+      expect(await validate(dto)).not.toHaveLength(0);
+    });
+
+    it('rejects a tag longer than 30 characters', async () => {
+      const dto = plainToInstance(CreatePortfolioItemDto, {
+        title: 'P',
+        tags: ['a', 'b'.repeat(31)],
+      });
+      expect(await validate(dto)).not.toHaveLength(0);
+    });
+
+    it('rejects non-string and duplicate tags', async () => {
+      const nonString = plainToInstance(CreatePortfolioItemDto, {
+        title: 'P',
+        tags: ['ok', 42],
+      });
+      const dupes = plainToInstance(CreatePortfolioItemDto, {
+        title: 'P',
+        tags: ['dup', 'dup'],
+      });
+      expect(await validate(nonString)).not.toHaveLength(0);
+      expect(await validate(dupes)).not.toHaveLength(0);
+    });
+
+    it('flags unknown keys when forbidNonWhitelisted is on', async () => {
+      const dto = plainToInstance(CreatePortfolioItemDto, {
+        title: 'P',
+        featured: true,
+      });
+      expect(
+        await validate(dto, { whitelist: true, forbidNonWhitelisted: true }),
+      ).not.toHaveLength(0);
+    });
+
+    it('accepts the same metadata on update', async () => {
+      const dto = plainToInstance(UpdatePortfolioItemDto, {
+        typeLabel: 'Cartography',
+        tags: ['GIS'],
+      });
+      expect(await validate(dto)).toHaveLength(0);
     });
   });
 });

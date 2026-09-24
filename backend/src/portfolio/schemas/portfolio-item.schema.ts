@@ -17,6 +17,8 @@ export interface PortfolioItem {
   mediaIds: Types.ObjectId[];
   visibility: PortfolioVisibility;
   order: number;
+  typeLabel?: string;
+  tags: string[];
 }
 
 export class PortfolioItemModel extends Document implements PortfolioItem {
@@ -26,6 +28,8 @@ export class PortfolioItemModel extends Document implements PortfolioItem {
   mediaIds!: Types.ObjectId[];
   visibility!: PortfolioVisibility;
   order!: number;
+  typeLabel?: string;
+  tags!: string[];
   createdAt!: Date;
   updatedAt!: Date;
 }
@@ -44,6 +48,11 @@ export const PortfolioItemSchema: Schema<PortfolioItemModel> = createSchema({
     default: 'public',
   },
   order: { type: Number, required: true, default: 0, min: 0 },
+  typeLabel: { type: String, trim: true, maxlength: 40 },
+  tags: {
+    type: [{ type: String, trim: true, maxlength: 30 }],
+    default: [],
+  },
 });
 
 PortfolioItemSchema.index({ volunteerId: 1, order: 1 });

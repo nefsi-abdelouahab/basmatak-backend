@@ -52,6 +52,7 @@ describe('PortfolioQueryService (S14 real read)', () => {
     order: number,
     mediaIds: string[],
     visibility: 'public' | 'private' = 'public',
+    metadata: { typeLabel?: string; tags?: string[] } = {},
   ): Promise<void> {
     await portfolioModel.create({
       volunteerId: userId,
@@ -59,6 +60,10 @@ describe('PortfolioQueryService (S14 real read)', () => {
       mediaIds: mediaIds.map((id) => new Types.ObjectId(id)),
       visibility,
       order,
+      ...(metadata.typeLabel !== undefined
+        ? { typeLabel: metadata.typeLabel }
+        : {}),
+      tags: metadata.tags ?? [],
     });
   }
 
@@ -172,5 +177,25 @@ describe('PortfolioQueryService (S14 real read)', () => {
     expect(result.items[0].id).toBeTruthy();
     expect(typeof result.items[0].id).toBe('string');
     expect(result.items[0].mediaId).toBe(m);
+  });
+
+  it('surfaces typeLabel/tags on public items and omits absent typeLabel', async () => {
+    await createProfile();
+    await enableProfile();
+    await createPublicItem('Labelled', 0, [], 'public', {
+      typeLabel: 'Audio',
+      tags: ['Field', 'Recording'],
+    });
+    await createPublicItem('Bare', 1, []);
+
+    const result = await service.getPublicPortfolio(username);
+    expect(result.items[0]).toMatchObject({
+      title: 'Labelled',
+      typeLabel: 'Audio',
+      tags: ['Field', 'Recording'],
+    });
+    expect(result.items[1]).toMatchObject({ title: 'Bare' });
+    expect(result.items[1].typeLabel).toBeUndefined();
+    expect(result.items[1].tags).toEqual([]);
   });
 });
