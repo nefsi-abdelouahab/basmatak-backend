@@ -1,5 +1,6 @@
 import {
   ArrayMaxSize,
+  ArrayUnique,
   IsArray,
   IsIn,
   IsMongoId,
@@ -46,6 +47,29 @@ export class CreatePortfolioItemDto {
   @IsOptional()
   @IsIn(PORTFOLIO_VISIBILITIES)
   visibility?: PortfolioVisibility;
+
+  @ApiPropertyOptional({
+    description: 'Short work-sample type label (max 40)',
+    example: 'Audio',
+    maxLength: 40,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  typeLabel?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tags shown on the work-sample card (max 10, each max 30)',
+    type: 'array',
+    items: { type: 'string' },
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @MaxLength(30, { each: true })
+  @ArrayUnique()
+  tags?: string[];
 }
 
 /** Body of `PATCH /portfolio/:itemId` (inventory §2.15). */
@@ -81,6 +105,29 @@ export class UpdatePortfolioItemDto {
   @IsOptional()
   @IsIn(PORTFOLIO_VISIBILITIES)
   visibility?: PortfolioVisibility;
+
+  @ApiPropertyOptional({
+    description: 'Short work-sample type label (max 40)',
+    example: 'Audio',
+    maxLength: 40,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  typeLabel?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tags shown on the work-sample card (max 10, each max 30)',
+    type: 'array',
+    items: { type: 'string' },
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @MaxLength(30, { each: true })
+  @ArrayUnique()
+  tags?: string[];
 }
 
 /** Body of `PUT /portfolio/me/order` (inventory §2.15, atomic batch). */

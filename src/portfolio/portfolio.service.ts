@@ -38,6 +38,8 @@ export interface PortfolioItemView {
   mediaIds: string[];
   visibility: PortfolioVisibility;
   order: number;
+  typeLabel: string | null;
+  tags: string[];
   media: PortfolioMediaInfo[];
 }
 
@@ -105,6 +107,12 @@ export class PortfolioService {
               mediaIds,
               visibility: dto.visibility ?? 'public',
               order: nextOrder,
+              ...(dto.typeLabel !== undefined
+                ? { typeLabel: dto.typeLabel }
+                : {}),
+              ...(dto.tags !== undefined
+                ? { tags: this.normalizeTags(dto.tags) }
+                : {}),
             },
           ],
           { session: txn },
@@ -180,6 +188,12 @@ export class PortfolioService {
         }
         if (dto.visibility !== undefined) {
           set.visibility = dto.visibility;
+        }
+        if (dto.typeLabel !== undefined) {
+          set.typeLabel = dto.typeLabel;
+        }
+        if (dto.tags !== undefined) {
+          set.tags = this.normalizeTags(dto.tags);
         }
         if (nextMedia !== undefined) {
           set.mediaIds = this.uniqueMediaIds(nextMedia).map(
@@ -425,6 +439,8 @@ export class PortfolioService {
         mediaIds: row.mediaIds.map((m) => m.toString()),
         visibility: row.visibility,
         order: row.order,
+        typeLabel: row.typeLabel ?? null,
+        tags: row.tags ?? [],
         media: info,
       };
     });
@@ -432,5 +448,10 @@ export class PortfolioService {
 
   private uniqueMediaIds(mediaIds: string[]): string[] {
     return [...new Set(mediaIds)];
+  }
+
+  /** Canonical tag list: trimmed, empties dropped, deduped. */
+  private normalizeTags(tags: string[]): string[] {
+    return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
   }
 }

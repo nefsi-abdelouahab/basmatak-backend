@@ -26,6 +26,8 @@ export interface PortfolioItemShape {
   mediaId?: string;
   title?: string;
   description?: string;
+  typeLabel?: string;
+  tags?: string[];
   media?: PublicMediaShape[];
 }
 
@@ -110,6 +112,8 @@ export class PortfolioQueryService {
         id: item._id.toString(),
         title: item.title,
         description: item.description ?? undefined,
+        ...(item.typeLabel ? { typeLabel: item.typeLabel } : {}),
+        tags: item.tags ?? [],
         media,
       };
       const first = visibleIds[0];

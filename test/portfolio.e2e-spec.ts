@@ -129,10 +129,22 @@ describe('portfolio e2e (S14) — curated showcase CRUD, media linkage, public r
       .expect(401);
   });
 
-  it('validates the payload (title required, media must be object ids)', async () => {
+  it('validates the payload (title required, media must be object ids, metadata bounded)', async () => {
     await authed(ownerToken, 'post', '/portfolio/me').send({}).expect(400);
     await authed(ownerToken, 'post', '/portfolio/me')
       .send({ title: 'P', mediaIds: ['not-an-id'] })
+      .expect(400);
+    await authed(ownerToken, 'post', '/portfolio/me')
+      .send({ title: 'P', featured: true })
+      .expect(400);
+    await authed(ownerToken, 'post', '/portfolio/me')
+      .send({ title: 'P', typeLabel: 'x'.repeat(41) })
+      .expect(400);
+    await authed(ownerToken, 'post', '/portfolio/me')
+      .send({
+        title: 'P',
+        tags: Array.from({ length: 11 }, (_, i) => `tag-${i}`),
+      })
       .expect(400);
   });
 
@@ -319,5 +331,60 @@ describe('portfolio e2e (S14) — curated showcase CRUD, media linkage, public r
     await get(undefined, `/volunteers/${strangerUsername}/portfolio`).expect(
       404,
     );
+  });
+
+  it('renders typeLabel/tags on own and public reads; absent metadata degrades gracefully', async () => {
+    const withMeta = await createItem(ownerToken, {
+      title: 'Field log',
+      typeLabel: 'Audio',
+      tags: ['Field', 'Recording'],
+    });
+    await createItem(ownerToken, { title: 'No metadata' });
+
+    const own = await get(ownerToken, '/portfolio/me').expect(200);
+    expect(own.body.map((i: { title: string }) => i.title)).toEqual([
+      'Field log',
+      'No metadata',
+    ]);
+    expect(own.body[0]).toMatchObject({
+      typeLabel: 'Audio',
+      tags: ['Field', 'Recording'],
+    });
+    expect(own.body[1]).toMatchObject({ typeLabel: null, tags: [] });
+
+    const patched = await authed(
+      ownerToken,
+      'patch',
+      `/portfolio/${withMeta.id}`,
+    )
+      .send({ tags: ['Cleanup'] })
+      .expect(200);
+    expect(patched.body).toMatchObject({
+      typeLabel: 'Audio',
+      tags: ['Cleanup'],
+    });
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/volunteers/me/public-settings')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ publicProfile: { enabled: true } })
+      .expect(200);
+
+    const res = await get(
+      undefined,
+      `/volunteers/${ownerUsername}/portfolio`,
+    ).expect(200);
+    const fieldLog = res.body.items.find(
+      (i: { title: string }) => i.title === 'Field log',
+    );
+    const bare = res.body.items.find(
+      (i: { title: string }) => i.title === 'No metadata',
+    );
+    expect(fieldLog).toMatchObject({
+      typeLabel: 'Audio',
+      tags: ['Cleanup'],
+    });
+    expect(bare.typeLabel).toBeUndefined();
+    expect(bare.tags).toEqual([]);
   });
 });
