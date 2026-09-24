@@ -42,7 +42,7 @@ export async function createTestApp(
   overrides: TestAppOverrides = {},
 ): Promise<TestAppHandle> {
   const mongod = new MongoMemoryReplSet({
-    replSet: { count: 1, storageEngine: 'ephemeralForTest' },
+    replSet: { count: 1 },
   });
   await mongod.start();
   await mongod.waitUntilRunning();

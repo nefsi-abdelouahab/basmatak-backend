@@ -15,7 +15,7 @@ export interface MemoryConnectionHandle {
  */
 export async function startMemoryConnection(): Promise<MemoryConnectionHandle> {
   const mongod = new MongoMemoryReplSet({
-    replSet: { count: 1, storageEngine: 'ephemeralForTest' },
+    replSet: { count: 1 },
   });
   await mongod.start();
   const connection = await createConnection(
