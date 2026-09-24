@@ -19,6 +19,7 @@ import {
 import { NotificationsEventHandlers } from './notifications-event-handlers';
 import { MongoNotificationsRepository } from './notifications.repository';
 import { NotificationsService } from './notifications.service';
+import { NotificationPrefsService } from './notification-prefs.service';
 import {
   NotificationModel,
   NotificationsCollection,
@@ -81,7 +82,14 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
     await notificationModel.init();
 
     const repository = new MongoNotificationsRepository(notificationModel);
-    const service = new NotificationsService(notificationModel, repository);
+    const prefs = {
+      enabledFor: async (): Promise<boolean> => true,
+    } as unknown as NotificationPrefsService;
+    const service = new NotificationsService(
+      notificationModel,
+      repository,
+      prefs,
+    );
     const handlers = new NotificationsEventHandlers(
       service,
       orgModel,

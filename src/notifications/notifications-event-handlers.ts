@@ -79,7 +79,7 @@ export class NotificationsEventHandlers {
     if (!organization) {
       return;
     }
-    await this.notifications.createForRecipient(
+    await this.notifications.createForRecipientIfEnabled(
       organization.userId,
       DomainEvents.ApplicationCreated,
       payload,
@@ -127,7 +127,7 @@ export class NotificationsEventHandlers {
     if (!volunteerId) {
       return Promise.resolve();
     }
-    return this.notifications.createForRecipient(
+    return this.notifications.createForRecipientIfEnabled(
       volunteerId,
       DomainEvents.ParticipationRemoved,
       payload,
@@ -218,7 +218,11 @@ export class NotificationsEventHandlers {
     if (!volunteerId) {
       return;
     }
-    await this.notifications.createForRecipient(volunteerId, type, payload);
+    await this.notifications.createForRecipientIfEnabled(
+      volunteerId,
+      type,
+      payload,
+    );
   }
 
   private async notifyOpportunityParticipants(
@@ -237,7 +241,7 @@ export class NotificationsEventHandlers {
       })
       .exec();
     for (const participant of participants) {
-      await this.notifications.createForRecipient(
+      await this.notifications.createForRecipientIfEnabled(
         participant.volunteerId,
         type,
         payload,
@@ -264,7 +268,7 @@ export class NotificationsEventHandlers {
     if (!organization) {
       return;
     }
-    await this.notifications.createForRecipient(
+    await this.notifications.createForRecipientIfEnabled(
       organization.userId,
       type,
       payload,
@@ -283,7 +287,7 @@ export class NotificationsEventHandlers {
     if (!organization) {
       return;
     }
-    await this.notifications.createForRecipient(
+    await this.notifications.createForRecipientIfEnabled(
       organization.userId,
       DomainEvents.SubmissionSubmitted,
       payload,
@@ -299,6 +303,10 @@ export class NotificationsEventHandlers {
     if (!volunteerId) {
       return;
     }
-    await this.notifications.createForRecipient(volunteerId, type, payload);
+    await this.notifications.createForRecipientIfEnabled(
+      volunteerId,
+      type,
+      payload,
+    );
   }
 }

@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -10,13 +11,16 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentAccount } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
+import { PatchNotificationPrefsDto } from './dto/notification-prefs.dto';
 import { NotificationListQueryDto } from './dto/notification.dto';
+import { NotificationPrefsService } from './notification-prefs.service';
 import { NotificationsService } from './notifications.service';
 
 /**
@@ -28,7 +32,28 @@ import { NotificationsService } from './notifications.service';
 @ApiTags('notifications')
 @Controller()
 export class NotificationsController {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly prefs: NotificationPrefsService,
+  ) {}
+
+  @Get('notifications/preferences')
+  @ApiOperation({
+    summary: "Get the caller's notification preferences (lazily seeded)",
+  })
+  async getPreferences(@CurrentAccount() account: AccountToken) {
+    return { prefs: await this.prefs.getOwn(account.sub) };
+  }
+
+  @Patch('notifications/preferences')
+  @ApiOperation({ summary: "Update the caller's notification preferences" })
+  @ApiBody({ type: PatchNotificationPrefsDto })
+  async patchPreferences(
+    @CurrentAccount() account: AccountToken,
+    @Body() dto: PatchNotificationPrefsDto,
+  ) {
+    return { prefs: await this.prefs.patchOwn(account.sub, dto.prefs) };
+  }
 
   @Get('notifications')
   @ApiOperation({ summary: "List the caller's notifications (newest first)" })

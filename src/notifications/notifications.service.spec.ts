@@ -44,7 +44,10 @@ describe('NotificationsService (S9 D5)', () => {
     );
     await model.init();
     repository = new InertRepository();
-    service = new NotificationsService(model, repository);
+    const prefsStub = {
+      enabledFor: async (): Promise<boolean> => true,
+    } as never;
+    service = new NotificationsService(model, repository, prefsStub);
   });
 
   afterAll(async () => {
