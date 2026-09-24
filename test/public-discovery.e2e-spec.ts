@@ -236,6 +236,12 @@ describe('public-discovery e2e (S12): talents, gated profiles, public experience
       enabled: true,
       showAvatar: true,
       showBiography: true,
+      showLocation: false,
+      showSkills: false,
+      showExperiences: false,
+      showAvailability: false,
+      showPortfolio: false,
+      showStats: false,
     });
     const privateAvatar = await createMedia(
       guests.c.userId,
@@ -266,13 +272,14 @@ describe('public-discovery e2e (S12): talents, gated profiles, public experience
   });
 
   describe('talents feed', () => {
-    it('guest GET /talents lists only enabled profiles (A and C, not B)', async () => {
+    it('guest GET /talents lists only enabled profiles (A, C and D, not B)', async () => {
       const res = await guestGet('/talents').expect(200);
       const usernames = res.body.items.map(
         (card: { username: string }) => card.username,
       );
       expect(usernames).toContain(guests.a.username);
       expect(usernames).toContain(guests.c.username);
+      expect(usernames).toContain(guests.d.username);
       expect(usernames).not.toContain(guests.b.username);
       expect(res.body.limit).toBe(20);
     });
@@ -313,18 +320,23 @@ describe('public-discovery e2e (S12): talents, gated profiles, public experience
       expect(cardA.skills).toEqual([
         expect.objectContaining({ skillId: activeSkillId, isPrimary: true }),
       ]);
+      expect(cardA.stats).toMatchObject({
+        completedTasks: 0,
+        verifiedExperiences: 0,
+        volunteerHours: 0,
+      });
 
       const cardC = res.body.items.find(
         (card: { username: string }) => card.username === guests.c.username,
       );
       expect(cardC.avatar).toBeNull();
       expect(cardC.skills).toBeNull();
+      expect(cardC.stats).toBeNull();
 
       const serialized = JSON.stringify(res.body);
       expect(serialized).not.toContain('@test.dz');
       expect(serialized).not.toContain('"userId"');
       expect(serialized).not.toContain('birthDate');
-      expect(serialized).not.toContain('"stats"');
     });
   });
 
@@ -344,13 +356,23 @@ describe('public-discovery e2e (S12): talents, gated profiles, public experience
         expect.objectContaining({ title: 'Well project' }),
       ]);
       expect(res.body.availability).toBeNull();
+      expect(res.body.stats).toMatchObject({
+        completedTasks: 0,
+        verifiedExperiences: 0,
+        volunteerHours: 0,
+      });
+      expect(res.body.createdAt).toEqual(expect.any(String));
+      expect(res.body.registryId).toMatch(/^VOL-\d{6}$/);
+      expect(res.body.areasOfContribution).toEqual([
+        expect.objectContaining({ percent: 100 }),
+      ]);
 
       const serialized = JSON.stringify(res.body);
       expect(serialized).not.toContain('Secret thing');
       expect(serialized).not.toContain('"userId"');
       expect(serialized).not.toContain('@test.dz');
       expect(serialized).not.toContain('birthDate');
-      expect(serialized).not.toContain('"stats"');
+      expect(serialized).not.toContain('Community Contributions');
     });
 
     it('hides non-flagged sections on a partial profile (C)', async () => {

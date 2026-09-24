@@ -1,6 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SkillsModule } from '../skills/skills.module';
+import {
+  SkillCategoriesCollection,
+  SkillCategorySchema,
+} from '../skills/schemas/skill-category.schema';
+import {
+  OrganizationSchema,
+  OrganizationsCollection,
+} from '../organizations/schemas/organization.schema';
+import { ReviewSchema, ReviewsCollection } from '../reviews/review.schema';
 import { MediaCollection, MediaSchema } from '../media/schemas/media.schema';
 import {
   PortfolioItemsCollection,
@@ -55,6 +64,15 @@ import { VolunteersService } from './volunteers.service';
         name: VolunteerExperiencesCollection,
         schema: VolunteerExperienceSchema,
       },
+      // Session 9 reads (no writes): skill categories for the derived
+      // contribution areas, reviews + organizations for the public reviews
+      // list. Registered here to avoid a cycle (ReviewsModule imports this one).
+      {
+        name: SkillCategoriesCollection,
+        schema: SkillCategorySchema,
+      },
+      { name: ReviewsCollection, schema: ReviewSchema },
+      { name: OrganizationsCollection, schema: OrganizationSchema },
     ]),
     SkillsModule,
   ],

@@ -128,7 +128,11 @@ describe('PortfolioQueryService (S14 real read)', () => {
   });
 
   it('404s on a profile whose publicProfile.enabled=false (A5)', async () => {
-    await createProfile();
+    await profileModel.create({
+      userId,
+      username,
+      publicProfile: { ...defaultPublicProfile(), enabled: false },
+    });
     await expect(service.getPublicPortfolio(username)).rejects.toMatchObject({
       status: 404,
       code: 'VOLUNTEER_NOT_FOUND',

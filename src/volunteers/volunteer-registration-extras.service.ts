@@ -19,9 +19,9 @@ import {
 /**
  * Registration extras provider for role `volunteer` (roadmap S2). Dispatches
  * on `user.role`: only `volunteer` creates a `volunteer_profiles` row (userId,
- * slug username from the email local-part, private by default); every other
- * role delegates to the organization provider so non-volunteer registration is
- * untouched (parallel-merge).
+ * slug username from the email local-part, public by default per decision 5);
+ * every other role delegates to the organization provider so non-volunteer
+ * registration is untouched (parallel-merge).
  */
 @Injectable()
 export class VolunteerRegistrationExtrasService implements RegistrationExtrasService {

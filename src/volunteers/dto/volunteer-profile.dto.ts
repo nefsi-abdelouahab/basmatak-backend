@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsMongoId,
@@ -82,6 +84,43 @@ export class UpdateVolunteerProfileDto {
   @IsOptional()
   @IsMongoId()
   banner?: string;
+
+  @ApiPropertyOptional({
+    example: 'Community health volunteer',
+    maxLength: 120,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  headline?: string;
+
+  @ApiPropertyOptional({
+    example: 'Available for on-site and remote missions',
+    maxLength: 500,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  availabilityNote?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['health', 'education'],
+    maxLength: 60,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(60, { each: true })
+  preferredDomains?: string[];
+
+  @ApiPropertyOptional({ example: 'Algiers', maxLength: 120 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  geographicBase?: string;
 }
 
 export class PublicProfileDto {
@@ -127,6 +166,14 @@ export class PublicProfileDto {
   @IsOptional()
   @IsBoolean()
   showPortfolio?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Master toggle for the public stats block',
+    type: 'boolean',
+  })
+  @IsOptional()
+  @IsBoolean()
+  showStats?: boolean;
 }
 
 /** A5 privacy flags; the payload is `{ publicProfile: {...} }` (only these keys). */
