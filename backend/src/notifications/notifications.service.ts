@@ -14,6 +14,7 @@ import {
   normalizeLimit,
 } from '../common/pagination/pagination.util';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
+import { NotificationPrefsService } from './notification-prefs.service';
 import { buildNotificationKey } from './notifications-key.util';
 import {
   NotificationModel,
@@ -32,6 +33,7 @@ export class NotificationsService {
     private readonly notificationModel: Model<NotificationModel>,
     @Inject(NOTIFICATIONS_REPOSITORY)
     private readonly repository: NotificationsRepository,
+    private readonly prefs: NotificationPrefsService,
   ) {}
 
   /**
@@ -44,6 +46,9 @@ export class NotificationsService {
     type: string,
     payload?: unknown,
   ): Promise<void> {
+    if (!(await this.prefs.enabledFor(recipientId.toString(), type))) {
+      return;
+    }
     const dedupeKey = buildNotificationKey(
       type,
       payload,
@@ -63,6 +68,45 @@ export class NotificationsService {
         throw error;
       }
     }
+  }
+
+  /**
+   * Bus path with preference gating (design D2, S9). Resolves the recipient's
+   * notification prefs; when the event type is disabled for the recipient the
+   * notification is skipped entirely. Otherwise delegates to the idempotent
+   * `createForRecipient`. `createInSession` (transactional path) is untouched.
+   */
+  async createForRecipientIfEnabled(
+    recipientId: Types.ObjectId | string,
+    type: string,
+    payload?: unknown,
+  ): Promise<void> {
+    if (!(await this.prefs.enabledFor(String(recipientId), type))) {
+      return;
+    }
+    return this.createForRecipient(
+      new Types.ObjectId(recipientId.toString()),
+      type,
+      payload,
+    );
+  }
+
+  /**
+   * D5 digest flag, read through the notifications module boundary (flag-only,
+   * no digest delivery in S9). Tolerant of absent/non-boolean stored value
+   * (defaults `false`).
+   */
+  async isDigestEnabled(): Promise<boolean> {
+    return this.prefs.isDigestEnabled();
+  }
+
+  /**
+   * D5 digest interval in days, read through the notifications module boundary
+   * (flag-only, no digest delivery in S9). Tolerant of absent/non-numeric
+   * stored value (defaults `7`).
+   */
+  async digestIntervalDays(): Promise<number> {
+    return this.prefs.digestIntervalDays();
   }
 
   /** Transactional path: persist inside the caller's Mongo transaction (F4). */
