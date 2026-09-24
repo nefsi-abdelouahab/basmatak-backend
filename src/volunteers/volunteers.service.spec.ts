@@ -108,8 +108,11 @@ describe('VolunteersService', () => {
     const orgExtras = new OrganizationRegistrationExtrasService(
       orgModel,
       new InertRegistrationExtrasService(),
+      { getNext: jest.fn().mockResolvedValue('ORG-000001') } as never,
     );
-    extras = new VolunteerRegistrationExtrasService(profileModel, orgExtras);
+    extras = new VolunteerRegistrationExtrasService(profileModel, orgExtras, {
+      getNext: jest.fn().mockResolvedValue('VOL-000001'),
+    } as never);
     service = new VolunteersService(
       profileModel,
       skillModel,

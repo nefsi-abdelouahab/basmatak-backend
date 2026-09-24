@@ -14,6 +14,7 @@ export interface VolunteerExperience {
   opportunityId: Types.ObjectId;
   positionId: Types.ObjectId;
   title: string;
+  registryId: string;
   description?: string;
   skills: Types.ObjectId[];
   duration: number;
@@ -32,6 +33,7 @@ export class VolunteerExperienceModel
   opportunityId!: Types.ObjectId;
   positionId!: Types.ObjectId;
   title!: string;
+  registryId!: string;
   description?: string;
   skills!: Types.ObjectId[];
   duration!: number;
@@ -57,6 +59,9 @@ export const VolunteerExperienceSchema: Schema<VolunteerExperienceModel> =
     opportunityId: { type: Schema.Types.ObjectId, required: true },
     positionId: { type: Schema.Types.ObjectId, required: true },
     title: { type: String, required: true, trim: true, maxlength: 200 },
+    // Server-minted neutral registry id (EXP-…); owned by the registry-ids
+    // session — never accepted from client input and never updated.
+    registryId: { type: String, trim: true, maxlength: 32 },
     description: { type: String, trim: true, maxlength: 2000 },
     skills: { type: [Schema.Types.ObjectId], default: [] },
     duration: { type: Number, required: true, default: 0, min: 0 },

@@ -26,6 +26,7 @@ export interface VolunteerLocation {
 export interface VolunteerProfile {
   userId: Types.ObjectId;
   username: string;
+  registryId: string;
   firstName?: string;
   lastName?: string;
   bio?: string;
@@ -43,6 +44,7 @@ export class VolunteerProfileModel
 {
   userId!: Types.ObjectId;
   username!: string;
+  registryId!: string;
   firstName?: string;
   lastName?: string;
   bio?: string;
@@ -111,6 +113,9 @@ export const VolunteerProfileSchema: Schema<VolunteerProfileModel> =
   createSchema({
     userId: { type: Schema.Types.ObjectId, required: true },
     username: { type: String, required: true, trim: true, maxlength: 80 },
+    // Server-minted neutral registry id (VOL-…); owned by the registry-ids
+    // session — never accepted from client input and never updated.
+    registryId: { type: String, trim: true, maxlength: 32 },
     firstName: { type: String, trim: true, maxlength: 80 },
     lastName: { type: String, trim: true, maxlength: 80 },
     bio: { type: String, trim: true, maxlength: 2000 },

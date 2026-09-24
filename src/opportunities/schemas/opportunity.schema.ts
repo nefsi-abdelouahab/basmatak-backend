@@ -40,6 +40,7 @@ export class PositionModel extends Document implements Position {
 export interface Opportunity {
   organizationId: Types.ObjectId;
   slug: string;
+  registryId: string;
   title: string;
   description: string;
   categoryId: Types.ObjectId;
@@ -53,6 +54,7 @@ export interface Opportunity {
 export class OpportunityModel extends Document implements Opportunity {
   organizationId!: Types.ObjectId;
   slug!: string;
+  registryId!: string;
   title!: string;
   description!: string;
   categoryId!: Types.ObjectId;
@@ -89,6 +91,9 @@ export const PositionSchema: Schema<PositionModel> = new Schema<PositionModel>({
 export const OpportunitySchema: Schema<OpportunityModel> = createSchema({
   organizationId: { type: Schema.Types.ObjectId, required: true, index: true },
   slug: { type: String, required: true, trim: true },
+  // Server-minted neutral registry id (OPP-…); owned by the registry-ids
+  // session — never accepted from client input and never updated.
+  registryId: { type: String, trim: true, maxlength: 32 },
   title: { type: String, required: true, trim: true, maxlength: 200 },
   description: { type: String, required: true, trim: true, maxlength: 2000 },
   categoryId: { type: Schema.Types.ObjectId },

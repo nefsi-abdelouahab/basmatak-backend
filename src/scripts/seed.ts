@@ -18,14 +18,34 @@ import {
 } from '../seed-data/seed.utils';
 import { seedAdmin } from './seed-admin';
 import { seedDemo } from './seed-demo';
+import { backfillRegistryIds } from './backfill-registry-ids';
+import { RegistryIdService } from '../common/counters/registry-id.service';
+import {
+  OrganizationModel,
+  OrganizationsCollection,
+} from '../organizations/schemas/organization.schema';
+import {
+  OpportunityModel,
+  OpportunitiesCollection,
+} from '../opportunities/schemas/opportunity.schema';
+import {
+  VolunteerExperienceModel,
+  VolunteerExperiencesCollection,
+} from '../verifications/schemas/volunteer-experience.schema';
+import {
+  VolunteerProfileModel,
+  VolunteerProfilesCollection,
+} from '../volunteers/schemas/volunteer-profile.schema';
 
-type SeedTarget = 'locations' | 'skills' | 'admin' | 'demo' | 'all';
+type SeedTarget =
+  'locations' | 'skills' | 'admin' | 'demo' | 'backfill-registry-ids' | 'all';
 
 const TARGETS: readonly SeedTarget[] = [
   'locations',
   'skills',
   'admin',
   'demo',
+  'backfill-registry-ids',
   'all',
 ];
 
@@ -78,6 +98,26 @@ async function run(): Promise<void> {
       const result = await seedDemo(app);
       results.push(
         `demo: org=${result.organizationEmail} verified=${result.organizationVerified}, volunteer=${result.volunteerEmail}`,
+      );
+    }
+    if (target === 'backfill-registry-ids' || target === 'all') {
+      const registryId = app.get(RegistryIdService);
+      const counts = await backfillRegistryIds(registryId, {
+        volunteer: app.get(
+          getModelToken(VolunteerProfilesCollection),
+        ) as Model<VolunteerProfileModel>,
+        organization: app.get(
+          getModelToken(OrganizationsCollection),
+        ) as Model<OrganizationModel>,
+        opportunity: app.get(
+          getModelToken(OpportunitiesCollection),
+        ) as Model<OpportunityModel>,
+        experience: app.get(
+          getModelToken(VolunteerExperiencesCollection),
+        ) as Model<VolunteerExperienceModel>,
+      });
+      results.push(
+        `backfill-registry-ids: volunteer=${counts.volunteer}, organization=${counts.organization}, opportunity=${counts.opportunity}, experience=${counts.experience}`,
       );
     }
     console.log(`Seeded ${results.join(' | ')}`);

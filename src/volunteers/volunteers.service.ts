@@ -58,6 +58,7 @@ export interface TalentSkill {
 /** Public-safety projection of an enabled volunteer profile (talents feed). */
 export interface TalentCard {
   username: string;
+  registryId: string;
   firstName: string | null;
   bio: string | null;
   location: { wilayaId: string } | null;
@@ -77,6 +78,7 @@ export interface PublicExperienceEvidence {
 /** Public snapshot of one `volunteer_experiences` row (publicVisibility=public). */
 export interface PublicExperienceCard {
   id: string;
+  registryId: string;
   title: string;
   description: string;
   duration: number;
@@ -87,6 +89,7 @@ export interface PublicExperienceCard {
 /** Public-read view (S2 seams; populated by Session 12). */
 export interface PublicVolunteerProfile {
   username: string;
+  registryId: string;
   firstName: string | null;
   avatar: string | null;
   bio: string | null;
@@ -433,6 +436,7 @@ export class VolunteersService {
 
     return {
       username: profile.username,
+      registryId: profile.registryId,
       firstName: flags.showBiography ? (profile.firstName ?? null) : null,
       avatar: flags.showAvatar && profile.avatar ? avatar : null,
       bio: flags.showBiography ? (profile.bio ?? null) : null,
@@ -623,6 +627,7 @@ export class VolunteersService {
       const flags = profile.publicProfile;
       cards.push({
         username: profile.username,
+        registryId: profile.registryId,
         firstName: flags.showBiography ? (profile.firstName ?? null) : null,
         bio: flags.showBiography ? (profile.bio ?? null) : null,
         location:
@@ -774,6 +779,7 @@ export class VolunteersService {
 
     const cards: PublicExperienceCard[] = items.map((row) => ({
       id: row._id.toString(),
+      registryId: row.registryId,
       title: row.title,
       description: row.description ?? '',
       duration: row.duration,

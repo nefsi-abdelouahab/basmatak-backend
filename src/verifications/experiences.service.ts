@@ -216,6 +216,7 @@ export class ExperiencesService {
     }));
 
     return {
+      registryId: experience.registryId,
       title: experience.title,
       description: experience.description ?? null,
       skills: experience.skills,

@@ -121,6 +121,7 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       transitions,
       publishGate,
       adapter,
+      { getNext: jest.fn().mockResolvedValue('OPP-000001') } as never,
       emitter,
     );
   });

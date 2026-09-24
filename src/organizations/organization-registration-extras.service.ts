@@ -7,6 +7,7 @@ import {
   RegistrationUser,
 } from '../common/seams/registration-extras.service';
 import { slugifyText, createWithUniqueSlug } from '../common/slug/slugify.util';
+import { RegistryIdService } from '../common/counters/registry-id.service';
 import {
   OrganizationsCollection,
   OrganizationModel,
@@ -25,6 +26,7 @@ export class OrganizationRegistrationExtrasService implements RegistrationExtras
     private readonly organizationModel: Model<OrganizationModel>,
     @Inject(InertRegistrationExtrasService)
     private readonly inert: InertRegistrationExtrasService,
+    private readonly registryId: RegistryIdService,
   ) {}
 
   async createExtras(
@@ -37,11 +39,13 @@ export class OrganizationRegistrationExtrasService implements RegistrationExtras
     }
     const localPart = String(dto.email ?? '').split('@')[0] ?? '';
     const baseSlug = slugifyText(localPart) || 'organization';
+    const registryId = await this.registryId.getNext('organization');
     await createWithUniqueSlug(
       (slug) =>
         this.organizationModel.create({
           userId: new Types.ObjectId(user.id),
           slug,
+          registryId,
           verificationStatus: 'pending',
           status: 'active',
         }),
