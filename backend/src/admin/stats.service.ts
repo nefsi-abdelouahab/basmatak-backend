@@ -114,7 +114,8 @@ export class AdminStatsService {
     return row ? row.hours : null;
   }
 
-  private async countGateFreezes(): Promise<number> {
+  /** Distinct organizations currently locked by the §4 publish gate (Session 8 reuse). */
+  async countGateFreezes(): Promise<number> {
     const threshold =
       (await this.settings.get<number>(GATE_KEY, GATE_DEFAULT_THRESHOLD)) ??
       GATE_DEFAULT_THRESHOLD;
