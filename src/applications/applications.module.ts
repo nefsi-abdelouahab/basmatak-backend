@@ -43,6 +43,10 @@ export class ApplicationsModule implements OnModuleInit {
       ['pending', 'accepted'],
       ['pending', 'rejected'],
       ['pending', 'withdrawn'],
+      ['pending', 'under_review'],
+      ['under_review', 'accepted'],
+      ['under_review', 'rejected'],
+      ['under_review', 'withdrawn'],
       ['accepted', 'withdrawn'],
     ]);
   }
