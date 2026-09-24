@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { Public } from '../common/decorators/auth.decorators';
+import { ReviewListQueryDto } from '../reviews/dto/review.dto';
 import { PublicExperiencesQueryDto, TalentsQueryDto } from './dto/talents.dto';
 import { VolunteersService } from './volunteers.service';
 
@@ -67,6 +68,36 @@ export class PublicVolunteersController {
       );
     }
     return this.volunteers.getPublicExperiences(
+      profile.userId.toString(),
+      query.limit,
+      query.cursor,
+    );
+  }
+
+  @ApiParam({
+    name: 'username',
+    description: 'Volunteer username',
+    type: String,
+  })
+  @Get('volunteers/:username/reviews')
+  @Public()
+  @ApiOperation({
+    summary: 'Public reviews of a volunteer (visible rows only)',
+  })
+  async publicReviews(
+    @Param('username') username: string,
+    @Query() query: ReviewListQueryDto,
+  ) {
+    const profile =
+      await this.volunteers.findEnabledProfileByUsername(username);
+    if (!profile) {
+      throw new BusinessException(
+        'VOLUNTEER_PROFILE_NOT_FOUND',
+        'Volunteer profile not found',
+        404,
+      );
+    }
+    return this.volunteers.getPublicReviews(
       profile.userId.toString(),
       query.limit,
       query.cursor,

@@ -4,6 +4,15 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
+import {
+  SkillCategoriesCollection,
+  SkillCategoryModel,
+} from '../skills/schemas/skill-category.schema';
+import {
+  OrganizationModel,
+  OrganizationsCollection,
+} from '../organizations/schemas/organization.schema';
+import { ReviewModel, ReviewsCollection } from '../reviews/review.schema';
 import { MediaOwnership } from '../common/seams/media-ownership';
 import {
   PortfolioQueryService,
@@ -68,6 +77,8 @@ export interface TalentCard {
   location: { wilayaId: string } | null;
   skills: TalentSkill[] | null;
   avatar: string | null;
+  /** Present only when `showStats` is true (Session 9). */
+  stats: VolunteerProfile['stats'] | null;
 }
 
 /** Evidence metadata restricted to `visibility=public` media (A6). */
@@ -90,18 +101,50 @@ export interface PublicExperienceCard {
   evidence: PublicExperienceEvidence[];
 }
 
+/** One derived contribution area: category label + share of verified experiences. */
+export interface AreaOfContribution {
+  categoryId: string;
+  nameAr: string;
+  nameFr: string;
+  /** Share of the volunteer's visible verified experiences, 1-decimal percent. */
+  percent: number;
+  count: number;
+}
+
 /** Public-read view (S2 seams; populated by Session 12). */
 export interface PublicVolunteerProfile {
   username: string;
   registryId: string;
+  fullName: string | null;
   firstName: string | null;
   avatar: string | null;
   bio: string | null;
+  headline: string | null;
+  availabilityNote: string | null;
+  preferredDomains: string[];
+  geographicBase: string | null;
+  createdAt: Date;
+  stats: VolunteerProfile['stats'] | null;
+  areasOfContribution: AreaOfContribution[] | null;
   location: VolunteerProfile['location'] | null;
   skills: TalentSkill[] | null;
   experiences: PublicExperienceCard[] | null;
   availability: WeeklySchedule | null;
   portfolio: unknown | null;
+}
+
+/** Neutral public review card with the writing-organization identity. */
+export interface PublicReviewCard {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+  organization: {
+    id: string;
+    slug: string;
+    nameAr: string | null;
+    nameFr: string | null;
+  } | null;
 }
 
 export interface VolunteerDashboard {
@@ -128,6 +171,12 @@ export class VolunteersService {
     private readonly availabilityModel: Model<VolunteerAvailabilityModel>,
     @InjectModel(SkillsCollection)
     private readonly skillsCatalogModel: Model<SkillModel>,
+    @InjectModel(SkillCategoriesCollection)
+    private readonly skillCategoryModel: Model<SkillCategoryModel>,
+    @InjectModel(ReviewsCollection)
+    private readonly reviewModel: Model<ReviewModel>,
+    @InjectModel(OrganizationsCollection)
+    private readonly organizationModel: Model<OrganizationModel>,
     @InjectModel(MediaCollection)
     private readonly mediaModel: Model<MediaModel>,
     @InjectModel(VolunteerExperiencesCollection)
@@ -182,6 +231,18 @@ export class VolunteersService {
       await this.mediaOwnership.assertFor(dto.banner, userId);
       set.banner = new Types.ObjectId(dto.banner);
     }
+    if (dto.headline !== undefined) {
+      set.headline = dto.headline;
+    }
+    if (dto.availabilityNote !== undefined) {
+      set.availabilityNote = dto.availabilityNote;
+    }
+    if (dto.preferredDomains !== undefined) {
+      set.preferredDomains = dto.preferredDomains;
+    }
+    if (dto.geographicBase !== undefined) {
+      set.geographicBase = dto.geographicBase;
+    }
     const updated = await this.profileModel
       .findOneAndUpdate({ userId }, { $set: set }, { new: true })
       .exec();
@@ -224,6 +285,9 @@ export class VolunteersService {
     }
     if (flags.showPortfolio !== undefined) {
       set['publicProfile.showPortfolio'] = flags.showPortfolio;
+    }
+    if (flags.showStats !== undefined) {
+      set['publicProfile.showStats'] = flags.showStats;
     }
     const updated = await this.profileModel
       .findOneAndUpdate({ userId }, { $set: set }, { new: true })
@@ -410,6 +474,9 @@ export class VolunteersService {
    * A5 public profile resolver (inventory §2.6, roadmap S12): `null` for
    * unknown/disabled profiles, otherwise sections populated only under their
    * `show*` flag. Avatar is resolved only when its media is `visibility=public`.
+   * Session 9 adds `fullName`/`createdAt`/headline fields, the `showStats`-gated
+   * stats block, and read-time `areasOfContribution` (gated by `showExperiences`,
+   * its data source). No free-form contributions list exists (FCD #4 cut).
    */
   async getPublicProfile(
     username: string,
@@ -421,7 +488,7 @@ export class VolunteersService {
     const flags = profile.publicProfile;
     const userId = profile.userId.toString();
 
-    const [skills, experiences, availability, avatar, portfolio] =
+    const [skills, experiences, availability, avatar, portfolio, areas] =
       await Promise.all([
         flags.showSkills ? this.loadPublicSkills(userId) : Promise.resolve([]),
         flags.showExperiences
@@ -438,14 +505,36 @@ export class VolunteersService {
         flags.showPortfolio
           ? this.portfolioQuery.getPublicPortfolio(username)
           : Promise.resolve(null),
+        flags.showExperiences
+          ? this.deriveAreasOfContribution(userId)
+          : Promise.resolve([]),
       ]);
+
+    const fullName = [profile.firstName, profile.lastName]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(' ');
 
     return {
       username: profile.username,
       registryId: profile.registryId,
+      fullName: fullName ? fullName : null,
       firstName: flags.showBiography ? (profile.firstName ?? null) : null,
       avatar: flags.showAvatar && profile.avatar ? avatar : null,
       bio: flags.showBiography ? (profile.bio ?? null) : null,
+      headline: flags.showBiography ? (profile.headline ?? null) : null,
+      availabilityNote: flags.showBiography
+        ? (profile.availabilityNote ?? null)
+        : null,
+      preferredDomains: flags.showBiography
+        ? (profile.preferredDomains ?? [])
+        : [],
+      geographicBase: flags.showBiography
+        ? (profile.geographicBase ?? null)
+        : null,
+      createdAt: profile.createdAt,
+      stats: flags.showStats ? profile.stats : null,
+      areasOfContribution: flags.showExperiences ? areas : null,
       location: flags.showLocation ? (profile.location ?? null) : null,
       skills: flags.showSkills ? skills : null,
       experiences: flags.showExperiences ? experiences : null,
@@ -609,6 +698,65 @@ export class VolunteersService {
     return this.portfolioQuery.getPublicPortfolio(username);
   }
 
+  /**
+   * Public reviews addressed to a volunteer (Session 9): only `status=visible`
+   * rows, newest-first, counted cursor paging, with the writing-organization
+   * identity. The caller resolves the enabled profile first (404 otherwise).
+   */
+  async getPublicReviews(
+    volunteerId: string,
+    limit?: string | number,
+    rawCursor?: string,
+  ): Promise<CursorPage<PublicReviewCard>> {
+    const baseFilter: FilterQuery<ReviewModel> = {
+      volunteerId: new Types.ObjectId(volunteerId),
+      status: 'visible',
+    };
+    return execPage(
+      this.reviewModel,
+      baseFilter,
+      {
+        limit,
+        cursor: rawCursor,
+        sort: { _id: -1 },
+        sortToken: 'newest',
+      },
+      async (rows) => {
+        const orgIds = [
+          ...new Set(rows.map((row) => row.organizationId.toString())),
+        ];
+        const orgs =
+          orgIds.length > 0
+            ? await this.organizationModel
+                .find({
+                  _id: { $in: orgIds.map((id) => new Types.ObjectId(id)) },
+                })
+                .select('slug nameAr nameFr')
+                .lean()
+                .exec()
+            : [];
+        const byId = new Map(orgs.map((org) => [org._id.toString(), org]));
+        return rows.map((row) => {
+          const org = byId.get(row.organizationId.toString());
+          return {
+            id: row._id.toString(),
+            rating: row.rating,
+            comment: row.comment ?? null,
+            createdAt: row.createdAt,
+            organization: org
+              ? {
+                  id: row.organizationId.toString(),
+                  slug: org.slug,
+                  nameAr: org.nameAr ?? null,
+                  nameFr: org.nameFr ?? null,
+                }
+              : null,
+          };
+        });
+      },
+    );
+  }
+
   /***************************************************************************
    * Public-read internals (A5/A6)
    **************************************************************************/
@@ -661,6 +809,107 @@ export class VolunteersService {
       .lean()
       .exec();
     return row ? row.schedule : emptySchedule();
+  }
+
+  /**
+   * Read-time areas of contribution (FCD #4, owner-confirmed): count-based
+   * share per skill category over the volunteer's caller-visible (`public`)
+   * verified experiences. Each experience contributes weight 1 split equally
+   * across its distinct mapped categories, so shares sum to ~100. Experiences
+   * with no active-category skill are excluded from numerator and denominator.
+   * Sorted by share desc (ties: category `order`, then `nameFr`), capped at 8.
+   * Batched in three bounded queries — never stored, no N+1.
+   */
+  private async deriveAreasOfContribution(
+    userId: string,
+  ): Promise<AreaOfContribution[]> {
+    const experiences = await this.experienceModel
+      .find({
+        volunteerId: new Types.ObjectId(userId),
+        publicVisibility: 'public',
+      })
+      .select('skills')
+      .lean()
+      .exec();
+    const skillIds = [
+      ...new Set(
+        experiences.flatMap((row) => row.skills.map((id) => id.toString())),
+      ),
+    ];
+    if (skillIds.length === 0) {
+      return [];
+    }
+    const catalog = await this.skillsCatalogModel
+      .find({
+        _id: { $in: skillIds.map((id) => new Types.ObjectId(id)) },
+        active: true,
+      })
+      .select('categoryId')
+      .lean()
+      .exec();
+    const categoryBySkill = new Map(
+      catalog.map((skill) => [
+        skill._id.toString(),
+        skill.categoryId.toString(),
+      ]),
+    );
+    const touches = new Map<string, number>();
+    const weights = new Map<string, number>();
+    let attributed = 0;
+    for (const row of experiences) {
+      const categories = [
+        ...new Set(
+          row.skills
+            .map((id) => categoryBySkill.get(id.toString()))
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      if (categories.length === 0) {
+        continue;
+      }
+      attributed += 1;
+      const weight = 1 / categories.length;
+      for (const categoryId of categories) {
+        touches.set(categoryId, (touches.get(categoryId) ?? 0) + 1);
+        weights.set(categoryId, (weights.get(categoryId) ?? 0) + weight);
+      }
+    }
+    if (attributed === 0) {
+      return [];
+    }
+    const categories = await this.skillCategoryModel
+      .find({
+        _id: {
+          $in: [...weights.keys()].map((id) => new Types.ObjectId(id)),
+        },
+      })
+      .lean()
+      .exec();
+    const areas: Array<AreaOfContribution & { order: number }> = [];
+    for (const category of categories) {
+      const categoryId = category._id.toString();
+      const weight = weights.get(categoryId);
+      if (weight === undefined) {
+        continue;
+      }
+      areas.push({
+        categoryId,
+        nameAr: category.nameAr,
+        nameFr: category.nameFr,
+        percent: Math.round((weight / attributed) * 1000) / 10,
+        count: touches.get(categoryId) ?? 0,
+        order: category.order,
+      });
+    }
+    return areas
+      .sort(
+        (a, b) =>
+          b.percent - a.percent ||
+          a.order - b.order ||
+          (a.nameFr < b.nameFr ? -1 : a.nameFr > b.nameFr ? 1 : 0),
+      )
+      .slice(0, 8)
+      .map(({ order: _order, ...area }) => area);
   }
 
   /** The avatar media id only when its row is live and `visibility=public` (A6). */
@@ -729,6 +978,7 @@ export class VolunteersService {
           publicAvatars.has(profile.avatar.toString())
             ? profile.avatar.toString()
             : null,
+        stats: flags.showStats ? profile.stats : null,
       });
     }
     return cards;

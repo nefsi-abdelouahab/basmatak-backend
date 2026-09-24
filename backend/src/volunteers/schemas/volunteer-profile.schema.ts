@@ -16,6 +16,8 @@ export interface VolunteerPublicProfile {
   showExperiences: boolean;
   showAvailability: boolean;
   showPortfolio: boolean;
+  /** Gates the public `stats` block (Session 9 opt-out addition). */
+  showStats: boolean;
 }
 
 export interface VolunteerLocation {
@@ -34,6 +36,14 @@ export interface VolunteerProfile {
   location?: VolunteerLocation;
   avatar?: Types.ObjectId;
   banner?: Types.ObjectId;
+  /** Short public tagline (Session 9, max 120). */
+  headline?: string;
+  /** Free-text availability note complementing the weekly schedule (Session 9, max 500). */
+  availabilityNote?: string;
+  /** Preferred contribution domains, free text (Session 9, max 10 x 60). */
+  preferredDomains?: string[];
+  /** Geographic base, free text (Session 9, max 120). */
+  geographicBase?: string;
   stats: VolunteerProfileStats;
   publicProfile: VolunteerPublicProfile;
 }
@@ -52,6 +62,10 @@ export class VolunteerProfileModel
   location?: VolunteerLocation;
   avatar?: Types.ObjectId;
   banner?: Types.ObjectId;
+  headline?: string;
+  availabilityNote?: string;
+  preferredDomains?: string[];
+  geographicBase?: string;
   stats!: VolunteerProfileStats;
   publicProfile!: VolunteerPublicProfile;
   createdAt!: Date;
@@ -60,17 +74,18 @@ export class VolunteerProfileModel
 
 export const VolunteerProfilesCollection = 'volunteer_profiles';
 
-/** A5 defaults: the profile is private until the owner deliberately enables it. */
+/** Decision 5 opt-out defaults: the profile is public until the owner disables it. */
 export function defaultPublicProfile(): VolunteerPublicProfile {
   return {
-    enabled: false,
+    enabled: true,
     showAvatar: false,
-    showBiography: false,
+    showBiography: true,
     showLocation: false,
-    showSkills: false,
-    showExperiences: false,
+    showSkills: true,
+    showExperiences: true,
     showAvailability: false,
-    showPortfolio: false,
+    showPortfolio: true,
+    showStats: true,
   };
 }
 
@@ -80,14 +95,15 @@ export function defaultStats(): VolunteerProfileStats {
 
 const publicProfileSchema = new Schema<VolunteerPublicProfile>(
   {
-    enabled: { type: Boolean, default: false },
+    enabled: { type: Boolean, default: true },
     showAvatar: { type: Boolean, default: false },
-    showBiography: { type: Boolean, default: false },
+    showBiography: { type: Boolean, default: true },
     showLocation: { type: Boolean, default: false },
-    showSkills: { type: Boolean, default: false },
-    showExperiences: { type: Boolean, default: false },
+    showSkills: { type: Boolean, default: true },
+    showExperiences: { type: Boolean, default: true },
     showAvailability: { type: Boolean, default: false },
-    showPortfolio: { type: Boolean, default: false },
+    showPortfolio: { type: Boolean, default: true },
+    showStats: { type: Boolean, default: true },
   },
   { _id: false },
 );
@@ -123,6 +139,10 @@ export const VolunteerProfileSchema: Schema<VolunteerProfileModel> =
     location: { type: locationSchema },
     avatar: { type: Schema.Types.ObjectId },
     banner: { type: Schema.Types.ObjectId },
+    headline: { type: String, trim: true, maxlength: 120 },
+    availabilityNote: { type: String, trim: true, maxlength: 500 },
+    preferredDomains: { type: [String], default: undefined },
+    geographicBase: { type: String, trim: true, maxlength: 120 },
     stats: { type: statsSchema, default: () => defaultStats() },
     publicProfile: {
       type: publicProfileSchema,

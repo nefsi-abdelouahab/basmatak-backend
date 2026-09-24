@@ -24,6 +24,7 @@ import {
   VolunteerProfileModel,
   VolunteerProfilesCollection,
 } from '../src/volunteers/schemas/volunteer-profile.schema';
+import { ReviewModel, ReviewsCollection } from '../src/reviews/review.schema';
 import {
   VolunteerSkillModel,
   VolunteerSkillsCollection,
@@ -39,6 +40,7 @@ describe('volunteers e2e — profile, skills, availability, dashboard, privacy (
   let app: INestApplication;
   let handle: TestAppHandle;
   let profileModel: Model<VolunteerProfileModel>;
+  let reviewModel: Model<ReviewModel>;
   let skillModel: Model<VolunteerSkillModel>;
   let availabilityModel: Model<VolunteerAvailabilityModel>;
   let catalogSkillModel: Model<SkillModel>;
@@ -69,6 +71,7 @@ describe('volunteers e2e — profile, skills, availability, dashboard, privacy (
     });
     app = handle.app;
     profileModel = app.get(getModelToken(VolunteerProfilesCollection));
+    reviewModel = app.get(getModelToken(ReviewsCollection));
     skillModel = app.get(getModelToken(VolunteerSkillsCollection));
     availabilityModel = app.get(
       getModelToken(VolunteerAvailabilitiesCollection),
@@ -106,13 +109,13 @@ describe('volunteers e2e — profile, skills, availability, dashboard, privacy (
   });
 
   describe('registration seam', () => {
-    it('creates a private profile with a slugged username at register time', async () => {
+    it('creates a public-by-default profile with a slugged username at register time', async () => {
       const profile = await profileModel
         .findOne({ userId: volunteerUserId })
         .exec();
       expect(profile).not.toBeNull();
       expect(profile!.username).toBe('profil-ben');
-      expect(profile!.publicProfile.enabled).toBe(false);
+      expect(profile!.publicProfile.enabled).toBe(true);
 
       const other = await profileModel
         .findOne({ userId: otherVolunteerUserId })
@@ -133,14 +136,15 @@ describe('volunteers e2e — profile, skills, availability, dashboard, privacy (
       expect(res.body.username).toBe('profil-ben');
       expect(res.body).toMatchObject({
         publicProfile: {
-          enabled: false,
+          enabled: true,
           showAvatar: false,
-          showBiography: false,
+          showBiography: true,
           showLocation: false,
-          showSkills: false,
-          showExperiences: false,
+          showSkills: true,
+          showExperiences: true,
           showAvailability: false,
-          showPortfolio: false,
+          showPortfolio: true,
+          showStats: true,
         },
         stats: {
           completedTasks: 0,
@@ -491,6 +495,125 @@ describe('volunteers e2e — profile, skills, availability, dashboard, privacy (
         latestVerifiedExperience: null,
       });
       expect(typeof res.body.completionPercent).toBe('number');
+    });
+  });
+
+  describe('public exposure (Session 9 opt-out)', () => {
+    let freshToken: string;
+    let freshUserId: string;
+    let freshUsername: string;
+
+    const guestGet = (path: string) =>
+      request(app.getHttpServer()).get(`/api/v1${path}`);
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/register/volunteer')
+        .send({ email: 'fresh-public@test.dz', password: 'Password123!' })
+        .expect(201);
+      freshToken = res.body.accessToken;
+      freshUserId = res.body.user.id;
+      freshUsername = (await profileModel
+        .findOne({ userId: freshUserId })
+        .exec())!.username;
+    });
+
+    it('a new volunteer is public by default with stats, createdAt and registryId', async () => {
+      const res = await guestGet(`/volunteers/${freshUsername}`).expect(200);
+      expect(res.body.username).toBe(freshUsername);
+      expect(res.body.registryId).toMatch(/^VOL-\d{6}$/);
+      expect(res.body.createdAt).toEqual(expect.any(String));
+      expect(res.body.stats).toMatchObject({
+        completedTasks: 0,
+        verifiedExperiences: 0,
+        volunteerHours: 0,
+      });
+      expect(res.body.areasOfContribution).toEqual([]);
+    });
+
+    it('PATCH /volunteers/me stores the new identity fields and the public read reflects them', async () => {
+      await patch(freshToken, '/volunteers/me')
+        .send({
+          firstName: 'Sara',
+          lastName: 'Mansouri',
+          headline: 'Community health volunteer',
+          availabilityNote: 'Available weekends',
+          preferredDomains: ['health', 'education'],
+          geographicBase: 'Algiers',
+        })
+        .expect(200);
+
+      const res = await guestGet(`/volunteers/${freshUsername}`).expect(200);
+      expect(res.body.fullName).toBe('Sara Mansouri');
+      expect(res.body.headline).toBe('Community health volunteer');
+      expect(res.body.availabilityNote).toBe('Available weekends');
+      expect(res.body.preferredDomains).toEqual(['health', 'education']);
+      expect(res.body.geographicBase).toBe('Algiers');
+    });
+
+    it('rejects oversized identity fields with 400', async () => {
+      const res = await patch(freshToken, '/volunteers/me')
+        .send({ headline: 'x'.repeat(121) })
+        .expect(400);
+      expect(res.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('showStats off hides stats; enabled off hides the whole profile', async () => {
+      await patch(freshToken, '/volunteers/me/public-settings')
+        .send({ publicProfile: { showStats: false } })
+        .expect(200);
+      const gated = await guestGet(`/volunteers/${freshUsername}`).expect(200);
+      expect(gated.body.stats).toBeNull();
+      expect(gated.body.firstName).toBe('Sara');
+
+      await patch(freshToken, '/volunteers/me/public-settings')
+        .send({ publicProfile: { enabled: false } })
+        .expect(200);
+      await guestGet(`/volunteers/${freshUsername}`).expect(404);
+      await guestGet(`/volunteers/${freshUsername}/reviews`).expect(404);
+      const talents = await guestGet('/talents').expect(200);
+      expect(
+        talents.body.items.map((c: { username: string }) => c.username),
+      ).not.toContain(freshUsername);
+    });
+
+    it('GET /volunteers/:username/reviews lists only visible reviews with org identity', async () => {
+      await patch(freshToken, '/volunteers/me/public-settings')
+        .send({ publicProfile: { enabled: true, showStats: true } })
+        .expect(200);
+      const org = await orgModel.create({
+        userId: new Types.ObjectId(),
+        slug: 's9-ong',
+        nameFr: 'S9 Org',
+        verificationStatus: 'verified',
+        status: 'active',
+      });
+      const mk = (status: 'visible' | 'hidden', rating: number) =>
+        reviewModel.create({
+          submissionId: new Types.ObjectId(),
+          organizationId: org._id,
+          volunteerId: new Types.ObjectId(freshUserId),
+          rating,
+          comment: `Review ${rating}`,
+          status,
+        });
+      await mk('visible', 5);
+      await mk('hidden', 1);
+      await mk('visible', 4);
+
+      const res = await guestGet(`/volunteers/${freshUsername}/reviews`).expect(
+        200,
+      );
+      expect(res.body.total).toBe(2);
+      expect(res.body.items.map((r: { rating: number }) => r.rating)).toEqual([
+        4, 5,
+      ]);
+      expect(res.body.items[0]).toMatchObject({
+        comment: 'Review 4',
+        organization: expect.objectContaining({ slug: 's9-ong' }),
+      });
+      const serialized = JSON.stringify(res.body);
+      expect(serialized).not.toContain('Review 1');
     });
   });
 });

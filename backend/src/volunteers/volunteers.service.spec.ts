@@ -13,6 +13,16 @@ import {
   SkillSchema,
 } from '../skills/schemas/skill.schema';
 import {
+  SkillCategoriesCollection,
+  SkillCategoryModel,
+  SkillCategorySchema,
+} from '../skills/schemas/skill-category.schema';
+import {
+  ReviewModel,
+  ReviewsCollection,
+  ReviewSchema,
+} from '../reviews/review.schema';
+import {
   emptySchedule,
   VolunteerAvailabilitiesCollection,
   VolunteerAvailabilityModel,
@@ -62,6 +72,9 @@ describe('VolunteersService', () => {
   let skillModel: Model<VolunteerSkillModel>;
   let availabilityModel: Model<VolunteerAvailabilityModel>;
   let catalogModel: Model<SkillModel>;
+  let categoryModel: Model<SkillCategoryModel>;
+  let reviewModel: Model<ReviewModel>;
+  let volunteerOrgModel: Model<OrganizationModel>;
   let orgModel: Model<OrganizationModel>;
   let mediaModel: Model<MediaModel>;
   let portfolioModel: Model<PortfolioItemModel>;
@@ -87,6 +100,18 @@ describe('VolunteersService', () => {
       VolunteerAvailabilitySchema,
     );
     catalogModel = handle.connection.model(SkillsCollection, SkillSchema);
+    categoryModel = handle.connection.model<SkillCategoryModel>(
+      SkillCategoriesCollection,
+      SkillCategorySchema,
+    );
+    reviewModel = handle.connection.model<ReviewModel>(
+      ReviewsCollection,
+      ReviewSchema,
+    );
+    volunteerOrgModel = handle.connection.model<OrganizationModel>(
+      OrganizationsCollection,
+      OrganizationSchema,
+    );
     orgModel = handle.connection.model(
       OrganizationsCollection,
       OrganizationSchema,
@@ -118,6 +143,9 @@ describe('VolunteersService', () => {
       skillModel,
       availabilityModel,
       catalogModel,
+      categoryModel,
+      reviewModel,
+      volunteerOrgModel,
       mediaModel,
       experienceModel,
       portfolioModel,
@@ -167,6 +195,10 @@ describe('VolunteersService', () => {
       .deleteMany({});
     await handle.connection.collection(OrganizationsCollection).deleteMany({});
     await handle.connection.collection(MediaCollection).deleteMany({});
+    await handle.connection.collection(ReviewsCollection).deleteMany({});
+    await handle.connection
+      .collection(SkillCategoriesCollection)
+      .deleteMany({});
     await handle.connection
       .collection(VolunteerExperiencesCollection)
       .deleteMany({});
@@ -195,7 +227,7 @@ describe('VolunteersService', () => {
   }
 
   describe('registration seam (S2 dispatch)', () => {
-    it('creates a private profile with a slug username for role volunteer', async () => {
+    it('creates a public-by-default profile with a slug username for role volunteer', async () => {
       const user = {
         id: new Types.ObjectId().toString(),
         role: 'volunteer' as const,
@@ -209,7 +241,14 @@ describe('VolunteersService', () => {
         verifiedExperiences: 0,
         volunteerHours: 0,
       });
-      expect(profile!.publicProfile.enabled).toBe(false);
+      expect(profile!.publicProfile).toMatchObject({
+        enabled: true,
+        showBiography: true,
+        showSkills: true,
+        showExperiences: true,
+        showPortfolio: true,
+        showStats: true,
+      });
     });
 
     it('appends a numeric suffix when the username slug collides', async () => {
@@ -323,11 +362,36 @@ describe('VolunteersService', () => {
 
     it('updatePublicSettings flips only the given flags', async () => {
       const updated = await service.updatePublicSettings(volunteerId, {
-        publicProfile: { enabled: true, showAvatar: true },
+        publicProfile: { enabled: false, showAvatar: true },
       });
-      expect(updated.publicProfile.enabled).toBe(true);
+      expect(updated.publicProfile.enabled).toBe(false);
       expect(updated.publicProfile.showAvatar).toBe(true);
-      expect(updated.publicProfile.showBiography).toBe(false);
+      // Untouched flags keep the opt-out defaults.
+      expect(updated.publicProfile.showBiography).toBe(true);
+      expect(updated.publicProfile.showStats).toBe(true);
+    });
+
+    it('updatePublicSettings toggles the stats flag', async () => {
+      const updated = await service.updatePublicSettings(volunteerId, {
+        publicProfile: { showStats: false },
+      });
+      expect(updated.publicProfile.showStats).toBe(false);
+      expect(updated.publicProfile.enabled).toBe(true);
+    });
+
+    it('updateProfile stores the new public-identity fields', async () => {
+      const updated = await service.updateProfile(volunteerId, {
+        headline: 'Community health volunteer',
+        availabilityNote: 'Available for on-site and remote missions',
+        preferredDomains: ['health', 'education'],
+        geographicBase: 'Algiers',
+      });
+      expect(updated.headline).toBe('Community health volunteer');
+      expect(updated.availabilityNote).toBe(
+        'Available for on-site and remote missions',
+      );
+      expect(updated.preferredDomains).toEqual(['health', 'education']);
+      expect(updated.geographicBase).toBe('Algiers');
     });
   });
 
@@ -492,13 +556,38 @@ describe('VolunteersService', () => {
   describe('public-read seams', () => {
     it('returns null for unknown or disabled-public profiles', async () => {
       expect(await service.getPublicProfile('nobody')).toBeNull();
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { enabled: false },
+      });
       expect(await service.getPublicProfile('volunteer-a')).toBeNull();
+    });
+
+    it('is public by default for a fresh profile (decision 5 opt-out)', async () => {
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile).not.toBeNull();
+      expect(profile!.username).toBe('volunteer-a');
+      expect(profile!.stats).toMatchObject({
+        completedTasks: 0,
+        verifiedExperiences: 0,
+        volunteerHours: 0,
+      });
+      expect(profile!.areasOfContribution).toEqual([]);
     });
 
     it('gates public data behind the enabled flag and show flags', async () => {
       await service.updateProfile(volunteerId, { firstName: 'Ali' });
       await service.updatePublicSettings(volunteerId, {
-        publicProfile: { enabled: true, showBiography: true },
+        publicProfile: {
+          enabled: true,
+          showBiography: true,
+          showAvatar: false,
+          showLocation: false,
+          showSkills: false,
+          showExperiences: false,
+          showAvailability: false,
+          showPortfolio: false,
+          showStats: false,
+        },
       });
       const profile = await service.getPublicProfile('volunteer-a');
       expect(profile).not.toBeNull();
@@ -510,6 +599,42 @@ describe('VolunteersService', () => {
       expect(profile!.experiences).toBeNull();
       expect(profile!.availability).toBeNull();
       expect(profile!.portfolio).toBeNull();
+      expect(profile!.stats).toBeNull();
+      expect(profile!.areasOfContribution).toBeNull();
+    });
+
+    it('exposes fullName, createdAt and the new identity fields on the public profile', async () => {
+      await service.updateProfile(volunteerId, {
+        firstName: 'Ali',
+        lastName: 'Ben',
+        headline: 'Community health volunteer',
+        availabilityNote: 'Available weekends',
+        preferredDomains: ['health'],
+        geographicBase: 'Algiers',
+      });
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile).not.toBeNull();
+      expect(profile!.fullName).toBe('Ali Ben');
+      expect(profile!.createdAt).toBeInstanceOf(Date);
+      expect(profile!.headline).toBe('Community health volunteer');
+      expect(profile!.availabilityNote).toBe('Available weekends');
+      expect(profile!.preferredDomains).toEqual(['health']);
+      expect(profile!.geographicBase).toBe('Algiers');
+      expect(profile!.stats).not.toBeNull();
+      const serialized = JSON.stringify(profile);
+      expect(serialized).not.toContain('userId');
+      expect(serialized).not.toContain('Community Contributions');
+    });
+
+    it('omits stats when showStats is off while other sections stay visible', async () => {
+      await service.updateProfile(volunteerId, { firstName: 'Ali' });
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { showStats: false },
+      });
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile).not.toBeNull();
+      expect(profile!.stats).toBeNull();
+      expect(profile!.firstName).toBe('Ali');
     });
 
     it('populates flagged sections from live data (skills, experiences, availability)', async () => {
@@ -609,6 +734,181 @@ describe('VolunteersService', () => {
       });
       const profile = await service.getPublicProfile('volunteer-a');
       expect(profile!.portfolio).toEqual({ items: [] });
+    });
+  });
+
+  describe('derived areas of contribution (FCD #4)', () => {
+    async function seedCategory(
+      slug: string,
+      order: number,
+    ): Promise<Types.ObjectId> {
+      const row = await categoryModel.create({
+        _id: new Types.ObjectId(),
+        slug,
+        nameAr: `${slug}-ar`,
+        nameFr: `${slug}-fr`,
+        order,
+        active: true,
+      });
+      return row._id;
+    }
+
+    async function seedCatalogSkill(
+      slug: string,
+      categoryId: Types.ObjectId,
+      active = true,
+    ): Promise<Types.ObjectId> {
+      const row = await catalogModel.create({
+        _id: new Types.ObjectId(),
+        slug,
+        categoryId,
+        nameAr: `${slug}-ar`,
+        nameFr: `${slug}-fr`,
+        order: 1,
+        active,
+      });
+      return row._id;
+    }
+
+    async function seedVerifiedExperience(
+      skillIds: Types.ObjectId[],
+      publicVisibility: 'public' | 'private' = 'public',
+    ): Promise<void> {
+      await experienceModel.create({
+        _id: new Types.ObjectId(),
+        submissionId: new Types.ObjectId(),
+        volunteerId: new Types.ObjectId(volunteerId),
+        organizationId: new Types.ObjectId(),
+        opportunityId: new Types.ObjectId(),
+        positionId: new Types.ObjectId(),
+        title: `Exp ${Math.random().toString(36).slice(2, 8)}`,
+        skills: skillIds,
+        duration: 2,
+        evidenceIds: [],
+        verificationCode: `CODE-${Math.random().toString(36).slice(2, 10)}`,
+        publicVisibility,
+      });
+    }
+
+    it('derives count-based shares per category, sorted desc, summing to 100', async () => {
+      const catA = await seedCategory('health', 1);
+      const catB = await seedCategory('education', 2);
+      const skillA = await seedCatalogSkill('first-aid-x', catA);
+      const skillB = await seedCatalogSkill('tutoring-x', catB);
+      await seedVerifiedExperience([skillA]);
+      await seedVerifiedExperience([skillA]);
+      await seedVerifiedExperience([skillA, skillB]);
+
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile!.areasOfContribution).toEqual([
+        expect.objectContaining({
+          categoryId: catA.toString(),
+          nameFr: 'health-fr',
+          percent: 83.3,
+          count: 3,
+        }),
+        expect.objectContaining({
+          categoryId: catB.toString(),
+          nameFr: 'education-fr',
+          percent: 16.7,
+          count: 1,
+        }),
+      ]);
+      const sum = profile!.areasOfContribution!.reduce(
+        (total, area) => total + area.percent,
+        0,
+      );
+      expect(sum).toBeCloseTo(100, 0);
+    });
+
+    it('excludes private experiences and unmapped skills, caps at 8', async () => {
+      const catA = await seedCategory('health', 1);
+      const skillA = await seedCatalogSkill('first-aid-y', catA);
+      const orphanSkill = new Types.ObjectId();
+      await seedVerifiedExperience([skillA]);
+      await seedVerifiedExperience([skillA], 'private');
+      await seedVerifiedExperience([orphanSkill]);
+
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile!.areasOfContribution).toEqual([
+        expect.objectContaining({
+          categoryId: catA.toString(),
+          percent: 100,
+          count: 1,
+        }),
+      ]);
+    });
+
+    it('hides areas when showExperiences is off and stores nothing', async () => {
+      const catA = await seedCategory('health', 1);
+      const skillA = await seedCatalogSkill('first-aid-z', catA);
+      await seedVerifiedExperience([skillA]);
+      await service.updatePublicSettings(volunteerId, {
+        publicProfile: { showExperiences: false },
+      });
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile!.areasOfContribution).toBeNull();
+
+      const stored = await profileModel
+        .findOne({ username: 'volunteer-a' })
+        .lean()
+        .exec();
+      expect(stored).not.toHaveProperty('areasOfContribution');
+    });
+  });
+
+  describe('public reviews', () => {
+    async function seedOrg(): Promise<Types.ObjectId> {
+      const row = await volunteerOrgModel.create({
+        _id: new Types.ObjectId(),
+        userId: new Types.ObjectId(),
+        slug: `ong-${Math.random().toString(36).slice(2, 8)}`,
+        nameFr: 'Org Test',
+        nameAr: 'منظمة اختبار',
+        verificationStatus: 'verified',
+        status: 'active',
+      });
+      return row._id;
+    }
+
+    async function seedReview(
+      orgId: Types.ObjectId,
+      status: 'visible' | 'hidden',
+      rating: number,
+    ): Promise<void> {
+      await reviewModel.create({
+        _id: new Types.ObjectId(),
+        submissionId: new Types.ObjectId(),
+        organizationId: orgId,
+        volunteerId: new Types.ObjectId(volunteerId),
+        rating,
+        comment: `Comment ${rating}`,
+        status,
+      });
+    }
+
+    it('lists only visible reviews newest-first with org identity and totals', async () => {
+      const orgId = await seedOrg();
+      await seedReview(orgId, 'visible', 4);
+      await seedReview(orgId, 'hidden', 1);
+      await seedReview(orgId, 'visible', 5);
+
+      const page = await service.getPublicReviews(volunteerId, '10');
+      expect(page.total).toBe(2);
+      expect(page.items.map((card) => card.rating)).toEqual([5, 4]);
+      expect(page.items[0]).toMatchObject({
+        comment: 'Comment 5',
+        organization: expect.objectContaining({ nameFr: 'Org Test' }),
+      });
+      expect(page.nextCursor).toBeNull();
+    });
+
+    it('returns an empty page when no visible review exists', async () => {
+      const orgId = await seedOrg();
+      await seedReview(orgId, 'hidden', 2);
+      const page = await service.getPublicReviews(volunteerId);
+      expect(page.items).toEqual([]);
+      expect(page.total).toBe(0);
     });
   });
 
