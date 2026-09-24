@@ -12,6 +12,7 @@ export interface User {
   role: UserRole;
   status: AccountStatus;
   emailVerifiedAt?: Date;
+  lastActivityAt?: Date;
   deletedAt?: Date;
 }
 
@@ -22,6 +23,7 @@ export class UserModel extends Document implements User {
   role!: UserRole;
   status!: AccountStatus;
   emailVerifiedAt?: Date;
+  lastActivityAt?: Date;
   deletedAt?: Date;
   createdAt!: Date;
   updatedAt!: Date;
@@ -52,6 +54,7 @@ export const UserSchema: Schema<UserModel> = createSchema({
     default: 'active',
   },
   emailVerifiedAt: { type: Date },
+  lastActivityAt: { type: Date },
   deletedAt: { type: Date },
 });
 

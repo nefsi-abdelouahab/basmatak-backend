@@ -2,6 +2,13 @@ import { TestMailService } from './utils/test-mail.service';
 import { GateProbeModule } from './utils/gate-probe.module';
 import { createTestApp, TestAppHandle } from './utils/test-db';
 import { MAIL_SERVICE } from '../src/mail/mail.interface';
+import { getModelToken } from '@nestjs/mongoose';
+import { UserModel, UsersCollection } from '../src/users/schemas/user.schema';
+import {
+  SessionModel,
+  SessionsCollection,
+} from '../src/auth/schemas/session.schema';
+import { Model } from 'mongoose';
 import * as request from 'supertest';
 
 const REGISTER_PATH = '/api/v1/auth/register/volunteer';
@@ -348,5 +355,219 @@ describe('auth e2e — email gate app (EMAIL_VERIFICATION_REQUIRED=true)', () =>
       .get('/api/v1/probe/gated')
       .set('Authorization', `Bearer ${accessToken}`);
     expect(allowed.status).toBe(200);
+  });
+});
+
+const DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const MOBILE_UA =
+  'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+describe('auth e2e — session device metadata & org-ops', () => {
+  let info: TestAppHandle;
+  let mail: TestMailService;
+  let sessionModel: Model<SessionModel>;
+  let userModel: Model<UserModel>;
+
+  const makeUser = (label: string) => ({
+    email: `sessions-${label}@example.com`,
+    password: 'Password123!',
+  });
+
+  beforeAll(async () => {
+    mail = new TestMailService();
+    info = await createTestApp([], {
+      env: { EMAIL_VERIFICATION_REQUIRED: 'false' },
+      providers: [{ token: MAIL_SERVICE, useValue: mail }],
+    });
+    sessionModel = info.app.get<Model<SessionModel>>(
+      getModelToken(SessionsCollection),
+    );
+    userModel = info.app.get<Model<UserModel>>(getModelToken(UsersCollection));
+  });
+
+  afterAll(async () => {
+    if (info) {
+      await info.close();
+    }
+  });
+
+  async function login(
+    payload: Record<string, unknown>,
+    userAgent: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const response = await request(info.app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .set('User-Agent', userAgent)
+      .send(payload);
+    expect(response.status).toBe(200);
+    return response.body;
+  }
+
+  it('lists sessions with device metadata and one current marker', async () => {
+    const user = makeUser('devices');
+    await request(info.app.getHttpServer())
+      .post('/api/v1/auth/register/volunteer')
+      .set('User-Agent', DESKTOP_UA)
+      .send(user)
+      .expect(201);
+
+    const second = await login(user, MOBILE_UA);
+
+    const listed = await request(info.app.getHttpServer())
+      .get('/api/v1/users/me/sessions')
+      .set('Authorization', `Bearer ${second.accessToken}`)
+      .expect(200);
+
+    expect(listed.body).toHaveLength(2);
+    const current = listed.body.filter(
+      (row: { isCurrent: boolean }) => row.isCurrent,
+    );
+    expect(current).toHaveLength(1);
+    const devices = listed.body.map(
+      (row: { device: { browser: string } }) => row.device.browser,
+    );
+    expect(devices).toContain('Chrome');
+    const userAgents = listed.body.map(
+      (row: { userAgent: string }) => row.userAgent,
+    );
+    expect(userAgents).toContain(DESKTOP_UA);
+    expect(userAgents).toContain(MOBILE_UA);
+  });
+
+  it('logout-others keeps the current session and kills the rest', async () => {
+    const user = makeUser('logout-others');
+    const first = await request(info.app.getHttpServer())
+      .post('/api/v1/auth/register/volunteer')
+      .set('User-Agent', DESKTOP_UA)
+      .send(user);
+    expect(first.status).toBe(201);
+
+    const second = await login(user, MOBILE_UA);
+
+    await request(info.app.getHttpServer())
+      .post('/api/v1/auth/logout-others')
+      .set('Authorization', `Bearer ${second.accessToken}`)
+      .expect(204);
+
+    await request(info.app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: first.body.refreshToken })
+      .expect(401);
+
+    await request(info.app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${second.accessToken}`)
+      .expect(200);
+
+    const ownSessions = await request(info.app.getHttpServer())
+      .get('/api/v1/users/me/sessions')
+      .set('Authorization', `Bearer ${second.accessToken}`)
+      .expect(200);
+    expect(ownSessions.body).toHaveLength(1);
+  });
+
+  it('logout-others is idempotent on a single session', async () => {
+    const user = makeUser('single');
+    const registered = await request(info.app.getHttpServer())
+      .post('/api/v1/auth/register/volunteer')
+      .send(user)
+      .expect(201);
+
+    await request(info.app.getHttpServer())
+      .post('/api/v1/auth/logout-others')
+      .set('Authorization', `Bearer ${registered.body.accessToken}`)
+      .expect(204);
+
+    await request(info.app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${registered.body.accessToken}`)
+      .expect(200);
+  });
+
+  it("a foreign user never sees another user's sessions", async () => {
+    const one = makeUser('one');
+    const two = makeUser('two');
+    await request(info.app.getHttpServer())
+      .post('/api/v1/auth/register/volunteer')
+      .send(one)
+      .expect(201);
+    await request(info.app.getHttpServer())
+      .post('/api/v1/auth/register/volunteer')
+      .send(two)
+      .expect(201);
+    const twoLogin = await login(two, DESKTOP_UA);
+
+    const oneUser = await userModel.findOne({ email: one.email }).lean().exec();
+    const oneSessions = await sessionModel
+      .find({ userId: oneUser!._id })
+      .lean()
+      .exec();
+    expect(oneSessions).toHaveLength(1);
+
+    const listed = await request(info.app.getHttpServer())
+      .get('/api/v1/users/me/sessions')
+      .set('Authorization', `Bearer ${twoLogin.accessToken}`)
+      .expect(200);
+
+    // Exactly two's own register + login sessions appear, never one's row.
+    expect(listed.body).toHaveLength(2);
+    for (const row of listed.body as Array<{ id: string }>) {
+      expect(row.id).not.toBe(oneSessions[0]._id.toString());
+    }
+  });
+
+  it('lastActivityAt updates on access and respects the 15-minute throttle', async () => {
+    const user = makeUser('activity');
+    const registered = await request(info.app.getHttpServer())
+      .post('/api/v1/auth/register/volunteer')
+      .send(user)
+      .expect(201);
+    const token = registered.body.accessToken as string;
+
+    await userModel.updateOne(
+      { email: user.email },
+      { $set: { lastActivityAt: new Date(Date.now() - 20 * 60 * 1000) } },
+    );
+    await request(info.app.getHttpServer())
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const refreshed = await userModel
+      .findOne({ email: user.email })
+      .lean()
+      .exec();
+    expect(refreshed!.lastActivityAt!.getTime()).toBeGreaterThan(
+      Date.now() - 60_000,
+    );
+
+    const insideWindow = new Date(Date.now() - 10 * 60 * 1000);
+    await userModel.updateOne(
+      { email: user.email },
+      { $set: { lastActivityAt: insideWindow } },
+    );
+    const marker = Date.now();
+    await request(info.app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const throttled = await userModel
+      .findOne({ email: user.email })
+      .lean()
+      .exec();
+    expect(throttled!.lastActivityAt!.getTime()).toBeLessThan(marker);
+  });
+
+  it('own account payload includes lastActivityAt', async () => {
+    const user = makeUser('payload');
+    const registered = await request(info.app.getHttpServer())
+      .post('/api/v1/auth/register/volunteer')
+      .send(user)
+      .expect(201);
+    const me = await request(info.app.getHttpServer())
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${registered.body.accessToken}`)
+      .expect(200);
+    expect(me.body.lastActivityAt).toBeDefined();
   });
 });

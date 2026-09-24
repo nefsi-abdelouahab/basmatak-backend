@@ -61,7 +61,7 @@ export class UsersController {
   @Get('me/sessions')
   @ApiOperation({ summary: "List the caller's own active sessions" })
   listSessions(@CurrentAccount() account: AccountToken) {
-    return this.auth.listSessions(account.sub);
+    return this.auth.listSessions(account.sub, account.sessionId);
   }
 
   @ApiParam({

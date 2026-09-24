@@ -5,7 +5,9 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentAccount, Public } from '../common/decorators/auth.decorators';
@@ -34,15 +36,29 @@ export class AuthController {
   @Post('register/volunteer')
   @Public()
   @ApiOperation({ summary: 'Register a volunteer account' })
-  registerVolunteer(@Body() dto: RegisterDto): Promise<AuthTokens> {
-    return this.authService.register('volunteer', dto);
+  registerVolunteer(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+  ): Promise<AuthTokens> {
+    return this.authService.register(
+      'volunteer',
+      dto,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('register/organization')
   @Public()
   @ApiOperation({ summary: 'Register an organization account' })
-  registerOrganization(@Body() dto: RegisterDto): Promise<AuthTokens> {
-    return this.authService.register('organization', dto);
+  registerOrganization(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+  ): Promise<AuthTokens> {
+    return this.authService.register(
+      'organization',
+      dto,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('login')
@@ -50,8 +66,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle(LOGIN_LIMIT)
   @ApiOperation({ summary: 'Login with email and password' })
-  login(@Body() dto: LoginDto): Promise<AuthTokens> {
-    return this.authService.login(dto.email, dto.password);
+  login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthTokens> {
+    return this.authService.login(
+      dto.email,
+      dto.password,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('refresh')
@@ -76,6 +96,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoke every session of the caller' })
   async logoutAll(@CurrentAccount() account: AccountToken): Promise<void> {
     await this.authService.logoutAll(account.sub);
+  }
+
+  @ApiBearerAuth()
+  @Post('logout-others')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Revoke every session of the caller except the current one',
+  })
+  async logoutOthers(@CurrentAccount() account: AccountToken): Promise<void> {
+    await this.authService.revokeAllExcept(account.sub, account.sessionId);
   }
 
   @Post('verify-email')

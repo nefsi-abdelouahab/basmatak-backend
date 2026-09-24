@@ -308,4 +308,85 @@ describe('AuthService', () => {
       service.removeSession(userId, 'not-an-object-id'),
     ).resolves.toBe(false);
   });
+
+  it('captures device metadata from the User-Agent on registration (org-ops)', async () => {
+    await service.register('volunteer', { email, password }, DESKTOP_UA);
+    const session = await sessionModel.findOne({}).lean().exec();
+    expect(session!.userAgent).toBe(DESKTOP_UA);
+    expect(session!.device).toMatchObject({ browser: 'Chrome', os: 'Windows' });
+  });
+
+  it('stores a null device when no User-Agent is provided (org-ops)', async () => {
+    await registerVolunteer();
+    const session = await sessionModel.findOne({}).lean().exec();
+    expect(session!.device).toBeNull();
+    expect(session!.userAgent).toBeNull();
+  });
+
+  it('refresh preserves the operated device metadata (org-ops)', async () => {
+    const { refreshToken } = await service.register(
+      'volunteer',
+      { email, password },
+      IPHONE_UA,
+    );
+    const first = await sessionModel.findOne({}).lean().exec();
+    expect(first!.device).toBeDefined();
+
+    await service.refresh(refreshToken);
+
+    const live = await sessionModel.find({ rotatedAt: null }).lean().exec();
+    expect(live).toHaveLength(1);
+    expect(live[0].device).toEqual(first!.device);
+    expect(live[0].userAgent).toBe(first!.userAgent);
+    expect(live[0].device!.device).toBe('iPhone');
+  });
+
+  it('listSessions marks exactly the current session as isCurrent (org-ops)', async () => {
+    await registerVolunteer();
+    await service.login(email, password, MOBILE_UA);
+    const all = await sessionModel.find({}).lean().exec();
+    expect(all).toHaveLength(2);
+
+    const currentId = all[0]._id.toString();
+    const sessions = await service.listSessions(
+      all[0].userId.toString(),
+      currentId,
+    );
+    expect(sessions).toHaveLength(2);
+    const current = sessions.find((s) => s.isCurrent)!;
+    expect(current.id).toBe(currentId);
+    expect(sessions.filter((s) => s.isCurrent)).toHaveLength(1);
+    expect(sessions.filter((s) => !s.isCurrent)[0].device?.browser).toBe(
+      'Chrome',
+    );
+  });
+
+  it('revokeAllExcept deletes every session but the current one (org-ops)', async () => {
+    await registerVolunteer();
+    await service.login(email, password, MOBILE_UA);
+    const sessions = await sessionModel.find({}).lean().exec();
+    expect(sessions).toHaveLength(2);
+
+    const currentId = sessions[0]._id.toString();
+    await service.revokeAllExcept(sessions[0].userId.toString(), currentId);
+
+    const remaining = await sessionModel.find({}).lean().exec();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]._id.toString()).toBe(currentId);
+  });
+
+  it('revokeAllExcept rejects an invalid current-session id', async () => {
+    await registerVolunteer();
+    const doc = await sessionModel.findOne({}).exec();
+    await expect(
+      service.revokeAllExcept(doc!.userId.toString(), 'not-an-object-id'),
+    ).rejects.toMatchObject({ status: 404, code: 'SESSION_NOT_FOUND' });
+  });
 });
+
+const DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const MOBILE_UA =
+  'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+const IPHONE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';

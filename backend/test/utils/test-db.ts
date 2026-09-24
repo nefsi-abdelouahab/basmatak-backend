@@ -2,6 +2,12 @@ import { INestApplication, Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { AppModule } from '../../src/app.module';
+import { MAIL_SERVICE, MailService } from '../../src/mail/mail.interface';
+
+const NOOP_MAIL_SERVICE: MailService = {
+  async sendVerificationEmail(): Promise<void> {},
+  async sendPasswordReset(): Promise<void> {},
+};
 
 export interface TestAppHandle {
   app: INestApplication;
@@ -27,13 +33,16 @@ const TEST_ENV_DEFAULTS: Record<string, string> = {
  * The only DB rig used by every unit + e2e test (roadmap S1 task 1).
  * Boots a single-node replica-set MongoMemoryServer (transactions-capable)
  * and a full Nest app pointed at it.
+ * `ephemeralForTest`: the engine keeps data in memory (no dbpath files), which
+ * both avoids mongod >= 8's free-disk-space guard on low-disk runners and
+ * keeps the transactions-capable replica-set behavior.
  */
 export async function createTestApp(
   extraImports: Type<unknown>[] = [],
   overrides: TestAppOverrides = {},
 ): Promise<TestAppHandle> {
   const mongod = new MongoMemoryReplSet({
-    replSet: { count: 1 },
+    replSet: { count: 1, storageEngine: 'ephemeralForTest' },
   });
   await mongod.start();
   await mongod.waitUntilRunning();
@@ -48,7 +57,14 @@ export async function createTestApp(
   const moduleBuilder = Test.createTestingModule({
     imports: [AppModule, ...extraImports],
   });
-  for (const override of overrides.providers ?? []) {
+  const overridesWithDefaults = [...(overrides.providers ?? [])];
+  if (!overridesWithDefaults.some((o) => o.token === MAIL_SERVICE)) {
+    overridesWithDefaults.push({
+      token: MAIL_SERVICE,
+      useValue: NOOP_MAIL_SERVICE,
+    });
+  }
+  for (const override of overridesWithDefaults) {
     moduleBuilder.overrideProvider(override.token).useValue(override.useValue);
   }
   const moduleFixture = await moduleBuilder.compile();

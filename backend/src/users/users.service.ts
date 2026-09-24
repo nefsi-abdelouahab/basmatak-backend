@@ -17,6 +17,10 @@ export interface UpdateContactData {
   phone?: string;
 }
 
+/** Guards so the last-activity write never happens more than once per user
+ *  per 15 minutes (org-ops D4). */
+const LAST_ACTIVITY_THROTTLE_MS = 15 * 60 * 1000;
+
 /**
  * CRUD over `users` (inventory §4). Every mutation here is a plain write; the
  * auth flows that trigger re-verification live in AuthService.
@@ -102,6 +106,31 @@ export class UsersService {
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     await this.userModel
       .updateOne({ _id: userId }, { $set: { passwordHash } })
+      .exec();
+  }
+
+  /**
+   * Records `lastActivityAt` (org-ops). A single conditional write: only rows
+   * whose timestamp is absent or older than 15 minutes are updated, so routine
+   * requests never write the field on every heartbeat.
+   */
+  async touchLastActivity(
+    userId: string,
+    now: Date = new Date(),
+  ): Promise<void> {
+    const cutoff = new Date(now.getTime() - LAST_ACTIVITY_THROTTLE_MS);
+    await this.userModel
+      .updateOne(
+        {
+          _id: userId,
+          $or: [
+            { lastActivityAt: { $exists: false } },
+            { lastActivityAt: null },
+            { lastActivityAt: { $lte: cutoff } },
+          ],
+        },
+        { $set: { lastActivityAt: now } },
+      )
       .exec();
   }
 

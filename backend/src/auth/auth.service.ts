@@ -16,6 +16,11 @@ import { UserModel } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
 import { SessionModel, SessionsCollection } from './schemas/session.schema';
 import {
+  ParsedUserAgent,
+  parseUserAgent,
+  SessionDevice,
+} from './session-device.util';
+import {
   VerificationTokenModel,
   VerificationTokensCollection,
   VerificationTokenType,
@@ -32,6 +37,7 @@ export interface UserPayload {
   role: UserRole;
   status: string;
   emailVerifiedAt?: Date;
+  lastActivityAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +52,14 @@ export interface RegisterUserDto {
   email: string;
   password: string;
   phone?: string;
+}
+
+export interface SessionMetadata {
+  /** Parse `device`/`userAgent` from a raw User-Agent string (login/register). */
+  rawUserAgent?: string;
+  /** Carry an existing session's metadata to a replacement row (refresh). */
+  device?: SessionDevice | null;
+  userAgent?: string | null;
 }
 
 /**
@@ -72,7 +86,11 @@ export class AuthService {
     private readonly registrationExtras: RegistrationExtrasService,
   ) {}
 
-  async register(role: UserRole, dto: RegisterUserDto): Promise<AuthTokens> {
+  async register(
+    role: UserRole,
+    dto: RegisterUserDto,
+    userAgent?: string,
+  ): Promise<AuthTokens> {
     const existing = await this.users.findByEmail(dto.email);
     if (existing) {
       throw new BusinessException(
@@ -105,10 +123,14 @@ export class AuthService {
     await this.registrationExtras.createExtras(extrasUser, { ...dto });
     await this.issueEmailVerification(user._id.toString());
 
-    return this.issueSession(user);
+    return this.issueSession(user, { rawUserAgent: userAgent });
   }
 
-  async login(email: string, password: string): Promise<AuthTokens> {
+  async login(
+    email: string,
+    password: string,
+    userAgent?: string,
+  ): Promise<AuthTokens> {
     const user = await this.users.findByEmail(email);
     if (!user) {
       throw new BusinessException(
@@ -126,7 +148,7 @@ export class AuthService {
       );
     }
     this.users.assertActive(user);
-    return this.issueSession(user);
+    return this.issueSession(user, { rawUserAgent: userAgent });
   }
 
   async refresh(rawRefreshToken: string): Promise<AuthTokens> {
@@ -195,7 +217,11 @@ export class AuthService {
         401,
       );
     }
-    return this.issueSession(user);
+    // The replacement row carries the operated device metadata forward (D3).
+    return this.issueSession(user, {
+      device: session.device,
+      userAgent: session.userAgent,
+    });
   }
 
   async logout(sessionId: string): Promise<void> {
@@ -208,21 +234,49 @@ export class AuthService {
   }
 
   /**
+   * Revokes every session a user holds except the one backing the request
+   * (org-ops `POST /auth/logout-others`; later reused by org account deletion).
+   */
+  async revokeAllExcept(userId: string, sessionId: string): Promise<void> {
+    let currentId: Types.ObjectId;
+    try {
+      currentId = new Types.ObjectId(sessionId);
+    } catch {
+      throw new BusinessException(
+        'SESSION_NOT_FOUND',
+        'Session not found',
+        404,
+      );
+    }
+    await this.sessionModel
+      .deleteMany({ userId, _id: { $ne: currentId } })
+      .exec();
+  }
+
+  /**
    * The caller's own sessions (F7, Session 13) — id + non-secret metadata
    * only, never the refresh-token hash. Foreign rows are never surfaced.
+   * `isCurrent` is derived server-side against the access token's
+   * `sessionId` claim and is never stored (org-ops).
    */
-  async listSessions(userId: string): Promise<
+  async listSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<
     Array<{
       id: string;
       createdAt: Date;
       expiresAt: Date;
       lastUsedAt?: Date;
+      device: SessionDevice | null;
+      userAgent: string | null;
+      isCurrent: boolean;
     }>
   > {
     const sessions = await this.sessionModel
       .find({ userId, rotatedAt: null })
       .sort({ createdAt: -1 })
-      .select('_id createdAt expiresAt lastUsedAt')
+      .select('_id createdAt expiresAt lastUsedAt device userAgent')
       .lean()
       .exec();
     return sessions.map((session) => ({
@@ -230,6 +284,9 @@ export class AuthService {
       createdAt: session.createdAt,
       expiresAt: session.expiresAt,
       lastUsedAt: session.lastUsedAt,
+      device: session.device ?? null,
+      userAgent: session.userAgent ?? null,
+      isCurrent: currentSessionId === session._id.toString(),
     }));
   }
 
@@ -364,6 +421,7 @@ export class AuthService {
   async me(userId: string): Promise<UserPayload> {
     const user = await this.users.findById(userId);
     this.users.assertActive(user);
+    await this.users.touchLastActivity(userId);
     return this.toUserPayload(user!);
   }
 
@@ -390,19 +448,28 @@ export class AuthService {
     });
   }
 
-  private async issueSession(user: UserModel): Promise<AuthTokens> {
+  private async issueSession(
+    user: UserModel,
+    meta: SessionMetadata = {},
+  ): Promise<AuthTokens> {
     const refreshToken = this.tokenUtil.generateToken();
     const refreshTtlMs = this.tokenUtil.parseDuration(
       this.config.get<string>('JWT_REFRESH_TTL'),
       30 * 24 * 60 * 60 * 1000,
     );
     const now = new Date();
+    const parsed: ParsedUserAgent | null = meta.rawUserAgent
+      ? parseUserAgent(meta.rawUserAgent)
+      : null;
     const session = await this.sessionModel.create({
       userId: user._id,
       refreshTokenHash: this.tokenUtil.hash(refreshToken),
       expiresAt: new Date(now.getTime() + refreshTtlMs),
       lastUsedAt: now,
+      device: parsed ? parsed.device : (meta.device ?? null),
+      userAgent: parsed ? parsed.userAgent : (meta.userAgent ?? null),
     });
+    await this.users.touchLastActivity(user._id.toString());
     const accessToken = this.jwt.sign({
       sub: user._id.toString(),
       role: user.role,
@@ -423,6 +490,7 @@ export class AuthService {
       role: user.role,
       status: user.status,
       emailVerifiedAt: user.emailVerifiedAt ?? undefined,
+      lastActivityAt: user.lastActivityAt ?? undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
