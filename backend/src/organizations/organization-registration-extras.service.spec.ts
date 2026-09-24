@@ -27,6 +27,7 @@ describe('OrganizationRegistrationExtrasService (ROADMAP S5)', () => {
     service = new OrganizationRegistrationExtrasService(
       orgModel,
       new InertRegistrationExtrasService(),
+      { getNext: jest.fn().mockResolvedValue('ORG-000001') } as never,
     );
   });
 
@@ -61,6 +62,7 @@ describe('OrganizationRegistrationExtrasService (ROADMAP S5)', () => {
     const orgService = new OrganizationRegistrationExtrasService(
       orgModel,
       inert,
+      { getNext: jest.fn().mockResolvedValue('ORG-000001') } as never,
     );
     await orgService.createExtras(
       { id: '64b000000000000000000002', role: 'volunteer' },

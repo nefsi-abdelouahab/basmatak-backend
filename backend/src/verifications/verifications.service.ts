@@ -3,6 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model, Types } from 'mongoose';
 import { DomainEvents } from '../common/constants/domain-events';
+import { RegistryIdService } from '../common/counters/registry-id.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
@@ -85,6 +86,7 @@ export class VerificationsService {
     private readonly organizations: OrganizationsService,
     private readonly statusTransitions: StatusTransitionService,
     private readonly notifications: NotificationsService,
+    private readonly registryId: RegistryIdService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -326,6 +328,14 @@ export class VerificationsService {
             404,
           );
         }
+        // Registry id minted inside the txn; `$setOnInsert` means re-verifying
+        // a previously-verified submission keeps its EXP- id (D4 immutability).
+        const experienceRegistryId = await this.registryId.getNext(
+          'experience',
+          {
+            session: txn,
+          },
+        );
         const { doc: experience } = await createWithUniqueVerificationCode(
           (verificationCode) =>
             this.experienceModel
@@ -344,6 +354,7 @@ export class VerificationsService {
                     evidenceIds,
                     verificationCode,
                   },
+                  $setOnInsert: { registryId: experienceRegistryId },
                 },
                 { upsert: true, new: true, session: txn },
               )

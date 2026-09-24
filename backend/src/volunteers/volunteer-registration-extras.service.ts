@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
+import { RegistryIdService } from '../common/counters/registry-id.service';
 import {
   RegistrationExtrasService,
   RegistrationUser,
@@ -29,6 +30,7 @@ export class VolunteerRegistrationExtrasService implements RegistrationExtrasSer
     private readonly profileModel: Model<VolunteerProfileModel>,
     @Inject(OrganizationRegistrationExtrasService)
     private readonly organizationExtras: OrganizationRegistrationExtrasService,
+    private readonly registryId: RegistryIdService,
   ) {}
 
   async createExtras(
@@ -51,12 +53,14 @@ export class VolunteerRegistrationExtrasService implements RegistrationExtrasSer
     }
     const localPart = String(dto.email ?? '').split('@')[0] ?? '';
     const baseSlug = slugifyText(localPart) || 'volunteer';
+    const registryId = await this.registryId.getNext('volunteer');
     try {
       await createWithUniqueSlug(
         (slug) =>
           this.profileModel.create({
             userId: new Types.ObjectId(user.id),
             username: slug,
+            registryId,
             stats: defaultStats(),
             publicProfile: defaultPublicProfile(),
           }),

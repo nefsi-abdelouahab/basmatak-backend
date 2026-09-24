@@ -17,6 +17,7 @@ export interface OrganizationReliability {
 export interface Organization {
   userId: Types.ObjectId;
   slug: string;
+  registryId: string;
   nameAr?: string;
   nameFr?: string;
   description?: string;
@@ -29,6 +30,7 @@ export interface Organization {
 export class OrganizationModel extends Document implements Organization {
   userId!: Types.ObjectId;
   slug!: string;
+  registryId!: string;
   nameAr?: string;
   nameFr?: string;
   description?: string;
@@ -45,6 +47,9 @@ export const OrganizationsCollection = 'organizations';
 export const OrganizationSchema: Schema<OrganizationModel> = createSchema({
   userId: { type: Schema.Types.ObjectId, required: true },
   slug: { type: String, required: true, trim: true },
+  // Server-minted neutral registry id (ORG-…); owned by the registry-ids
+  // session — never accepted from client input and never updated.
+  registryId: { type: String, trim: true, maxlength: 32 },
   nameAr: { type: String, trim: true },
   nameFr: { type: String, trim: true },
   description: { type: String, trim: true },

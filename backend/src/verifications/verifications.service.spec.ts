@@ -297,6 +297,7 @@ describe('VerificationsService (S11 Part B)', () => {
           }
         },
       } as never,
+      { getNext: jest.fn().mockResolvedValue('EXP-000001') } as never,
       {
         emit: (name: string, payload: unknown) =>
           emitted.push({ name, payload }),

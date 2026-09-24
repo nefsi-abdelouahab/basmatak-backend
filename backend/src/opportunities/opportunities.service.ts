@@ -13,6 +13,7 @@ import {
 } from '../common/pagination/pagination.util';
 import { PublishGateService } from '../common/seams/publish-gate.service';
 import { createWithUniqueSlug, slugifyText } from '../common/slug/slugify.util';
+import { RegistryIdService } from '../common/counters/registry-id.service';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import { OrganizationModel } from '../organizations/schemas/organization.schema';
 import { OrganizationsService } from '../organizations/organizations.service';
@@ -109,6 +110,7 @@ export class OpportunitiesService {
     private readonly statusTransitions: StatusTransitionService,
     private readonly publishGate: PublishGateService,
     private readonly adapter: TaskParticipantsAdapter,
+    private readonly registryId: RegistryIdService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -216,11 +218,13 @@ export class OpportunitiesService {
       }),
     );
 
+    const registryId = await this.registryId.getNext('opportunity');
     const { doc } = await createWithUniqueSlug(
       (slug) =>
         this.opportunityModel.create({
           organizationId: organization._id,
           slug,
+          registryId,
           title: dto.title,
           description: dto.description,
           categoryId: dto.categoryId
