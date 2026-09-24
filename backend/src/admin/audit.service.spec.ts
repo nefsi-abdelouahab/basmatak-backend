@@ -9,6 +9,36 @@ import {
   AuditLogsCollection,
   AuditLogSchema,
 } from '../core/audit/audit-log.schema';
+import {
+  UserModel,
+  UsersCollection,
+  UserSchema,
+} from '../users/schemas/user.schema';
+import {
+  VolunteerProfileModel,
+  VolunteerProfilesCollection,
+  VolunteerProfileSchema,
+} from '../volunteers/schemas/volunteer-profile.schema';
+import {
+  OrganizationModel,
+  OrganizationsCollection,
+  OrganizationSchema,
+} from '../organizations/schemas/organization.schema';
+import {
+  OpportunityModel,
+  OpportunitiesCollection,
+  OpportunitySchema,
+} from '../opportunities/schemas/opportunity.schema';
+import {
+  ReportModel,
+  ReportsCollection,
+  ReportSchema,
+} from '../reports/report.schema';
+import {
+  SubmissionModel,
+  SubmissionsCollection,
+  SubmissionSchema,
+} from '../submissions/schemas/submission.schema';
 import { AdminAuditService } from './audit.service';
 
 describe('AdminAuditService (inventory §2.20 audit logs)', () => {
@@ -22,7 +52,27 @@ describe('AdminAuditService (inventory §2.20 audit logs)', () => {
   beforeAll(async () => {
     handle = await startMemoryConnection();
     model = handle.connection.model(AuditLogsCollection, AuditLogSchema);
-    service = new AdminAuditService(model);
+    service = new AdminAuditService(
+      model,
+      handle.connection.model<UserModel>(UsersCollection, UserSchema),
+      handle.connection.model<VolunteerProfileModel>(
+        VolunteerProfilesCollection,
+        VolunteerProfileSchema,
+      ),
+      handle.connection.model<OrganizationModel>(
+        OrganizationsCollection,
+        OrganizationSchema,
+      ),
+      handle.connection.model<OpportunityModel>(
+        OpportunitiesCollection,
+        OpportunitySchema,
+      ),
+      handle.connection.model<ReportModel>(ReportsCollection, ReportSchema),
+      handle.connection.model<SubmissionModel>(
+        SubmissionsCollection,
+        SubmissionSchema,
+      ),
+    );
   });
 
   afterAll(async () => {
@@ -48,7 +98,7 @@ describe('AdminAuditService (inventory §2.20 audit logs)', () => {
     }
     const page = await service.list({});
     expect(page.items).toHaveLength(3);
-    const ids = page.items.map((row) => row._id.toString());
+    const ids = page.items.map((row) => row.log._id.toString());
     expect(ids).toEqual([...ids].sort((a, b) => b.localeCompare(a)));
   });
 
@@ -89,7 +139,7 @@ describe('AdminAuditService (inventory §2.20 audit logs)', () => {
     ]);
 
     const byActor = await service.list({ actor: actor.toString() });
-    expect(byActor.items.map((row) => row.path).sort()).toEqual([
+    expect(byActor.items.map((row) => row.log.path).sort()).toEqual([
       '/a',
       '/c',
       '/d',
@@ -99,14 +149,14 @@ describe('AdminAuditService (inventory §2.20 audit logs)', () => {
       entityType: 'user',
       entityId: entity.toString(),
     });
-    expect(byEntity.items.map((row) => row.path).sort()).toEqual([
+    expect(byEntity.items.map((row) => row.log.path).sort()).toEqual([
       '/a',
       '/b',
       '/d',
     ]);
 
     const byDate = await service.list({ date: '2026-01-01' });
-    expect(byDate.items.map((row) => row.path).sort()).toEqual([
+    expect(byDate.items.map((row) => row.log.path).sort()).toEqual([
       '/a',
       '/b',
       '/c',

@@ -23,15 +23,19 @@ The system SHALL provide an `organizations` collection with `userId` (ObjectId, 
 - **THEN** the row carries a well-formed `ORG-` registry identifier minted by `RegistryIdService`, and the identifier is never client-settable or mutable afterwards
 
 ### Requirement: Organization verifications collection
-The system SHALL provide an `organization_verifications` collection with `organizationId`, `status` (`pending | verified | rejected`), `documents` (array of `mediaId`s stored as ObjectId-format strings), `rejectionReason` (optional), `submittedAt`, `decidedAt` (optional), and `decidedBy` (optional). Index SHALL be `(organizationId, status)`.
+The system SHALL provide an `organization_verifications` collection with `organizationId`, `status` (`pending | verified | rejected`), `documents` (array of `mediaId`s stored as ObjectId-format strings), `rejectionReason` (optional), `assignedAdminId` (optional ObjectId of an `admin`-role user, unset by default), `submittedAt`, `decidedAt` (optional), and `decidedBy` (optional). Index SHALL be `(organizationId, status)` plus `(assignedAdminId, status)`.
 
 #### Scenario: Submission record created
 - **WHEN** an organization submits verification documents
-- **THEN** an `organization_verifications` row is created with the documents, status `pending`, and `submittedAt` set
+- **THEN** an `organization_verifications` row is created with the documents, status `pending`, no `assignedAdminId`, and `submittedAt` set
 
 #### Scenario: Rejection context retained
 - **WHEN** an organization's submission is rejected by an admin (Session 15)
 - **THEN** the row records `status=rejected`, `rejectionReason`, `decidedAt`, and `decidedBy`
+
+#### Scenario: Assignment recorded
+- **WHEN** an admin assigns a verification row to an existing admin user
+- **THEN** the row records `assignedAdminId` without changing `status` or decision fields
 
 ### Requirement: Verification status state machine
 The SHALL be `pending → verified | rejected → pending` (F1). An organization SHALL only be considered able to publish once `verificationStatus=verified` (§7 decision 7; publish itself is Session 6). Moving `pending → verified | rejected` SHALL happen only through the admin approve/reject routes (Session 15). Resubmission from `rejected` SHALL return the organization to `pending`.

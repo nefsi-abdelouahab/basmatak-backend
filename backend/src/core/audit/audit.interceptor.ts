@@ -91,7 +91,8 @@ export class AuditInterceptor implements NestInterceptor {
         segment === 'volunteers' ||
         segment === 'opportunities' ||
         segment === 'applications' ||
-        segment === 'submissions'
+        segment === 'submissions' ||
+        segment === 'reports'
       ) {
         const next = segments[i + 1];
         if (next && next !== 'me' && Types.ObjectId.isValid(next)) {

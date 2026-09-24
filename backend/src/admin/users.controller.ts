@@ -1,16 +1,27 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import { UserModel } from '../users/schemas/user.schema';
 import { UserStatusDto, UsersQueryDto } from './dto/admin-query.dto';
 import { AdminUsersService } from './users.service';
+import { adminCsvFilename, adminCsvStream } from './csv/admin-csv';
 
 @ApiBearerAuth()
 @ApiTags('admin (users)')
@@ -21,8 +32,20 @@ export class AdminUsersController {
 
   @Get()
   @ApiOperation({ summary: 'List users with role/status/email filters' })
-  list(@Query() query: UsersQueryDto): Promise<CursorPage<UserModel>> {
-    return this.users.list(query);
+  async list(
+    @Query() query: UsersQueryDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<CursorPage<UserModel> | StreamableFile> {
+    const page = await this.users.list(query);
+    if (query.format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${adminCsvFilename('users')}"`,
+      );
+      return new StreamableFile(adminCsvStream('users', page.items));
+    }
+    return page;
   }
 
   @ApiParam({
@@ -50,6 +73,9 @@ export class AdminUsersController {
     @Param('userId') userId: string,
     @Body() dto: UserStatusDto,
   ): Promise<UserModel> {
-    return this.users.setStatus(account, userId, dto.status);
+    return this.users.setStatus(account, userId, dto.status, {
+      reason: dto.reason,
+      notes: dto.notes,
+    });
   }
 }

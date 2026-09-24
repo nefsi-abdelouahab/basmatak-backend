@@ -1,17 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
-import {
-  decodePageCursor,
-  encodePageCursor,
-  normalizeLimit,
-} from '../common/pagination/pagination.util';
 import { CursorPage } from '../common/pagination/paginated.interface';
+import { execPage } from '../common/pagination/pagination.util';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import { UserModel, UsersCollection } from '../users/schemas/user.schema';
 import { UsersQueryDto } from './dto/admin-query.dto';
+import {
+  adminCursor,
+  adminLimit,
+  escapeRegex,
+  idSort,
+} from './admin-list.util';
 
 const PUBLIC_USER_SELECT = '-passwordHash';
 
@@ -39,39 +41,24 @@ export class AdminUsersService {
     if (query.q) {
       filter.email = { $regex: escapeRegex(query.q), $options: 'i' };
     }
-    // Session 8 owns admin-list filters/CSV; Session 7 only ensures the
-    // required counted-page shape (same base filter, cursor-only paging).
-    const limit = normalizeLimit(query.limit);
-    const decoded = decodePageCursor(query.cursor);
-    const page = decoded?.page ?? 1;
-    const pageFilter: FilterQuery<UserModel> = { ...filter };
-    if (decoded?.id && Types.ObjectId.isValid(decoded.id)) {
-      pageFilter._id = { $lt: new Types.ObjectId(decoded.id) };
-    }
-    const total = await this.userModel.countDocuments(filter).exec();
-    const pages = total === 0 ? 0 : Math.ceil(total / limit);
-    const rows = await this.userModel
-      .find(pageFilter)
-      .select(PUBLIC_USER_SELECT)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .exec();
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    const lastId =
-      hasMore && items.length > 0
-        ? items[items.length - 1]._id.toString()
-        : null;
-    return {
-      items,
-      nextCursor: lastId
-        ? encodePageCursor({ id: lastId, page: page + 1, sort: 'newest' })
-        : null,
-      limit,
-      total,
-      page,
-      pages,
-    };
+    const sortDef = idSort(query.sort ?? 'newest');
+    return execPage(
+      this.userModel,
+      filter,
+      {
+        limit: adminLimit(query),
+        cursor: adminCursor(query),
+        sort: sortDef.sort,
+        sortToken: sortDef.token,
+        ...(sortDef.cursorFilter ? { cursorFilter: sortDef.cursorFilter } : {}),
+      },
+      (rows) =>
+        rows.map((row) => {
+          const plain = row.toJSON() as Record<string, unknown>;
+          delete plain.passwordHash;
+          return plain as unknown as UserModel;
+        }),
+    );
   }
 
   async getById(userId: string): Promise<UserModel> {
@@ -89,6 +76,7 @@ export class AdminUsersService {
     account: AccountToken,
     userId: string,
     status: 'active' | 'suspended',
+    meta?: { reason?: string; notes?: string },
   ): Promise<UserModel> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
@@ -114,14 +102,12 @@ export class AdminUsersService {
       from: user.status,
       to: status,
       actor: account.sub,
+      ...(meta?.reason !== undefined ? { reason: meta.reason } : {}),
+      ...(meta?.notes !== undefined ? { notes: meta.notes } : {}),
     });
     await this.userModel
       .updateOne({ _id: user._id }, { $set: { status } })
       .exec();
     return this.getById(user._id.toString());
   }
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

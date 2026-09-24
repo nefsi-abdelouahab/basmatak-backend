@@ -7,7 +7,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { REPORT_TARGET_TYPES } from '../report.schema';
+import { REPORT_PRIORITIES, REPORT_TARGET_TYPES } from '../report.schema';
 
 export class CreateReportDto {
   @ApiProperty({ enum: REPORT_TARGET_TYPES })
@@ -36,4 +36,18 @@ export class CreateReportDto {
   @IsString()
   @MaxLength(4000)
   description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Moderator-facing title',
+    maxLength: 200,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @ApiPropertyOptional({ enum: REPORT_PRIORITIES, default: 'normal' })
+  @IsOptional()
+  @IsIn(REPORT_PRIORITIES)
+  priority?: (typeof REPORT_PRIORITIES)[number];
 }

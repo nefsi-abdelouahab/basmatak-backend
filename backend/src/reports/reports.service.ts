@@ -26,6 +26,8 @@ export class ReportsService {
       targetId: new Types.ObjectId(dto.targetId),
       reason: dto.reason,
       ...(dto.description ? { description: dto.description } : {}),
+      ...(dto.title ? { title: dto.title } : {}),
+      ...(dto.priority ? { priority: dto.priority } : {}),
       status: 'open',
     });
   }

@@ -1,16 +1,28 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import { ReportModel } from '../reports/report.schema';
 import { ReportStatusDto, ReportsQueryDto } from './dto/admin-part-b.dto';
-import { AdminReportsService } from './reports.service';
+import { AssignAdminDto } from './dto/admin-query.dto';
+import { AdminReportsService, AdminReportRow } from './reports.service';
+import { adminCsvFilename, adminCsvStream } from './csv/admin-csv';
 
 @ApiBearerAuth()
 @ApiTags('admin (reports)')
@@ -21,8 +33,35 @@ export class AdminReportsController {
 
   @Get()
   @ApiOperation({ summary: 'List reports (optional status filter)' })
-  list(@Query() query: ReportsQueryDto): Promise<CursorPage<ReportModel>> {
-    return this.reports.list(query);
+  async list(
+    @Query() query: ReportsQueryDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<CursorPage<AdminReportRow> | StreamableFile> {
+    const page = await this.reports.list(query);
+    if (query.format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${adminCsvFilename('reports')}"`,
+      );
+      return new StreamableFile(adminCsvStream('reports', page.items));
+    }
+    return page;
+  }
+
+  @ApiParam({
+    name: 'reportId',
+    description: 'The report id',
+    type: String,
+    format: 'ObjectId',
+  })
+  @Patch(':reportId/assign')
+  @ApiOperation({ summary: 'Assign a report to an admin' })
+  assign(
+    @Param('reportId') reportId: string,
+    @Body() dto: AssignAdminDto,
+  ): Promise<ReportModel> {
+    return this.reports.assign(reportId, dto.assignedAdminId);
   }
 
   @ApiParam({

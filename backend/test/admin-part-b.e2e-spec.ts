@@ -179,7 +179,9 @@ describe('admin e2e (Part B: opportunities, reviews, reports, audit, settings)',
         .set(auth(adminToken))
         .expect(200);
       expect(
-        listed.body.items.some((row: { _id: string }) => row._id === reportId),
+        listed.body.items.some(
+          (row: { report: { _id: string } }) => row.report._id === reportId,
+        ),
       ).toBe(true);
 
       const resolved = await request(info.app.getHttpServer())
@@ -386,7 +388,9 @@ describe('admin e2e (Part B: opportunities, reviews, reports, audit, settings)',
           .get(`${ADMIN_AUDIT_LOGS}?actor=${adminId}`)
           .set(auth(adminToken))
           .expect(200);
-        paths = byActor.body.items.map((row: { path: string }) => row.path);
+        paths = byActor.body.items.map(
+          (row: { log: { path: string } }) => row.log.path,
+        );
         if (
           paths.includes(`/api/v1/admin/opportunities/${opportunityId}/status`)
         ) {
@@ -406,7 +410,8 @@ describe('admin e2e (Part B: opportunities, reviews, reports, audit, settings)',
         .expect(200);
       expect(
         byEntity.body.items.every(
-          (row: { entityId: string }) => row.entityId === opportunityId,
+          (row: { log: { entityId: string } }) =>
+            row.log.entityId === opportunityId,
         ),
       ).toBe(true);
 

@@ -9,8 +9,51 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  OPPORTUNITY_STATUSES,
+  OpportunityStatus,
+} from '../../opportunities/schemas/opportunity.schema';
+import {
+  REPORT_PRIORITIES,
+  REPORT_TARGET_TYPES,
+  ReportPriority,
+  ReportStatus,
+  ReportTargetType,
+} from '../../reports/report.schema';
 
 export class OpportunitiesQueryDto {
+  @ApiPropertyOptional({
+    description: 'Title/slug/registryId keyword',
+    maxLength: 254,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(254)
+  q?: string;
+
+  @ApiPropertyOptional({ enum: OPPORTUNITY_STATUSES })
+  @IsOptional()
+  @IsIn(OPPORTUNITY_STATUSES)
+  status?: OpportunityStatus;
+
+  @ApiPropertyOptional({ type: String, format: 'ObjectId' })
+  @IsOptional()
+  @IsMongoId()
+  organizationId?: string;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest', 'title'],
+    default: 'newest',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest', 'title'])
+  sort?: string;
+
+  @ApiPropertyOptional({ enum: ['json', 'csv'], default: 'json' })
+  @IsOptional()
+  @IsIn(['json', 'csv'])
+  format?: string;
+
   @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()
   @IsString()
@@ -20,19 +63,86 @@ export class OpportunitiesQueryDto {
   @IsOptional()
   @IsString()
   limit?: string;
+
+  @ApiPropertyOptional({ description: 'Alias of limit' })
+  @IsOptional()
+  @IsString()
+  pageSize?: string;
 }
 
 export class OpportunityStatusDto {
   @ApiProperty({ enum: ['closed', 'cancelled'] })
   @IsIn(['closed', 'cancelled'])
   status!: 'closed' | 'cancelled';
+
+  @ApiPropertyOptional({
+    description: 'Short reason recorded in status_histories',
+    maxLength: 500,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Longer context recorded in status_histories',
+    maxLength: 2000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  notes?: string;
 }
 
 export class ReportsQueryDto {
   @ApiPropertyOptional({ enum: ['open', 'in_review', 'resolved', 'dismissed'] })
   @IsOptional()
   @IsIn(['open', 'in_review', 'resolved', 'dismissed'])
-  status?: string;
+  status?: ReportStatus;
+
+  @ApiPropertyOptional({ enum: REPORT_TARGET_TYPES })
+  @IsOptional()
+  @IsIn(REPORT_TARGET_TYPES)
+  targetType?: ReportTargetType;
+
+  @ApiPropertyOptional({ enum: REPORT_PRIORITIES })
+  @IsOptional()
+  @IsIn(REPORT_PRIORITIES)
+  priority?: ReportPriority;
+
+  @ApiPropertyOptional({ type: String, format: 'ObjectId' })
+  @IsOptional()
+  @IsMongoId()
+  assignedAdminId?: string;
+
+  @ApiPropertyOptional({ description: 'Title/reason keyword', maxLength: 254 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(254)
+  q?: string;
+
+  @ApiPropertyOptional({ description: 'Created-at window start (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @ApiPropertyOptional({ description: 'Created-at window end (ISO)' })
+  @IsOptional()
+  @IsDateString()
+  to?: string;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest', 'priority'],
+    default: 'newest',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest', 'priority'])
+  sort?: string;
+
+  @ApiPropertyOptional({ enum: ['json', 'csv'], default: 'json' })
+  @IsOptional()
+  @IsIn(['json', 'csv'])
+  format?: string;
 
   @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()
@@ -43,6 +153,11 @@ export class ReportsQueryDto {
   @IsOptional()
   @IsString()
   limit?: string;
+
+  @ApiPropertyOptional({ description: 'Alias of limit' })
+  @IsOptional()
+  @IsString()
+  pageSize?: string;
 }
 
 export class ReportStatusDto {
@@ -87,6 +202,25 @@ export class AuditLogsQueryDto {
   @IsDateString()
   date?: string;
 
+  @ApiPropertyOptional({ description: 'Action/path keyword', maxLength: 254 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(254)
+  q?: string;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest'],
+    default: 'newest',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest'])
+  sort?: string;
+
+  @ApiPropertyOptional({ enum: ['json', 'csv'], default: 'json' })
+  @IsOptional()
+  @IsIn(['json', 'csv'])
+  format?: string;
+
   @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
   @IsOptional()
   @IsString()
@@ -96,8 +230,12 @@ export class AuditLogsQueryDto {
   @IsOptional()
   @IsString()
   limit?: string;
-}
 
+  @ApiPropertyOptional({ description: 'Alias of limit' })
+  @IsOptional()
+  @IsString()
+  pageSize?: string;
+}
 export class SettingsValueDto {
   @ApiProperty({
     description: 'Numeric value stored under the setting key',
@@ -106,4 +244,33 @@ export class SettingsValueDto {
   })
   @IsNumber({ allowInfinity: false })
   value!: number;
+}
+
+/** Read one entity's status history (both params required). */
+export class StatusHistoriesQueryDto {
+  @ApiPropertyOptional({ description: 'Entity type, e.g. user' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  entityType?: string;
+
+  @ApiPropertyOptional({ type: String, format: 'ObjectId' })
+  @IsOptional()
+  @IsString()
+  entityId?: string;
+
+  @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({ description: 'Page size (default 20, max 50)' })
+  @IsOptional()
+  @IsString()
+  limit?: string;
+
+  @ApiPropertyOptional({ description: 'Alias of limit' })
+  @IsOptional()
+  @IsString()
+  pageSize?: string;
 }

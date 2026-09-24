@@ -15,6 +15,36 @@ import { AccountToken } from '../common/interfaces/account-token.interface';
 import { AdminReportsService } from '../admin/reports.service';
 import { ReportModel, ReportsCollection, ReportSchema } from './report.schema';
 import { ReportsService } from './reports.service';
+import {
+  UserModel,
+  UsersCollection,
+  UserSchema,
+} from '../users/schemas/user.schema';
+import {
+  VolunteerProfileModel,
+  VolunteerProfilesCollection,
+  VolunteerProfileSchema,
+} from '../volunteers/schemas/volunteer-profile.schema';
+import {
+  OrganizationModel,
+  OrganizationsCollection,
+  OrganizationSchema,
+} from '../organizations/schemas/organization.schema';
+import {
+  OpportunityModel,
+  OpportunitiesCollection,
+  OpportunitySchema,
+} from '../opportunities/schemas/opportunity.schema';
+import {
+  ReviewModel,
+  ReviewsCollection,
+  ReviewSchema,
+} from '../reviews/review.schema';
+import {
+  SubmissionModel,
+  SubmissionsCollection,
+  SubmissionSchema,
+} from '../submissions/schemas/submission.schema';
 
 const REPORT_PAIRS = [
   ['open', 'in_review'],
@@ -48,7 +78,28 @@ describe('ReportsService (inventory §2.19, module 21)', () => {
     registry.register('report', REPORT_PAIRS);
     const transitions = new StatusTransitionService(historyModel, registry);
     create = new ReportsService(reportModel);
-    resolve = new AdminReportsService(reportModel, transitions);
+    resolve = new AdminReportsService(
+      reportModel,
+      handle.connection.model<UserModel>(UsersCollection, UserSchema),
+      handle.connection.model<VolunteerProfileModel>(
+        VolunteerProfilesCollection,
+        VolunteerProfileSchema,
+      ),
+      handle.connection.model<OrganizationModel>(
+        OrganizationsCollection,
+        OrganizationSchema,
+      ),
+      handle.connection.model<OpportunityModel>(
+        OpportunitiesCollection,
+        OpportunitySchema,
+      ),
+      handle.connection.model<ReviewModel>(ReviewsCollection, ReviewSchema),
+      handle.connection.model<SubmissionModel>(
+        SubmissionsCollection,
+        SubmissionSchema,
+      ),
+      transitions,
+    );
   });
 
   afterAll(async () => {

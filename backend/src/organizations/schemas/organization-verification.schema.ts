@@ -7,6 +7,8 @@ export interface OrganizationVerification {
   status: OrganizationVerificationStatus;
   documents: Types.ObjectId[];
   rejectionReason?: string;
+  /** Owning admin account for triage (Session 10 `backend-v2-admin-lists`). */
+  assignedAdminId?: Types.ObjectId;
   submittedAt: Date;
   decidedAt?: Date;
   decidedBy?: Types.ObjectId;
@@ -20,6 +22,7 @@ export class OrganizationVerificationModel
   status!: OrganizationVerificationStatus;
   documents!: Types.ObjectId[];
   rejectionReason?: string;
+  assignedAdminId?: Types.ObjectId;
   submittedAt!: Date;
   decidedAt?: Date;
   decidedBy?: Types.ObjectId;
@@ -40,9 +43,12 @@ export const OrganizationVerificationSchema: Schema<OrganizationVerificationMode
     },
     documents: { type: [Schema.Types.ObjectId], required: true },
     rejectionReason: { type: String, trim: true },
+    assignedAdminId: { type: Schema.Types.ObjectId },
     submittedAt: { type: Date, required: true },
     decidedAt: { type: Date },
     decidedBy: { type: Schema.Types.ObjectId },
   });
 
 OrganizationVerificationSchema.index({ organizationId: 1, status: 1 });
+OrganizationVerificationSchema.index({ organizationId: 1, submittedAt: -1 });
+OrganizationVerificationSchema.index({ assignedAdminId: 1, status: 1 });

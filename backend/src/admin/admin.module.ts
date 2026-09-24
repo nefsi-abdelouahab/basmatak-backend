@@ -14,6 +14,10 @@ import {
   ORG_FOOTPRINT_PROVIDER,
 } from '../common/seams/org-footprint';
 import {
+  ADMIN_EXPERIENCE_DISPLAY,
+  InertAdminExperienceDisplayProvider,
+} from '../common/seams/admin-experience-display';
+import {
   OpportunitiesCollection,
   OpportunitySchema,
 } from '../opportunities/schemas/opportunity.schema';
@@ -34,6 +38,15 @@ import {
   VolunteerProfileSchema,
   VolunteerProfilesCollection,
 } from '../volunteers/schemas/volunteer-profile.schema';
+import {
+  VolunteerSkillSchema,
+  VolunteerSkillsCollection,
+} from '../volunteers/schemas/volunteer-skill.schema';
+import { SkillSchema, SkillsCollection } from '../skills/schemas/skill.schema';
+import {
+  LocationSchema,
+  LocationsCollection,
+} from '../locations/schemas/location.schema';
 import {
   AuditLogsCollection,
   AuditLogSchema,
@@ -56,6 +69,8 @@ import { AdminAnalyticsController } from './analytics.controller';
 import { AdminAnalyticsService } from './analytics.service';
 import { AdminAuditController } from './audit.controller';
 import { AdminAuditService } from './audit.service';
+import { AdminStatusHistoriesController } from './status-histories.controller';
+import { AdminStatusHistoriesService } from './status-histories.service';
 import { AdminOpportunitiesController } from './opportunities.controller';
 import { AdminOpportunitiesService } from './opportunities.service';
 import { AdminOrganizationsController } from './organizations.controller';
@@ -93,6 +108,9 @@ import { AdminVolunteersService } from './volunteers.service';
         schema: OrganizationVerificationSchema,
       },
       { name: VolunteerProfilesCollection, schema: VolunteerProfileSchema },
+      { name: VolunteerSkillsCollection, schema: VolunteerSkillSchema },
+      { name: SkillsCollection, schema: SkillSchema },
+      { name: LocationsCollection, schema: LocationSchema },
       { name: OpportunitiesCollection, schema: OpportunitySchema },
       { name: SubmissionsCollection, schema: SubmissionSchema },
       { name: ReviewsCollection, schema: ReviewSchema },
@@ -115,11 +133,16 @@ import { AdminVolunteersService } from './volunteers.service';
     AdminReviewsController,
     AdminReportsController,
     AdminAuditController,
+    AdminStatusHistoriesController,
     AdminSettingsController,
   ],
   providers: [
     AdminAnalyticsService,
     { provide: ORG_FOOTPRINT_PROVIDER, useClass: InertOrgFootprintProvider },
+    {
+      provide: ADMIN_EXPERIENCE_DISPLAY,
+      useClass: InertAdminExperienceDisplayProvider,
+    },
     AdminStatsService,
     AdminUsersService,
     AdminVolunteersService,
@@ -128,6 +151,7 @@ import { AdminVolunteersService } from './volunteers.service';
     AdminReviewsService,
     AdminReportsService,
     AdminAuditService,
+    AdminStatusHistoriesService,
     AdminSettingsService,
   ],
 })

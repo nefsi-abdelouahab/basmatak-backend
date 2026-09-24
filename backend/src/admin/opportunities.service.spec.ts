@@ -16,6 +16,26 @@ import {
   OpportunitiesCollection,
   OpportunitySchema,
 } from '../opportunities/schemas/opportunity.schema';
+import {
+  OrganizationsCollection,
+  OrganizationSchema,
+} from '../organizations/schemas/organization.schema';
+import {
+  ApplicationsCollection,
+  ApplicationSchema,
+} from '../applications/schemas/application.schema';
+import {
+  TaskParticipantsCollection,
+  TaskParticipantSchema,
+} from '../participations/schemas/task-participant.schema';
+import {
+  VolunteerProfilesCollection,
+  VolunteerProfileSchema,
+} from '../volunteers/schemas/volunteer-profile.schema';
+import {
+  LocationsCollection,
+  LocationSchema,
+} from '../locations/schemas/location.schema';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { AdminOpportunitiesService } from './opportunities.service';
 
@@ -48,6 +68,26 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
       OpportunitiesCollection,
       OpportunitySchema,
     );
+    const organizationModel = handle.connection.model(
+      OrganizationsCollection,
+      OrganizationSchema,
+    );
+    const applicationModel = handle.connection.model(
+      ApplicationsCollection,
+      ApplicationSchema,
+    );
+    const participantModel = handle.connection.model(
+      TaskParticipantsCollection,
+      TaskParticipantSchema,
+    );
+    const profileModel = handle.connection.model(
+      VolunteerProfilesCollection,
+      VolunteerProfileSchema,
+    );
+    const locationModel = handle.connection.model(
+      LocationsCollection,
+      LocationSchema,
+    );
     historyModel = handle.connection.model(
       StatusHistoryCollection,
       StatusHistorySchema,
@@ -55,7 +95,15 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
     const registry = new StatusTransitionRegistry();
     registry.register('opportunity', OPPORTUNITY_PAIRS);
     const transitions = new StatusTransitionService(historyModel, registry);
-    service = new AdminOpportunitiesService(opportunityModel, transitions);
+    service = new AdminOpportunitiesService(
+      opportunityModel,
+      organizationModel,
+      applicationModel,
+      participantModel,
+      profileModel,
+      locationModel,
+      transitions,
+    );
   });
 
   afterAll(async () => {
@@ -102,8 +150,8 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
       expect(second.items).toHaveLength(1);
       expect(second.nextCursor).toBeNull();
 
-      const firstIds = first.items.map((o) => o._id.toString());
-      const secondIds = second.items.map((o) => o._id.toString());
+      const firstIds = first.items.map((o) => o.opportunity._id.toString());
+      const secondIds = second.items.map((o) => o.opportunity._id.toString());
       const all = [...firstIds, ...secondIds];
       const sorted = [...all].sort((a, b) => b.localeCompare(a));
       expect(all).toEqual(sorted);
