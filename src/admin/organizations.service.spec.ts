@@ -24,6 +24,11 @@ import {
   OrganizationVerificationSchema,
   OrganizationVerificationsCollection,
 } from '../organizations/schemas/organization-verification.schema';
+import {
+  UserModel,
+  UserSchema,
+  UsersCollection,
+} from '../users/schemas/user.schema';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { RejectionReasonDto } from './dto/admin-query.dto';
 import { AdminOrganizationsService } from './organizations.service';
@@ -41,6 +46,7 @@ describe('AdminOrganizationsService (inventory §2.20 organizations)', () => {
   let service: AdminOrganizationsService;
   let orgModel: Model<OrganizationModel>;
   let verificationModel: Model<OrganizationVerificationModel>;
+  let userModel: Model<UserModel>;
   let historyModel: Model<StatusHistoryModel>;
   let emitter: EventEmitter2;
   let emitted: unknown[];
@@ -61,6 +67,7 @@ describe('AdminOrganizationsService (inventory §2.20 organizations)', () => {
       OrganizationVerificationsCollection,
       OrganizationVerificationSchema,
     );
+    userModel = handle.connection.model(UsersCollection, UserSchema);
     historyModel = handle.connection.model(
       StatusHistoryCollection,
       StatusHistorySchema,
@@ -72,6 +79,7 @@ describe('AdminOrganizationsService (inventory §2.20 organizations)', () => {
     service = new AdminOrganizationsService(
       orgModel,
       verificationModel,
+      userModel,
       transitions,
       emitter,
     );
@@ -96,6 +104,7 @@ describe('AdminOrganizationsService (inventory §2.20 organizations)', () => {
     await handle.connection
       .collection(OrganizationVerificationsCollection)
       .deleteMany({});
+    await handle.connection.collection(UsersCollection).deleteMany({});
     await handle.connection.collection(StatusHistoryCollection).deleteMany({});
   });
 
@@ -179,6 +188,79 @@ describe('AdminOrganizationsService (inventory §2.20 organizations)', () => {
 
     it('does not emit verification events for account-status changes', () => {
       expect(emitted).toEqual([]);
+    });
+  });
+
+  describe('assignVerification + latestVerification (Session 10)', () => {
+    async function seedAdminUser(role = 'admin'): Promise<UserModel> {
+      return userModel.create({
+        email: `${new Types.ObjectId().toString()}@example.com`,
+        passwordHash: 'hash',
+        role,
+        status: 'active',
+      });
+    }
+
+    it('assigns a dossier to an admin without changing its status', async () => {
+      const organization = await seedOrganization();
+      const row = await seedPendingVerification(organization._id);
+      const assignee = await seedAdminUser();
+      const updated = await service.assignVerification(
+        row._id.toString(),
+        assignee._id.toString(),
+      );
+      expect(updated.assignedAdminId!.toString()).toBe(assignee._id.toString());
+      expect(updated.status).toBe('pending');
+
+      const filtered = await service.listVerifications({
+        assignedAdminId: assignee._id.toString(),
+      });
+      expect(filtered.total).toBe(1);
+    });
+
+    it('rejects non-admin assignees with 400 and unknown rows with 404', async () => {
+      const organization = await seedOrganization();
+      const row = await seedPendingVerification(organization._id);
+      const volunteer = await seedAdminUser('volunteer');
+      await expect(
+        service.assignVerification(
+          row._id.toString(),
+          volunteer._id.toString(),
+        ),
+      ).rejects.toMatchObject({ status: 400, code: 'INVALID_ASSIGNEE' });
+      await expect(
+        service.assignVerification(
+          '507f1f77bcf86cd799439099',
+          volunteer._id.toString(),
+        ),
+      ).rejects.toMatchObject({
+        status: 404,
+        code: 'VERIFICATION_NOT_FOUND',
+      });
+    });
+
+    it('returns the newest dossier per organization', async () => {
+      const organization = await seedOrganization();
+      await seedPendingVerification(
+        organization._id,
+        new Date('2026-01-01T00:00:00.000Z'),
+      );
+      const newest = await seedPendingVerification(
+        organization._id,
+        new Date('2026-02-01T00:00:00.000Z'),
+      );
+      const latest = await service.latestVerification(
+        organization._id.toString(),
+      );
+      expect(latest._id.toString()).toBe(newest._id.toString());
+
+      const other = await seedOrganization();
+      await expect(
+        service.latestVerification(other._id.toString()),
+      ).rejects.toMatchObject({
+        status: 404,
+        code: 'VERIFICATION_NOT_FOUND',
+      });
     });
   });
 

@@ -18,7 +18,7 @@ import {
   UsersCollection,
 } from '../users/schemas/user.schema';
 import { AccountToken } from '../common/interfaces/account-token.interface';
-import { UserStatusDto } from './dto/admin-query.dto';
+import { UserStatusDto, UsersQueryDto } from './dto/admin-query.dto';
 import { AdminUsersService } from './users.service';
 
 const USER_PAIRS = [
@@ -227,6 +227,29 @@ describe('AdminUsersService (inventory §2.20 users)', () => {
         service.setStatus(admin, '507f1f77bcf86cd799439099', 'suspended'),
       ).rejects.toMatchObject({ status: 404, code: 'USER_NOT_FOUND' });
     });
+
+    it('records reason and notes on the history row when provided', async () => {
+      const user = await seedUser('reason@example.com');
+      await service.setStatus(admin, user._id.toString(), 'suspended', {
+        reason: 'Policy violation',
+        notes: 'Repeated spam reports',
+      });
+      const history = await historyModel.find({}).exec();
+      expect(history).toHaveLength(1);
+      expect(history[0]).toMatchObject({
+        reason: 'Policy violation',
+        notes: 'Repeated spam reports',
+      });
+    });
+
+    it('leaves reason/notes unset when absent', async () => {
+      const user = await seedUser('plain@example.com');
+      await service.setStatus(admin, user._id.toString(), 'suspended');
+      const history = await historyModel.find({}).exec();
+      expect(history).toHaveLength(1);
+      expect(history[0].reason).toBeUndefined();
+      expect(history[0].notes).toBeUndefined();
+    });
   });
 
   describe('UserStatusDto validation (400 surface)', () => {
@@ -242,6 +265,17 @@ describe('AdminUsersService (inventory §2.20 users)', () => {
       const dto = new UserStatusDto();
       dto.status = 'suspended';
       expect(await validate(dto)).toHaveLength(0);
+    });
+
+    it('rejects unknown sort tokens and formats', async () => {
+      const dto = new UsersQueryDto();
+      (dto as unknown as Record<string, unknown>).sort = 'popular';
+      (dto as unknown as Record<string, unknown>).format = 'xml';
+      const errors = await validate(dto);
+      expect(errors.map((error) => error.property).sort()).toEqual([
+        'format',
+        'sort',
+      ]);
     });
   });
 });

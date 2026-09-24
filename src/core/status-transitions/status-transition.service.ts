@@ -14,6 +14,10 @@ export interface AssertTransitionInput {
   from: string;
   to: string;
   actor: Types.ObjectId | string;
+  /** Optional short reason (≤500 chars) persisted on the history entry. */
+  reason?: string;
+  /** Optional longer notes (≤2000 chars) persisted on the history entry. */
+  notes?: string;
   session?: ClientSession;
 }
 
@@ -33,7 +37,23 @@ export class StatusTransitionService {
   ) {}
 
   async assert(input: AssertTransitionInput): Promise<StatusHistoryModel> {
-    const { entityType, entityId, from, to, actor, session } = input;
+    const { entityType, entityId, from, to, actor, reason, notes, session } =
+      input;
+
+    if (reason !== undefined && reason.length > 500) {
+      throw new BusinessException(
+        'INVALID_STATUS_REASON',
+        'Status change reason must be 500 characters or fewer',
+        400,
+      );
+    }
+    if (notes !== undefined && notes.length > 2000) {
+      throw new BusinessException(
+        'INVALID_STATUS_NOTES',
+        'Status change notes must be 2000 characters or fewer',
+        400,
+      );
+    }
 
     if (!this.registry.isRegistered(entityType)) {
       throw new BusinessException(
@@ -58,6 +78,8 @@ export class StatusTransitionService {
           from,
           to,
           actor: new Types.ObjectId(String(actor)),
+          ...(reason !== undefined ? { reason } : {}),
+          ...(notes !== undefined ? { notes } : {}),
         },
       ],
       session ? { session } : undefined,
