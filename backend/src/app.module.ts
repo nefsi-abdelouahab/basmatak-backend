@@ -27,6 +27,7 @@ import { PortfolioModule } from './portfolio/portfolio.module';
 import { ReportsModule } from './reports/reports.module';
 import { AdminModule } from './admin/admin.module';
 import { ActivityModule } from './activity/activity.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 import { SuspendedGuard } from './common/guards/suspended.guard';
@@ -85,6 +86,7 @@ const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
     ReportsModule,
     AdminModule,
     ActivityModule,
+    FavoritesModule,
   ],
   controllers: [AppController, HealthController],
   // Global guards execute in the order declared: JWT identity first, then
