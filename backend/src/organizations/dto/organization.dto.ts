@@ -1,12 +1,86 @@
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
+  IsEmail,
+  IsIn,
+  IsInt,
   IsMongoId,
   IsOptional,
   IsString,
+  IsUrl,
+  Matches,
+  Max,
   MaxLength,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export const MAX_ORG_TYPE_LENGTH = 80;
+export const MAX_ORG_REGISTRATION_NUMBER_LENGTH = 80;
+export const MAX_ORG_ADDRESS_LENGTH = 500;
+export const MAX_ORG_WEBSITE_LENGTH = 500;
+export const MIN_ORG_FOUNDED_YEAR = 1800;
+export const MAX_ORG_FOCUS_DISCIPLINES = 12;
+export const MAX_ORG_OPERATING_SCOPE_LENGTH = 120;
+
+/** Canonical phone pattern shared with the auth/users DTOs. */
+export const ORG_PHONE_PATTERN = /^\+?[0-9]{8,15}$/;
+
+export class OrganizationLocationDto {
+  @ApiPropertyOptional({ description: 'Wilaya code (01-58)', example: '16' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  wilayaId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Municipality code (4 digits)',
+    example: '1601',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  municipalityId?: string;
+
+  @ApiPropertyOptional({ maxLength: MAX_ORG_ADDRESS_LENGTH })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_ORG_ADDRESS_LENGTH)
+  address?: string;
+}
+
+export class OrganizationContactDto {
+  @ApiPropertyOptional({ example: 'contact@example.org', maxLength: 254 })
+  @IsOptional()
+  @IsString()
+  @IsEmail()
+  @MaxLength(254)
+  email?: string;
+
+  @ApiPropertyOptional({
+    description: 'International phone number',
+    example: '+213555123456',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(ORG_PHONE_PATTERN, {
+    message: 'phone must be a valid phone number',
+  })
+  phone?: string;
+}
+
+export class OrganizationPublicProfileDto {
+  @ApiProperty({
+    description: 'Neutral platform-profile toggle (default on)',
+    example: true,
+  })
+  @IsBoolean()
+  enabled!: boolean;
+}
 
 export class UpdateOrganizationDto {
   @ApiPropertyOptional({ example: 'جمعية الأمل', maxLength: 200 })
@@ -38,6 +112,120 @@ export class UpdateOrganizationDto {
   @IsOptional()
   @IsMongoId()
   logoMediaId?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: 'ObjectId',
+    description: 'Cover media id (purpose organization_cover)',
+  })
+  @IsOptional()
+  @IsMongoId()
+  coverMediaId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Organization type (free-form short text)',
+    example: 'Association',
+    maxLength: MAX_ORG_TYPE_LENGTH,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_ORG_TYPE_LENGTH)
+  type?: string;
+
+  @ApiPropertyOptional({ maxLength: MAX_ORG_REGISTRATION_NUMBER_LENGTH })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_ORG_REGISTRATION_NUMBER_LENGTH)
+  registrationNumber?: string;
+
+  @ApiPropertyOptional({ type: OrganizationLocationDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrganizationLocationDto)
+  location?: OrganizationLocationDto;
+
+  @ApiPropertyOptional({
+    example: 'https://example.org',
+    maxLength: MAX_ORG_WEBSITE_LENGTH,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_ORG_WEBSITE_LENGTH)
+  @IsUrl(
+    { protocols: ['http', 'https'], require_protocol: true },
+    { message: 'website must be a valid http(s) URL' },
+  )
+  website?: string;
+
+  @ApiPropertyOptional({ example: 2018 })
+  @IsOptional()
+  @IsInt()
+  @Min(MIN_ORG_FOUNDED_YEAR)
+  @Max(new Date().getFullYear())
+  foundedYear?: number;
+
+  @ApiPropertyOptional({ type: OrganizationContactDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrganizationContactDto)
+  contact?: OrganizationContactDto;
+
+  @ApiPropertyOptional({
+    description: 'Skill-category refs backing the focus-disciplines chips',
+    type: 'array',
+    items: { type: 'string' },
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_ORG_FOCUS_DISCIPLINES)
+  @IsMongoId({ each: true })
+  focusDisciplines?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Operating scope (free-form short text)',
+    example: 'Algiers and surroundings',
+    maxLength: MAX_ORG_OPERATING_SCOPE_LENGTH,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_ORG_OPERATING_SCOPE_LENGTH)
+  operatingScope?: string;
+
+  @ApiPropertyOptional({ type: OrganizationPublicProfileDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrganizationPublicProfileDto)
+  publicProfile?: OrganizationPublicProfileDto;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: 'ObjectId',
+    description:
+      'Optional annual-report attachment (purpose organization_document, no workflow)',
+  })
+  @IsOptional()
+  @IsMongoId()
+  annualReportMediaId?: string;
+}
+
+export const ORG_OPPORTUNITY_STATUSES = [
+  'published',
+  'completed',
+  'closed',
+] as const;
+
+export type OrgOpportunityStatus = (typeof ORG_OPPORTUNITY_STATUSES)[number];
+
+export class OrgOpportunitiesQueryDto {
+  @ApiPropertyOptional({
+    description: 'Opportunity status filter (default published)',
+    enum: ORG_OPPORTUNITY_STATUSES,
+    default: 'published',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn([...ORG_OPPORTUNITY_STATUSES])
+  status?: OrgOpportunityStatus;
 }
 
 export class OrganizationListQueryDto {
