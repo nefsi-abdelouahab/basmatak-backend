@@ -5,9 +5,15 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentAccount, Roles } from '../common/decorators/auth.decorators';
+import {
+  CurrentAccount,
+  Public,
+  Roles,
+} from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
+import { BusinessException } from '../common/exceptions/business.exception';
+import { VolunteersService } from '../volunteers/volunteers.service';
 import { CreateReviewDto, ReviewListQueryDto } from './dto/review.dto';
 import { ReviewModel } from './review.schema';
 import { ReviewsService } from './reviews.service';
@@ -22,7 +28,10 @@ import { ReviewsService } from './reviews.service';
 @ApiTags('reviews')
 @Controller()
 export class ReviewsController {
-  constructor(private readonly reviews: ReviewsService) {}
+  constructor(
+    private readonly reviews: ReviewsService,
+    private readonly volunteers: VolunteersService,
+  ) {}
 
   @ApiParam({
     name: 'submissionId',
@@ -61,5 +70,40 @@ export class ReviewsController {
     @Query() query: ReviewListQueryDto,
   ): Promise<CursorPage<Record<string, unknown>>> {
     return this.reviews.listGiven(account, query);
+  }
+
+  /**
+   * Public reviews of a volunteer (Session 9, visible rows only). Registered
+   * AFTER `volunteers/me/reviews` in this controller so the static `me` route
+   * wins over the `:username` catch-all (same route-order trap as above).
+   */
+  @ApiParam({
+    name: 'username',
+    description: 'Volunteer username',
+    type: String,
+  })
+  @Get('volunteers/:username/reviews')
+  @Public()
+  @ApiOperation({
+    summary: 'Public reviews of a volunteer (visible rows only)',
+  })
+  async publicReviews(
+    @Param('username') username: string,
+    @Query() query: ReviewListQueryDto,
+  ) {
+    const profile =
+      await this.volunteers.findEnabledProfileByUsername(username);
+    if (!profile) {
+      throw new BusinessException(
+        'VOLUNTEER_PROFILE_NOT_FOUND',
+        'Volunteer profile not found',
+        404,
+      );
+    }
+    return this.volunteers.getPublicReviews(
+      profile.userId.toString(),
+      query.limit,
+      query.cursor,
+    );
   }
 }
