@@ -8,7 +8,9 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   OPPORTUNITY_STATUSES,
@@ -21,6 +23,7 @@ import {
   ReportStatus,
   ReportTargetType,
 } from '../../reports/report.schema';
+import { ModerationActionDto } from './moderation-action.dto';
 
 export class OpportunitiesQueryDto {
   @ApiPropertyOptional({
@@ -172,6 +175,15 @@ export class ReportStatusDto {
   @IsNotEmpty()
   @MaxLength(4000)
   resolution?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional moderation consequence executed atomically with a `resolved` status (Session 20). Requires `resolution`. Without `action` the route resolves/dismisses exactly as before.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ModerationActionDto)
+  action?: ModerationActionDto;
 }
 
 export class AuditLogsQueryDto {

@@ -54,6 +54,8 @@ export class NotificationPrefsService {
         return 'verification';
       case DomainEvents.PublishGateLocked:
         return 'system';
+      case DomainEvents.AdminNotice:
+        return 'system';
       default:
         return 'applicationUpdates';
     }

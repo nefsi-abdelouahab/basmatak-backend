@@ -22,6 +22,7 @@ import { ReportModel } from '../reports/report.schema';
 import { ReportStatusDto, ReportsQueryDto } from './dto/admin-part-b.dto';
 import { AssignAdminDto } from './dto/admin-query.dto';
 import { AdminReportsService, AdminReportRow } from './reports.service';
+import { ModerationActionsService } from './moderation-actions.service';
 import { adminCsvFilename, adminCsvStream } from './csv/admin-csv';
 
 @ApiBearerAuth()
@@ -29,7 +30,10 @@ import { adminCsvFilename, adminCsvStream } from './csv/admin-csv';
 @Controller('admin/reports')
 @Roles('admin')
 export class AdminReportsController {
-  constructor(private readonly reports: AdminReportsService) {}
+  constructor(
+    private readonly reports: AdminReportsService,
+    private readonly moderation: ModerationActionsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List reports (optional status filter)' })
@@ -71,12 +75,21 @@ export class AdminReportsController {
     format: 'ObjectId',
   })
   @Patch(':reportId')
-  @ApiOperation({ summary: 'Resolve/dismiss a report' })
+  @ApiOperation({
+    summary:
+      'Resolve/dismiss a report (optionally with a moderation consequence)',
+  })
   resolve(
     @CurrentAccount() account: AccountToken,
     @Param('reportId') reportId: string,
     @Body() dto: ReportStatusDto,
   ): Promise<ReportModel> {
+    // Terminal `resolved` calls run through the composite so the
+    // suspend-on-report policy default applies; without an action (and with
+    // the flag off) the outcome is identical to the plain path below.
+    if (dto.action || dto.status === 'resolved') {
+      return this.moderation.resolveWithAction(account, reportId, dto);
+    }
     return this.reports.resolve(account, reportId, dto);
   }
 }
