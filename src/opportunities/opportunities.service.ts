@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { FilterQuery, FlattenMaps, Model, Types } from 'mongoose';
 import { DomainEvents } from '../common/constants/domain-events';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
@@ -19,6 +19,7 @@ import { createWithUniqueSlug, slugifyText } from '../common/slug/slugify.util';
 import { RegistryIdService } from '../common/counters/registry-id.service';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import { OrganizationModel } from '../organizations/schemas/organization.schema';
+import { OrgOpportunitiesQueryDto } from '../organizations/dto/organization.dto';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
 import {
@@ -890,13 +891,18 @@ export class OpportunitiesService {
     return doc;
   }
 
-  /** Published opportunities of a verified+active org (shadows S5's empty stub). */
-  async listByOrganizationSlug(slug: string): Promise<OpportunityModel[]> {
-    const organization = await this.organizations.getPublicBySlug(slug);
-    return this.opportunityModel
-      .find({ organizationId: organization._id, status: 'published' })
-      .sort({ _id: -1 })
-      .exec();
+  /**
+   * Per-status public opportunities archive (Session 14 `backend-v2-org-facts`
+   * extension of the Session 11 published-only read): delegates the org gating
+   * and the status filter to `OrganizationsService.listOrgOpportunities`, which
+   * owns the query implementation. Default `published` keeps the Session 11
+   * behavior for callers without `?status=`.
+   */
+  async listByOrganizationSlug(
+    slug: string,
+    query?: OrgOpportunitiesQueryDto,
+  ): Promise<Array<FlattenMaps<OpportunityModel>>> {
+    return this.organizations.listOrgOpportunities(slug, query);
   }
 
   /***************************************************************************

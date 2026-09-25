@@ -31,6 +31,7 @@ import {
   UpdateOpportunityDto,
 } from './dto/opportunity.dto';
 import { OpportunitiesService } from './opportunities.service';
+import { OrgOpportunitiesQueryDto } from '../organizations/dto/organization.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 /**
@@ -136,10 +137,13 @@ export class OpportunitiesController {
   @Get('organizations/:slug/opportunities')
   @Public()
   @ApiOperation({
-    summary: 'Public opportunities of an organization (published)',
+    summary: 'Public opportunities of an organization (per-status archive)',
   })
-  listBySlug(@Param('slug') slug: string) {
-    return this.opportunities.listByOrganizationSlug(slug);
+  listBySlug(
+    @Param('slug') slug: string,
+    @Query() query: OrgOpportunitiesQueryDto,
+  ) {
+    return this.opportunities.listByOrganizationSlug(slug, query);
   }
 
   @ApiBearerAuth()

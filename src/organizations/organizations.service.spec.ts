@@ -1,6 +1,12 @@
 import { Model } from 'mongoose';
 import { OrganizationsService } from './organizations.service';
 import { UsersService } from '../users/users.service';
+import {
+  SessionModel,
+  SessionsCollection,
+  SessionSchema,
+} from '../auth/schemas/session.schema';
+import { InertOrgPublicStatsProvider } from '../common/seams/org-public-stats';
 import { StatusTransitionRegistry } from '../core/status-transitions/status-transition.registry';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
 import {
@@ -8,6 +14,22 @@ import {
   StatusHistorySchema,
   StatusHistoryCollection,
 } from '../core/status-transitions/status-histories.schema';
+import {
+  LocationModel,
+  LocationsCollection,
+  LocationSchema,
+} from '../locations/schemas/location.schema';
+import { LocationsService } from '../locations/locations.service';
+import {
+  OpportunitiesCollection,
+  OpportunityModel,
+  OpportunitySchema,
+} from '../opportunities/schemas/opportunity.schema';
+import {
+  SkillCategoriesCollection,
+  SkillCategoryModel,
+  SkillCategorySchema,
+} from '../skills/schemas/skill-category.schema';
 import {
   OrganizationModel,
   OrganizationSchema,
@@ -45,6 +67,10 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
   let historyModel: Model<StatusHistoryModel>;
   let userModel: Model<UserModel>;
   let mediaModel: Model<MediaModel>;
+  let opportunityModel: Model<OpportunityModel>;
+  let sessionModel: Model<SessionModel>;
+  let locationModel: Model<LocationModel>;
+  let skillCategoryModel: Model<SkillCategoryModel>;
   let registry: StatusTransitionRegistry;
 
   beforeAll(async () => {
@@ -66,6 +92,22 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       MediaCollection,
       MediaSchema,
     );
+    opportunityModel = handle.connection.model<OpportunityModel>(
+      OpportunitiesCollection,
+      OpportunitySchema,
+    );
+    sessionModel = handle.connection.model<SessionModel>(
+      SessionsCollection,
+      SessionSchema,
+    );
+    locationModel = handle.connection.model<LocationModel>(
+      LocationsCollection,
+      LocationSchema,
+    );
+    skillCategoryModel = handle.connection.model<SkillCategoryModel>(
+      SkillCategoriesCollection,
+      SkillCategorySchema,
+    );
 
     users = new UsersService(userModel);
     registry = new StatusTransitionRegistry();
@@ -81,6 +123,14 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       transitions,
       users,
       new MediaOwnership(mediaModel),
+      opportunityModel,
+      sessionModel,
+      userModel,
+      historyModel,
+      skillCategoryModel,
+      new LocationsService(locationModel),
+      new InertOrgPublicStatsProvider(),
+      handle.connection,
     );
   });
 
@@ -98,6 +148,12 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
     await handle.connection.collection(StatusHistoryCollection).deleteMany({});
     await handle.connection.collection(UsersCollection).deleteMany({});
     await handle.connection.collection(MediaCollection).deleteMany({});
+    await handle.connection.collection(OpportunitiesCollection).deleteMany({});
+    await handle.connection.collection(SessionsCollection).deleteMany({});
+    await handle.connection.collection(LocationsCollection).deleteMany({});
+    await handle.connection
+      .collection(SkillCategoriesCollection)
+      .deleteMany({});
   });
 
   async function createOrgOwner() {
@@ -127,7 +183,11 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
 
   async function createMedia(
     ownerId: string,
-    purpose: 'verification_document' | 'organization_logo',
+    purpose:
+      | 'verification_document'
+      | 'organization_logo'
+      | 'organization_cover'
+      | 'organization_document',
   ): Promise<string> {
     const row = await mediaModel.create({
       ownerId,
@@ -237,7 +297,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         code: 'ORGANIZATION_NOT_FOUND',
       });
       await expect(
-        service.listPublishedOpportunities('org-owner'),
+        service.listOrgOpportunities('org-owner'),
       ).rejects.toMatchObject({
         status: 404,
       });
@@ -259,7 +319,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       expect(fetched).not.toBeNull();
       expect(fetched!.verificationStatus).toBe('verified');
       expect((await service.listPublic()).items).toHaveLength(1);
-      expect(await service.listPublishedOpportunities('org-owner')).toEqual([]);
+      expect(await service.listOrgOpportunities('org-owner')).toEqual([]);
     });
 
     it('hides a verified but suspended organization', async () => {
@@ -272,6 +332,420 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         )
         .exec();
       expect(await service.getPublicOrganization('org-owner')).toBeNull();
+    });
+  });
+
+  describe('fact-sheet schema guard (Session 14)', () => {
+    it('has no perks-equivalent paths and no client-settable registryId', async () => {
+      const paths = Object.keys(OrganizationSchema.paths);
+      for (const banned of ['perks', 'benefits', 'marketing']) {
+        expect(paths).not.toContain(banned);
+      }
+      expect(paths).toContain('annualReportMediaId');
+      expect(paths).toContain('registryId');
+    });
+  });
+
+  describe('fact-sheet PATCH (Session 14)', () => {
+    async function seedReferenceData() {
+      await locationModel.create({
+        code: '16',
+        type: 'wilaya',
+        nameAr: 'الجزائر',
+        nameFr: 'Alger',
+      });
+      await locationModel.create({
+        code: '1601',
+        type: 'municipality',
+        parentCode: '16',
+        nameAr: 'الجزائر الوسطى',
+        nameFr: 'Alger Centre',
+      });
+      const category = await skillCategoryModel.create({
+        slug: 'education',
+        nameAr: 'التعليم',
+        nameFr: 'Éducation',
+        order: 1,
+        active: true,
+      });
+      return category._id.toString();
+    }
+
+    it('persists the full fact sheet and reads it back', async () => {
+      const { user } = await createOrgOwner();
+      const categoryId = await seedReferenceData();
+      const cover = await createMedia(
+        user._id.toString(),
+        'organization_cover',
+      );
+      const report = await createMedia(
+        user._id.toString(),
+        'organization_document',
+      );
+
+      const updated = await service.updateOwn(accountOf(user), {
+        nameFr: 'Association El-Amel',
+        description: 'Volunteer charity in Algiers',
+        type: 'Association',
+        registrationNumber: 'REG-2024-001',
+        location: {
+          wilayaId: '16',
+          municipalityId: '1601',
+          address: 'Rue Didouche Mourad',
+        },
+        website: 'https://el-amel.example.org',
+        foundedYear: 2018,
+        contact: {
+          email: 'contact@el-amel.example.org',
+          phone: '+213555123456',
+        },
+        focusDisciplines: [categoryId],
+        operatingScope: 'Algiers and surroundings',
+        publicProfile: { enabled: true },
+        coverMediaId: cover,
+        annualReportMediaId: report,
+      });
+
+      expect(updated.type).toBe('Association');
+      expect(updated.location?.wilayaId).toBe('16');
+      expect(updated.website).toBe('https://el-amel.example.org');
+      expect(updated.foundedYear).toBe(2018);
+      expect(updated.focusDisciplines?.map(String)).toEqual([categoryId]);
+      expect(updated.coverMediaId?.toString()).toBe(cover);
+      expect(updated.annualReportMediaId?.toString()).toBe(report);
+
+      const own = await service.getOwn(accountOf(user));
+      expect(own.type).toBe('Association');
+    });
+
+    it('merges nested facts leaf-wise without wiping siblings', async () => {
+      const { user } = await createOrgOwner();
+      await seedReferenceData();
+      await service.updateOwn(accountOf(user), {
+        location: {
+          wilayaId: '16',
+          municipalityId: '1601',
+          address: 'Old address',
+        },
+      });
+      const updated = await service.updateOwn(accountOf(user), {
+        location: { address: 'New address' },
+      });
+      expect(updated.location?.address).toBe('New address');
+      expect(updated.location?.wilayaId).toBe('16');
+      expect(updated.location?.municipalityId).toBe('1601');
+    });
+
+    it('allows facts PATCH before email verification', async () => {
+      const user = await userModel.create({
+        email: 'fresh@example.com',
+        passwordHash: 'hash',
+        role: 'organization',
+        status: 'active',
+      });
+      await orgModel.create({
+        userId: user._id,
+        slug: 'fresh-org',
+        verificationStatus: 'pending',
+        status: 'active',
+      });
+      const updated = await service.updateOwn(accountOf(user), {
+        type: 'Foundation',
+      });
+      expect(updated.type).toBe('Foundation');
+    });
+
+    it('rejects unknown location refs with INVALID_LOCATION', async () => {
+      const { user } = await createOrgOwner();
+      await seedReferenceData();
+      await expect(
+        service.updateOwn(accountOf(user), { location: { wilayaId: '99' } }),
+      ).rejects.toMatchObject({ status: 400, code: 'INVALID_LOCATION' });
+      await expect(
+        service.updateOwn(accountOf(user), {
+          location: { wilayaId: '16', municipalityId: '9999' },
+        }),
+      ).rejects.toMatchObject({ status: 400, code: 'INVALID_LOCATION' });
+      await expect(
+        service.updateOwn(accountOf(user), {
+          location: { municipalityId: '1601' },
+        }),
+      ).rejects.toMatchObject({ status: 400, code: 'INVALID_LOCATION' });
+    });
+
+    it('rejects unknown skill-category refs with INVALID_FOCUS_DISCIPLINE', async () => {
+      const { user } = await createOrgOwner();
+      await expect(
+        service.updateOwn(accountOf(user), {
+          focusDisciplines: ['507f1f77bcf86cd799439011'],
+        }),
+      ).rejects.toMatchObject({
+        status: 400,
+        code: 'INVALID_FOCUS_DISCIPLINE',
+      });
+    });
+
+    it('rejects cover/report media with the wrong purpose', async () => {
+      const { user } = await createOrgOwner();
+      const logo = await createMedia(user._id.toString(), 'organization_logo');
+      await expect(
+        service.updateOwn(accountOf(user), { coverMediaId: logo }),
+      ).rejects.toMatchObject({ code: 'MEDIA_PURPOSE_MISMATCH' });
+      await expect(
+        service.updateOwn(accountOf(user), { annualReportMediaId: logo }),
+      ).rejects.toMatchObject({ code: 'MEDIA_PURPOSE_MISMATCH' });
+    });
+
+    it('detaches the annual report on explicit null', async () => {
+      const { user } = await createOrgOwner();
+      const report = await createMedia(
+        user._id.toString(),
+        'organization_document',
+      );
+      await service.updateOwn(accountOf(user), {
+        annualReportMediaId: report,
+      });
+      const detached = await service.updateOwn(accountOf(user), {
+        annualReportMediaId: null,
+      } as unknown as Parameters<typeof service.updateOwn>[1]);
+      expect(detached.annualReportMediaId).toBeNull();
+    });
+  });
+
+  describe('profile completion (Session 14)', () => {
+    it('reports missing keys and the filled share', async () => {
+      const { user } = await createOrgOwner();
+      await service.updateOwn(accountOf(user), {
+        nameFr: 'Association El-Amel',
+        contact: { phone: '+213555123456' },
+      });
+      const completion = await service.getProfileCompletion(accountOf(user));
+      expect(completion.complete).toBe(false);
+      expect(completion.missing).toContain('description');
+      expect(completion.missing).toContain('coverMediaId');
+      expect(completion.missing).not.toContain('name');
+      expect(completion.missing).not.toContain('contact');
+      // 2 of 11 keys filled → 18%.
+      expect(completion.percent).toBe(18);
+    });
+
+    it('reports complete at 100 once every key is filled', async () => {
+      const { user } = await createOrgOwner();
+      await locationModel.create({
+        code: '16',
+        type: 'wilaya',
+        nameAr: 'الجزائر',
+        nameFr: 'Alger',
+      });
+      const category = await skillCategoryModel.create({
+        slug: 'education',
+        nameAr: 'التعليم',
+        nameFr: 'Éducation',
+        order: 1,
+        active: true,
+      });
+      const cover = await createMedia(
+        user._id.toString(),
+        'organization_cover',
+      );
+      await service.updateOwn(accountOf(user), {
+        nameFr: 'Association El-Amel',
+        description: 'Charity',
+        type: 'Association',
+        registrationNumber: 'REG-1',
+        location: { wilayaId: '16' },
+        website: 'https://example.org',
+        foundedYear: 2020,
+        contact: { email: 'a@example.org' },
+        focusDisciplines: [category._id.toString()],
+        operatingScope: 'National',
+        coverMediaId: cover,
+      });
+      const completion = await service.getProfileCompletion(accountOf(user));
+      expect(completion).toEqual({ percent: 100, missing: [], complete: true });
+    });
+
+    it('404s for accounts without an organization', async () => {
+      const user = await userModel.create({
+        email: 'lonely@example.com',
+        passwordHash: 'hash',
+        role: 'volunteer',
+        status: 'active',
+      });
+      await expect(
+        service.getProfileCompletion(accountOf(user)),
+      ).rejects.toMatchObject({
+        status: 404,
+        code: 'ORGANIZATION_NOT_FOUND',
+      });
+    });
+  });
+
+  describe('public payload aggregates seam (Session 14)', () => {
+    it('exposes zeroed aggregates and null activeSince before Session 16', async () => {
+      const { user, org } = await createOrgOwner();
+      void user;
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          { $set: { verificationStatus: 'verified' } },
+        )
+        .exec();
+      const payload = await service.getPublicBySlug('org-owner');
+      expect(payload['aggregates']).toEqual({
+        volunteers: 0,
+        initiativesActive: 0,
+        initiativesCompleted: 0,
+        verifiedHours: 0,
+        responseRate: 0,
+        perDomain: [],
+        activeSince: null,
+      });
+    });
+
+    it('derives activeSince from foundedYear', async () => {
+      const { user, org } = await createOrgOwner();
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          { $set: { verificationStatus: 'verified', foundedYear: 2018 } },
+        )
+        .exec();
+      void user;
+      const payload = await service.getPublicBySlug('org-owner');
+      expect(
+        (payload['aggregates'] as Record<string, unknown>)['activeSince'],
+      ).toBe(2018);
+    });
+
+    it('keeps resolving when the platform toggle is off (no 404 regression)', async () => {
+      const { user, org } = await createOrgOwner();
+      void user;
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          {
+            $set: {
+              verificationStatus: 'verified',
+              publicProfile: { enabled: false },
+            },
+          },
+        )
+        .exec();
+      const payload = await service.getPublicBySlug('org-owner');
+      expect(payload['publicProfile']).toEqual({ enabled: false });
+    });
+  });
+
+  describe('per-status public opportunities (Session 14)', () => {
+    async function seedOpportunity(
+      orgId: unknown,
+      slug: string,
+      status: 'published' | 'completed' | 'closed' | 'draft',
+    ) {
+      return opportunityModel.create({
+        organizationId: orgId,
+        slug,
+        title: `Initiative ${slug}`,
+        description: 'Description',
+        status,
+      });
+    }
+
+    it('filters the archive by status with published as default', async () => {
+      const { user, org } = await createOrgOwner();
+      void user;
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          { $set: { verificationStatus: 'verified' } },
+        )
+        .exec();
+      await seedOpportunity(org._id, 'opp-live', 'published');
+      await seedOpportunity(org._id, 'opp-done', 'completed');
+      await seedOpportunity(org._id, 'opp-old', 'closed');
+      await seedOpportunity(org._id, 'opp-draft', 'draft');
+
+      const byDefault = await service.listOrgOpportunities('org-owner');
+      expect(byDefault.map((row) => row.slug)).toEqual(['opp-live']);
+      const completed = await service.listOrgOpportunities('org-owner', {
+        status: 'completed',
+      });
+      expect(completed.map((row) => row.slug)).toEqual(['opp-done']);
+      const closed = await service.listOrgOpportunities('org-owner', {
+        status: 'closed',
+      });
+      expect(closed.map((row) => row.slug)).toEqual(['opp-old']);
+    });
+  });
+
+  describe('delete own organization (Session 14)', () => {
+    it('archives org + user, revokes sessions, and writes history', async () => {
+      const { user, org } = await createOrgOwner();
+      await sessionModel.create({
+        userId: user._id,
+        refreshTokenHash: 'hash-1',
+        expiresAt: new Date(Date.now() + 3600_000),
+      });
+      await sessionModel.create({
+        userId: user._id,
+        refreshTokenHash: 'hash-2',
+        expiresAt: new Date(Date.now() + 3600_000),
+      });
+
+      const result = await service.deleteOwn(accountOf(user));
+      expect(result).toEqual({
+        deleted: true,
+        organizationId: org._id.toString(),
+      });
+
+      expect((await orgModel.findById(org._id).exec())!.status).toBe('deleted');
+      const retired = await userModel.findById(user._id).exec();
+      expect(retired!.status).toBe('deleted');
+      expect(retired!.deletedAt).toBeInstanceOf(Date);
+      expect(
+        await sessionModel.countDocuments({ userId: user._id }).exec(),
+      ).toBe(0);
+      const history = await historyModel.find({}).exec();
+      expect(history).toHaveLength(1);
+      expect(history[0]).toMatchObject({
+        entityType: 'organization',
+        from: 'active',
+        to: 'deleted',
+      });
+      expect(await service.getPublicOrganization('org-owner')).toBeNull();
+    });
+
+    it('rolls back everything when a step fails', async () => {
+      const { user, org } = await createOrgOwner();
+      const spy = jest.spyOn(sessionModel, 'deleteMany').mockReturnValueOnce({
+        exec: () => Promise.reject(new Error('boom')),
+      } as unknown as ReturnType<typeof sessionModel.deleteMany>);
+      try {
+        await expect(service.deleteOwn(accountOf(user))).rejects.toThrow(
+          'boom',
+        );
+      } finally {
+        spy.mockRestore();
+      }
+      expect((await orgModel.findById(org._id).exec())!.status).toBe('active');
+      expect((await userModel.findById(user._id).exec())!.status).toBe(
+        'active',
+      );
+      expect(await historyModel.countDocuments({}).exec()).toBe(0);
+    });
+
+    it('404s for accounts without an organization', async () => {
+      const user = await userModel.create({
+        email: 'lonely@example.com',
+        passwordHash: 'hash',
+        role: 'volunteer',
+        status: 'active',
+      });
+      await expect(service.deleteOwn(accountOf(user))).rejects.toMatchObject({
+        status: 404,
+        code: 'ORGANIZATION_NOT_FOUND',
+      });
     });
   });
 });

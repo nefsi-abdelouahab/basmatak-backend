@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -56,6 +57,20 @@ export class OrganizationsController {
   }
 
   @ApiBearerAuth()
+  @Get('me/profile-completion')
+  @ApiOperation({ summary: "Profile-completion checklist of the caller's org" })
+  getProfileCompletion(@CurrentAccount() account: AccountToken) {
+    return this.organizations.getProfileCompletion(account);
+  }
+
+  @ApiBearerAuth()
+  @Delete('me')
+  @ApiOperation({ summary: "Delete the caller's own organization account" })
+  deleteOwn(@CurrentAccount() account: AccountToken) {
+    return this.organizations.deleteOwn(account);
+  }
+
+  @ApiBearerAuth()
   @Post('me/verification')
   @ApiOperation({ summary: 'Submit (or resubmit) verification documents' })
   submitVerification(
@@ -84,17 +99,5 @@ export class OrganizationsController {
   @ApiOperation({ summary: 'Public organization profile by slug' })
   getBySlug(@Param('slug') slug: string) {
     return this.organizations.getPublicBySlug(slug);
-  }
-
-  @ApiParam({
-    name: 'slug',
-    description: 'Organization slug',
-    type: String,
-  })
-  @Get(':slug/opportunities')
-  @Public()
-  @ApiOperation({ summary: 'Public opportunities of an organization' })
-  getOpportunities(@Param('slug') slug: string) {
-    return this.organizations.listPublishedOpportunities(slug);
   }
 }
