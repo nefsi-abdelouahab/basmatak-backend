@@ -62,3 +62,5 @@ export const TaskParticipantSchema: Schema<TaskParticipantModel> = createSchema(
 TaskParticipantSchema.index({ applicationId: 1 }, { unique: true });
 TaskParticipantSchema.index({ volunteerId: 1, status: 1 });
 TaskParticipantSchema.index({ opportunityId: 1, positionId: 1 });
+// Session 16 org-scoped roster + aggregate reads.
+TaskParticipantSchema.index({ organizationId: 1, status: 1 });

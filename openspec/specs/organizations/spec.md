@@ -88,7 +88,7 @@ The system SHALL expose public `GET /organizations` returning organizations wher
 - **THEN** it is absent from `GET /organizations`
 
 ### Requirement: Public organization by slug
-The system SHALL expose public `GET /organizations/:slug` returning the organization profile only when `verificationStatus=verified` AND `status=active`; otherwise it SHALL return `404` in the error envelope. The public profile SHALL include the organization's neutral `registryId` and the additive fact-sheet fields `location`, `website`, `type`, `registrationNumber`, `foundedYear`, `contact`, `focusDisciplines`, `operatingScope`, `annualReportMediaId`, plus `aggregates` supplied by the `OrgPublicStatsProvider` seam (zeroed until Session 16 fills them). Organizations with `publicProfile.enabled=false` SHALL still resolve (the toggle is a neutral platform-profile preference, not a visibility gate — no 404 regression).
+The system SHALL expose public `GET /organizations/:slug` returning the organization profile only when `verificationStatus=verified` AND `status=active`; otherwise it SHALL return `404` in the error envelope. The public profile SHALL include the organization's neutral `registryId` and the additive fact-sheet fields `location`, `website`, `type`, `registrationNumber`, `foundedYear`, `contact`, `focusDisciplines`, `operatingScope`, `annualReportMediaId`, plus `aggregates` supplied by the `OrgPublicStatsProvider` seam (database-derived since Session 16 filled the real provider). Organizations with `publicProfile.enabled=false` SHALL still resolve (the toggle is a neutral platform-profile preference, not a visibility gate — no 404 regression).
 
 #### Scenario: Verified active organization readable
 - **WHEN** a guest calls `GET /organizations/:slug` for a verified, active organization
@@ -98,9 +98,9 @@ The system SHALL expose public `GET /organizations/:slug` returning the organiza
 - **WHEN** a guest calls `GET /organizations/:slug` for a `pending` or `rejected` organization (or an inactive/deleted one)
 - **THEN** the response is `404`
 
-#### Scenario: Aggregates zeroed before Session 16
-- **WHEN** a guest reads the public profile before the real stats provider ships
-- **THEN** the `aggregates` block is present with zeroed values from the inert seam default
+#### Scenario: Aggregates real after Session 16
+- **WHEN** a guest reads the public profile of an org with 2 active initiatives, 1 completed initiative, 4 engaged volunteers, 300 verified minutes, and a cached `responseRate` of `0.5`
+- **THEN** the `aggregates` block carries those database-derived values (not zeros) with `activeSince` mirroring `foundedYear`
 
 ### Requirement: Public organization opportunities
 The system SHALL expose public `GET /organizations/:slug/opportunities` returning the organization's opportunities filtered by `?status=published|completed|closed` (default `published`). The route SHALL be served by the opportunities controller (established there by Session 11, which also documents the registration order that shadows the organizations-side stub — removed here as dead code), delegating org gating and the status filter to `OrganizationsService.listOrgOpportunities`. For a non-verified or inactive organization it SHALL return `404` in the error envelope. Each row SHALL carry the card fields consumed by the public profile (`mode`, `coverMediaId`, `endDate`, `durationMinutes`) alongside the existing payload. The per-opportunity aggregates (`position.applicationCount`, assigned names) remain owned by Session 17 and SHALL NOT be joined here.
@@ -365,13 +365,28 @@ The system SHALL expose `DELETE /organizations/me` (authenticated, organization 
 - **THEN** the response is `404` in the error envelope
 
 ### Requirement: Organization public stats seam
-The system SHALL define the `OrgPublicStatsProvider` extension seam (interface + inert default in `src/common/seams/`, following the S1 seam convention): `getStats(organizationId)` SHALL return the public-aggregate shape `{ volunteers, initiativesActive, initiativesCompleted, verifiedHours, responseRate, perDomain[], activeSince }` with all numeric fields zeroed, empty `perDomain`, and `activeSince` derived from `foundedYear` when set (else `null`). The public organization payload SHALL consume this seam via Nest DI. Session 16 (`org-dashboard`) SHALL swap in the real aggregation implementation without changing the organizations module's code.
+The system SHALL bind the real `OrgPublicStatsProvider` aggregation behind the extension seam (interface in `src/common/seams/`, following the S1 seam convention; swapped via Nest DI without changing the organizations module's code): `getStats(organizationId)` SHALL return `{ volunteers, initiativesActive, initiativesCompleted, verifiedHours, responseRate, perDomain[] }` where `volunteers` = distinct `volunteerId` over the org's `task_participants` with status `accepted | active`; `initiativesActive` / `initiativesCompleted` = counts of the org's `opportunities` by status (active `published | in_progress`, completed `completed | closed`, `draft | cancelled` excluded); `verifiedHours` = lifetime sum of `volunteer_experiences.duration` for the org (no trailing-window restriction); `responseRate` = the org's cached `organizations.reliability.responseRate` (the `ReliabilityService` convention: decided over uploaded submissions), `0` when the cache is absent — no new formula is introduced; `perDomain[]` = `{ domain, share }` slices of the org's non-draft opportunities grouped by `categoryId` → skill-category name, sorted desc, at most 8). `activeSince` stays derived in `OrganizationsService` from `foundedYear` (else `null`), not by the seam.
 
-#### Scenario: Inert default zeroed
-- **WHEN** the public payload resolves aggregates through the default binding
-- **THEN** numerics are `0`, `perDomain` is empty, and `activeSince` mirrors `foundedYear` (or `null` when unset)
+#### Scenario: Real provider returns database values
+- **WHEN** the public payload resolves aggregates through the real binding
+- **THEN** every field reflects the org's rows per the formulas above and `activeSince` mirrors `foundedYear` (or `null` when unset)
 
 #### Scenario: Swap is source-compatible
 - **WHEN** Session 16 binds the real provider
 - **THEN** consumers calling `getStats(organizationId)` compile unchanged against the same interface
+
+#### Scenario: Organization without activity yields zeros
+- **WHEN** the real provider computes stats for an org with no participants, opportunities, experiences, or cached reliability
+- **THEN** numerics are `0` and `perDomain` is empty
+
+### Requirement: Organization private dashboard stats
+The system SHALL expose `GET /organizations/me/stats` (authenticated, `organization` role, caller's own org only; a caller without an organization row SHALL receive `404`) returning the private dashboard numbers: `opportunitiesActive`, `opportunitiesCompleted` (same status mapping as the public seam), `applicationsPending`, `applicationsUnderReview` (counts over the org's `applications`), `participantsActive`, `participantsCompleted` (counts over the org's `task_participants`), `verifiedHours` (same sum as the public seam), `decisionsLast30d` (count of the org's `verifications` with `decidedAt` in the trailing 30 days), `decidedRatio` and `medianDecisionHours` (the org's cached reliability snapshot values, omitted when the cache is absent). The route SHALL be read-only with no pagination (single object).
+
+#### Scenario: Owning org reads its stats
+- **WHEN** the owning org calls `GET /organizations/me/stats`
+- **THEN** the response carries the counts above matching the database, with cached reliability values included when present
+
+#### Scenario: Foreign caller isolated
+- **WHEN** a guest or a volunteer calls the route, or an organization-role caller has no organization row
+- **THEN** guests receive `401`, wrong-role callers receive `403`, and a role-valid caller without an organization row receives `404`; scoping always derives from the caller's own org so no org ever sees another org's numbers
 
