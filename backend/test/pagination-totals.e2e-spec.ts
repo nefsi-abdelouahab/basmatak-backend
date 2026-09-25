@@ -374,6 +374,13 @@ describe('pagination totals e2e (Session 7)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ location: { wilayaId: '31', municipalityId: '3101' } })
       .expect(200);
+    // Opt-out default would leak this helper volunteer into the talents
+    // counts below; keep the fixture private (decision 5 opt-out).
+    await server()
+      .patch('/api/v1/volunteers/me/public-settings')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ publicProfile: { enabled: false } })
+      .expect(200);
     void userId;
     const near = await server()
       .get('/api/v1/opportunities?nearMe=me')

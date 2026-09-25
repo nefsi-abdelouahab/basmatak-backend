@@ -287,6 +287,12 @@ describe('portfolio e2e (S14) — curated showcase CRUD, media linkage, public r
   });
 
   it('serves the public read: 404 unless enabled, then public rows only with public media', async () => {
+    // Opt-out default is on at register time; disable first to assert the gate.
+    await request(app.getHttpServer())
+      .patch('/api/v1/volunteers/me/public-settings')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ publicProfile: { enabled: false } })
+      .expect(200);
     await get(undefined, `/volunteers/${ownerUsername}/portfolio`).expect(404);
 
     const publicMedia = await upload(ownerToken, 'portfolio_item');
@@ -328,6 +334,11 @@ describe('portfolio e2e (S14) — curated showcase CRUD, media linkage, public r
   });
 
   it('does not leak portfolio data through the public profile of a disabled account', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/volunteers/me/public-settings')
+      .set('Authorization', `Bearer ${strangerToken}`)
+      .send({ publicProfile: { enabled: false } })
+      .expect(200);
     await get(undefined, `/volunteers/${strangerUsername}/portfolio`).expect(
       404,
     );
