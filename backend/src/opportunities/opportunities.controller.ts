@@ -80,9 +80,15 @@ export class OpportunitiesController {
   })
   @Get('opportunities/:idOrSlug')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Public opportunity detail by id or slug' })
-  getByIdOrSlug(@Param('idOrSlug') idOrSlug: string) {
-    return this.opportunities.getByIdOrSlug(idOrSlug);
+  getByIdOrSlug(
+    @Param('idOrSlug') idOrSlug: string,
+    @CurrentAccount() account?: AccountToken,
+  ) {
+    // Session 19: optional caller threads through for per-viewer `isFavorited`
+    // (guests unchanged).
+    return this.opportunities.getByIdOrSlug(idOrSlug, account?.sub);
   }
 
   @ApiBearerAuth()
@@ -136,14 +142,18 @@ export class OpportunitiesController {
   })
   @Get('organizations/:slug/opportunities')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: 'Public opportunities of an organization (per-status archive)',
   })
   listBySlug(
     @Param('slug') slug: string,
     @Query() query: OrgOpportunitiesQueryDto,
+    @CurrentAccount() account?: AccountToken,
   ) {
-    return this.opportunities.listByOrganizationSlug(slug, query);
+    // Session 19: optional caller threads through for per-viewer `isFavorited`
+    // (guests unchanged).
+    return this.opportunities.listByOrganizationSlug(slug, query, account?.sub);
   }
 
   @ApiBearerAuth()

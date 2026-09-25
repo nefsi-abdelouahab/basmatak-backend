@@ -25,6 +25,10 @@ import {
   TaskParticipantsCollection,
 } from '../participations/schemas/task-participant.schema';
 import {
+  VolunteerProfileModel,
+  VolunteerProfilesCollection,
+} from '../volunteers/schemas/volunteer-profile.schema';
+import {
   SubmissionListQueryDto,
   SubmitDto,
   UpdateSubmissionDto,
@@ -88,6 +92,11 @@ export class SubmissionsService {
     private readonly mediaOwnership: MediaOwnership,
     private readonly statusTransitions: StatusTransitionService,
     private readonly eventEmitter: EventEmitter2,
+    // Session 19: read-only profile ref for the volunteer join on inbox +
+    // detail reads (token resolves through the imported OpportunitiesModule's
+    // exports — same pattern as opportunityModel above; no module edit).
+    @InjectModel(VolunteerProfilesCollection)
+    private readonly profileModel: Model<VolunteerProfileModel>,
   ) {}
 
   /***************************************************************************
@@ -533,7 +542,56 @@ export class SubmissionsService {
         }
       }
     }
-    return { ...submission.toObject(), evidence };
+    return {
+      ...submission.toObject(),
+      evidence,
+      // Session 19: submitting-volunteer identity join.
+      volunteer: await this.volunteerJoin(submission.volunteerId),
+    };
+  }
+
+  /**
+   * Session 19 volunteer identity join (single + batched variants, one bounded
+   * query per page). Unknown profiles yield `null`, never an error.
+   */
+  private async volunteerJoin(
+    volunteerId: Types.ObjectId,
+  ): Promise<Record<string, unknown> | null> {
+    const map = await this.volunteerJoinMap([volunteerId]);
+    return map.get(volunteerId.toString()) ?? null;
+  }
+
+  private async volunteerJoinMap(
+    volunteerIds: Types.ObjectId[],
+  ): Promise<Map<string, Record<string, unknown>>> {
+    const distinct = [...new Set(volunteerIds.map((id) => id.toString()))];
+    if (distinct.length === 0) {
+      return new Map();
+    }
+    const profiles = await this.profileModel
+      .find({
+        userId: { $in: distinct.map((id) => new Types.ObjectId(id)) },
+      })
+      .select('userId username firstName lastName avatar geographicBase')
+      .lean()
+      .exec();
+    return new Map(
+      profiles.map((profile) => {
+        const fullName = [profile.firstName, profile.lastName]
+          .filter(Boolean)
+          .join(' ');
+        return [
+          profile.userId.toString(),
+          {
+            userId: profile.userId.toString(),
+            username: profile.username,
+            fullName: fullName ? fullName : null,
+            avatarMediaId: profile.avatar ? profile.avatar.toString() : null,
+            geographicBase: profile.geographicBase ?? null,
+          },
+        ];
+      }),
+    );
   }
 
   /***************************************************************************
@@ -543,7 +601,7 @@ export class SubmissionsService {
   async listForOrganization(
     account: AccountToken,
     query: SubmissionListQueryDto,
-  ): Promise<CursorPage<SubmissionModel>> {
+  ): Promise<CursorPage<Record<string, unknown>>> {
     const organization = await this.requireOwnOrganization(account);
     const filter: FilterQuery<SubmissionModel> = {
       organizationId: organization._id,
@@ -576,7 +634,18 @@ export class SubmissionsService {
           ? { $in: mediaIds }
           : new Types.ObjectId('000000000000000000000000');
     }
-    return this.paginateSubmissions(filter, query);
+    const page = await this.paginateSubmissions(filter, query);
+    // Session 19: volunteer identity join on every inbox row (one query).
+    const joins = await this.volunteerJoinMap(
+      page.items.map((item) => item.volunteerId),
+    );
+    return {
+      ...page,
+      items: page.items.map((item) => ({
+        ...item.toObject(),
+        volunteer: joins.get(item.volunteerId.toString()) ?? null,
+      })),
+    };
   }
 
   /**

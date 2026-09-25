@@ -1,10 +1,12 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { APPLICATION_INBOX_JOINER } from '../common/seams/application-inbox-joiner';
 import { StatusTransitionRegistry } from '../core/status-transitions/status-transition.registry';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OpportunitiesModule } from '../opportunities/opportunities.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { ParticipationsModule } from '../participations/participations.module';
+import { ApplicationInboxJoinerImpl } from './application-inbox.joiner';
 import { ApplicationsController } from './applications.controller';
 import { ApplicationsService } from './applications.service';
 import {
@@ -32,7 +34,15 @@ import {
     ]),
   ],
   controllers: [ApplicationsController],
-  providers: [ApplicationsService],
+  providers: [
+    ApplicationsService,
+    ApplicationInboxJoinerImpl,
+    // Session 19 fills the Session 5 seam: the module-scoped binding shadows
+    // CommonModule's inert default for this module's consumers (no other
+    // module consumes the token). All joined models resolve through the
+    // already-imported Organizations/Opportunities modules' exports.
+    { provide: APPLICATION_INBOX_JOINER, useClass: ApplicationInboxJoinerImpl },
+  ],
   exports: [ApplicationsService],
 })
 export class ApplicationsModule implements OnModuleInit {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, FlattenMaps, Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { DomainEvents } from '../common/constants/domain-events';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AccountToken } from '../common/interfaces/account-token.interface';
@@ -46,6 +46,7 @@ import {
   Position,
 } from './schemas/opportunity.schema';
 import { TaskParticipantsAdapter } from './task-participants.adapter';
+import { OpportunityEmbedProvider } from './opportunity-embed.provider';
 
 /** Fixed zero sentinel standing for the system actor in job runs (D8). */
 const SYSTEM_ACTOR = new Types.ObjectId('000000000000000000000000');
@@ -116,6 +117,7 @@ export class OpportunitiesService {
     private readonly adapter: TaskParticipantsAdapter,
     private readonly registryId: RegistryIdService,
     private readonly mediaOwnership: MediaOwnership,
+    private readonly embeds: OpportunityEmbedProvider,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -504,7 +506,7 @@ export class OpportunitiesService {
   async listPublic(
     query: OpportunityFeedQueryDto,
     account?: AccountToken,
-  ): Promise<CursorPage<OpportunityModel>> {
+  ): Promise<CursorPage<Record<string, unknown>>> {
     const filter: FilterQuery<OpportunityModel> = { status: 'published' };
 
     const categoryIds = toArray(query.categoryId).map((id) => {
@@ -664,16 +666,24 @@ export class OpportunitiesService {
         }
         return undefined;
       },
-    });
+    }).then(async (page) => ({
+      ...page,
+      // Session 19: card embeds (org identity, labels, favorites state).
+      items: await this.embeds.embedCards(page.items, account?.sub),
+    }));
   }
 
-  async getByIdOrSlug(idOrSlug: string): Promise<OpportunityModel> {
+  async getByIdOrSlug(
+    idOrSlug: string,
+    viewerUserId?: string,
+  ): Promise<Record<string, unknown>> {
     if (Types.ObjectId.isValid(idOrSlug)) {
       const byId = await this.opportunityModel
         .findOne({ _id: new Types.ObjectId(idOrSlug), status: 'published' })
         .exec();
       if (byId) {
-        return byId;
+        // Session 19: full detail embeds (labels, counts, assigned, favorites).
+        return (await this.embeds.embedFull([byId], viewerUserId))[0];
       }
     }
     const bySlug = await this.opportunityModel
@@ -686,7 +696,8 @@ export class OpportunitiesService {
         404,
       );
     }
-    return bySlug;
+    // Session 19: full detail embeds (labels, counts, assigned, favorites).
+    return (await this.embeds.embedFull([bySlug], viewerUserId))[0];
   }
 
   /**
@@ -699,7 +710,7 @@ export class OpportunitiesService {
   async getRecommended(
     account: AccountToken,
     query: RecommendedQueryDto,
-  ): Promise<CursorPage<OpportunityModel>> {
+  ): Promise<CursorPage<Record<string, unknown>>> {
     const limit = normalizeLimit(query.limit);
     const volunteerId = new Types.ObjectId(account.sub);
     const [profile, volunteerSkills] = await Promise.all([
@@ -759,7 +770,8 @@ export class OpportunitiesService {
         ? items[items.length - 1]._id.toString()
         : null;
     return {
-      items,
+      // Session 19: card embeds (org identity, labels, favorites state).
+      items: await this.embeds.embedCards(items, account.sub),
       nextCursor: lastId
         ? encodePageCursor({ id: lastId, page: page + 1, sort: 'recommended' })
         : null,
@@ -791,7 +803,7 @@ export class OpportunitiesService {
   async listOwn(
     account: AccountToken,
     query: OwnOpportunityQueryDto,
-  ): Promise<CursorPage<OpportunityModel>> {
+  ): Promise<CursorPage<Record<string, unknown>>> {
     const organization = await this.resolveOwnOrganization(account);
     const filter: FilterQuery<OpportunityModel> = {
       organizationId: organization._id,
@@ -815,7 +827,7 @@ export class OpportunitiesService {
     const sortToken = query.sort ?? 'newest';
     const sort: Record<string, 1 | -1> =
       sortToken === 'oldest' ? { _id: 1 } : { _id: -1 };
-    return execPage(this.opportunityModel, filter, {
+    const page = await execPage(this.opportunityModel, filter, {
       limit: query.limit,
       cursor: query.cursor,
       sort,
@@ -830,6 +842,8 @@ export class OpportunitiesService {
           : { _id: { $lt: id } };
       },
     });
+    // Session 19: org own rows carry counts + assigned names (Q1) + labels.
+    return { ...page, items: await this.embeds.embedFull(page.items) };
   }
 
   /**
@@ -839,9 +853,11 @@ export class OpportunitiesService {
   async getOwnById(
     account: AccountToken,
     id: string,
-  ): Promise<OpportunityModel> {
+  ): Promise<Record<string, unknown>> {
     const organization = await this.resolveOwnOrganization(account);
-    return this.requireOwned(organization, id);
+    const owned = await this.requireOwned(organization, id);
+    // Session 19: full embeds on the org single read.
+    return (await this.embeds.embedFull([owned]))[0];
   }
 
   /**
@@ -901,8 +917,15 @@ export class OpportunitiesService {
   async listByOrganizationSlug(
     slug: string,
     query?: OrgOpportunitiesQueryDto,
-  ): Promise<Array<FlattenMaps<OpportunityModel>>> {
-    return this.organizations.listOrgOpportunities(slug, query);
+    viewerUserId?: string,
+  ): Promise<Array<Record<string, unknown>>> {
+    const rows = await this.organizations.listOrgOpportunities(slug, query);
+    // Session 19: slug-archive rows carry labels, counts, assigned names and
+    // favorites state (enriched here so organizations.service stays untouched).
+    return this.embeds.embedFull(
+      rows as unknown as OpportunityModel[],
+      viewerUserId,
+    );
   }
 
   /***************************************************************************

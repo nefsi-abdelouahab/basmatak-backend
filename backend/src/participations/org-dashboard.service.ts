@@ -9,6 +9,7 @@ import { AccountToken } from '../common/interfaces/account-token.interface';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import { execPage } from '../common/pagination/pagination.util';
+import { OpportunityEmbedProvider } from '../opportunities/opportunity-embed.provider';
 import {
   OpportunitiesCollection,
   OpportunityModel,
@@ -82,6 +83,8 @@ export class OrgDashboardService {
     @InjectModel(OrganizationsCollection)
     private readonly organizationModel: Model<OrganizationModel>,
     private readonly organizations: OrganizationsService,
+    // Session 19: location-label helper for roster opportunity embeds.
+    private readonly embeds: OpportunityEmbedProvider,
   ) {}
 
   private async requireOwnOrganization(
@@ -290,6 +293,15 @@ export class OrgDashboardService {
         (hoursByKey.get(key) ?? 0) + (experience.duration ?? 0),
       );
     }
+    // Session 19: opportunity location labels for the roster (one query).
+    const locationLabels = await this.embeds.resolveLocationLabels(
+      opportunities
+        .flatMap((opportunity) => [
+          opportunity.location?.wilayaId,
+          opportunity.location?.municipalityId,
+        ])
+        .filter((code): code is string => Boolean(code)),
+    );
     return items.map((item) => {
       const profile = profileByUser.get(item.volunteerId.toString()) ?? null;
       const opportunity =
@@ -302,6 +314,8 @@ export class OrgDashboardService {
         ) ?? null;
       const submission =
         submissionByParticipant.get(item._id.toString()) ?? null;
+      const wilayaCode = opportunity?.location?.wilayaId ?? null;
+      const municipalityCode = opportunity?.location?.municipalityId ?? null;
       return {
         _id: item._id,
         status: item.status,
@@ -318,6 +332,8 @@ export class OrgDashboardService {
           ? {
               id: (position as { _id: Types.ObjectId })._id,
               title: position.title,
+              // Session 19: deliverables on the roster position embed.
+              deliverables: [...(position.deliverables ?? [])],
             }
           : null,
         opportunity: opportunity
@@ -326,6 +342,17 @@ export class OrgDashboardService {
               title: opportunity.title,
               slug: opportunity.slug,
               status: opportunity.status,
+              // Session 19: location labels on the roster opportunity embed.
+              locationLabels: {
+                wilaya:
+                  wilayaCode != null
+                    ? (locationLabels.get(wilayaCode) ?? null)
+                    : null,
+                municipality:
+                  municipalityCode != null
+                    ? (locationLabels.get(municipalityCode) ?? null)
+                    : null,
+              },
             }
           : null,
         submission: submission

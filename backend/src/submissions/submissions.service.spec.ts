@@ -33,6 +33,11 @@ import {
 } from '../core/status-transitions/status-histories.schema';
 import { MediaOwnership } from '../common/seams/media-ownership';
 import { MediaService } from '../media/media.service';
+import {
+  VolunteerProfileModel,
+  VolunteerProfilesCollection,
+  VolunteerProfileSchema,
+} from '../volunteers/schemas/volunteer-profile.schema';
 import { DomainEvents } from '../common/constants/domain-events';
 import {
   startMemoryConnection,
@@ -224,6 +229,11 @@ describe('SubmissionsService (S10 Part A)', () => {
         emit: (name: string, payload: unknown) =>
           emitted.push({ name, payload }),
       } as never,
+      // Session 19: real profile model for the volunteer join.
+      handle.connection.model<VolunteerProfileModel>(
+        VolunteerProfilesCollection,
+        VolunteerProfileSchema,
+      ),
     );
 
     await seedOrganization();

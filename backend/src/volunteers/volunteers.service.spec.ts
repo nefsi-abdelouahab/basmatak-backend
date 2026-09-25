@@ -162,6 +162,9 @@ describe('VolunteersService', () => {
       verificationModel,
       ownership,
       new PortfolioQueryService(profileModel, portfolioModel, mediaModel),
+      // Session 19: stubbed favorites store (zero-state lookups keep legacy
+      // assertions stable).
+      { lookup: async () => ({}) } as never,
     );
 
     activeSkillId = new Types.ObjectId();
