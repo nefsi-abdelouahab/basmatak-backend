@@ -547,21 +547,21 @@ describe('reconciliation gate e2e (Session 21, verification-only)', () => {
       expect(detail.body.message).toBe('Recon gate cover note');
     });
 
-    it('owning org direct read of private evidence (spec-required; F1 gate flag)', async () => {
+    it('owning org direct read of private evidence (backend-v2-media-org-read)', async () => {
       // Archived backend-v2-media-access spec, scenario "Org reads evidence
-      // on its opportunity": the organization owning the opportunity SHALL
-      // read visibility=private submission_evidence attached to a submission
-      // on that opportunity (signed URL, 200). The OpportunityMediaAccess
-      // seam (backend/src/media/media-access.ts) is still the inert deny and
-      // no override exists, so this currently returns 403. Session 21 is
-      // verification-only: flagged here, not amended.
+      // on its opportunity": the organization owning the opportunity reads
+      // visibility=private submission_evidence on its submissions (signed
+      // URL, 200). Wired by backend-v2-media-org-read (was F1 gate flag).
       await request(server())
         .get(`${MEDIA}/${evidenceId}`)
         .set('Authorization', `Bearer ${orgToken}`)
-        .expect(200);
+        .expect(200)
+        .expect((response) => {
+          expect(response.body.url).toContain('read');
+        });
     });
 
-    it('media matrix: guest-public read, stranger/guest denial, org metadata fallback', async () => {
+    it('media matrix: guest-public read, org signed-URL read, stranger/guest denial', async () => {
       const cover = await request(server())
         .post(MEDIA_UPLOADS)
         .set('Authorization', `Bearer ${orgToken}`)
@@ -609,13 +609,13 @@ describe('reconciliation gate e2e (Session 21, verification-only)', () => {
         })
         .expect(400);
 
-      // Actual behavior today (F1): direct org read is denied; the metadata
-      // fallback below is the delivered path.
+      // Owning org reads its evidence directly (signed URL).
       const ownerRead = await request(server())
         .get(`${MEDIA}/${evidenceId}`)
         .set('Authorization', `Bearer ${orgToken}`)
-        .expect(403);
+        .expect(200);
       rec(ownerRead.body);
+      expect(ownerRead.body.url).toContain('read');
 
       await request(server())
         .get(`${MEDIA}/${evidenceId}`)
@@ -624,9 +624,8 @@ describe('reconciliation gate e2e (Session 21, verification-only)', () => {
 
       await request(server()).get(`${MEDIA}/${evidenceId}`).expect(404);
 
-      // Delivered fallback path (submissions.service withEvidence): the
-      // owning org sees the evidence metadata on the submission detail
-      // without a signed URL.
+      // Submission detail surfaces the evidence with a signed URL for the
+      // owning org (strangers still get metadata-only via the 403 fallback).
       const detail = await request(server())
         .get(`${SUBMISSIONS}/${submissionId}`)
         .set('Authorization', `Bearer ${orgToken}`)
@@ -636,7 +635,7 @@ describe('reconciliation gate e2e (Session 21, verification-only)', () => {
         (row) => String(row.mediaId) === evidenceId,
       );
       expect(entry).toBeDefined();
-      expect(entry.url).toBeNull();
+      expect(entry.url).toContain('read');
     });
 
     it('guest apply is 401 and creates no application (frontend redirect contract)', async () => {

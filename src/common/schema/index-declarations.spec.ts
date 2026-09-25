@@ -51,6 +51,12 @@ describe('schema index declarations (S19)', () => {
     ).toBe(true);
   });
 
+  it('submissions declares the evidence.mediaId reverse-lookup index (media org-read)', () => {
+    expect(
+      has(declaredIndexes(SubmissionSchema), { 'evidence.mediaId': 1 }),
+    ).toBe(true);
+  });
+
   it('sessions declare the rotatedAt tombstone column', () => {
     expect(SessionSchema.path('rotatedAt')).toBeDefined();
   });
