@@ -7,6 +7,7 @@ import {
   PublishGateEvaluation,
   PublishGateService,
 } from '../common/seams/publish-gate.service';
+import { BusinessException } from '../common/exceptions/business.exception';
 import { DomainEvents } from '../common/constants/domain-events';
 import { SettingsService } from '../core/settings/settings.service';
 import {
@@ -132,6 +133,21 @@ export class TrustPublishGateService extends PublishGateService {
   override async evaluate(organization: {
     id: string;
   }): Promise<PublishGateEvaluation> {
+    // S4-disjointness: the ops publishing kill-switch is enforced here (not
+    // in `OpportunitiesService`, owned by parallel session
+    // `backend-v2-opportunity-fields`) by throwing, so the publish path
+    // surfaces 403 PUBLISHING_DISABLED without a same-file edit there.
+    const publishingEnabled = await this.settings.get<boolean>(
+      'ops.publishingEnabled',
+      true,
+    );
+    if (publishingEnabled === false) {
+      throw new BusinessException(
+        'PUBLISHING_DISABLED',
+        'Publishing is temporarily disabled',
+        403,
+      );
+    }
     if (!Types.ObjectId.isValid(organization.id)) {
       return { locked: false };
     }

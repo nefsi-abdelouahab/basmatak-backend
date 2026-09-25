@@ -12,6 +12,7 @@ import {
   RegistrationUser,
 } from '../common/seams/registration-extras.service';
 import { InjectMail, MailService } from '../mail/mail.interface';
+import { SettingsService } from '../core/settings/settings.service';
 import { UserModel } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
 import { SessionModel, SessionsCollection } from './schemas/session.schema';
@@ -84,6 +85,7 @@ export class AuthService {
     private readonly mail: MailService,
     @Inject(REGISTRATION_EXTRAS_SERVICE)
     private readonly registrationExtras: RegistrationExtrasService,
+    private readonly settings: SettingsService,
   ) {}
 
   async register(
@@ -91,6 +93,17 @@ export class AuthService {
     dto: RegisterUserDto,
     userAgent?: string,
   ): Promise<AuthTokens> {
+    const registrationEnabled = await this.settings.get<boolean>(
+      'ops.registrationEnabled',
+      true,
+    );
+    if (registrationEnabled === false) {
+      throw new BusinessException(
+        'REGISTRATION_DISABLED',
+        'Registration is temporarily disabled',
+        403,
+      );
+    }
     const existing = await this.users.findByEmail(dto.email);
     if (existing) {
       throw new BusinessException(
@@ -453,10 +466,19 @@ export class AuthService {
     meta: SessionMetadata = {},
   ): Promise<AuthTokens> {
     const refreshToken = this.tokenUtil.generateToken();
-    const refreshTtlMs = this.tokenUtil.parseDuration(
+    let refreshTtlMs = this.tokenUtil.parseDuration(
       this.config.get<string>('JWT_REFRESH_TTL'),
       30 * 24 * 60 * 60 * 1000,
     );
+    if (user.role === 'admin') {
+      const days = await this.settings.get<number>(
+        'auth.adminSessionDurationDays',
+        30,
+      );
+      if (typeof days === 'number' && Number.isInteger(days) && days >= 1) {
+        refreshTtlMs = days * 24 * 60 * 60 * 1000;
+      }
+    }
     const now = new Date();
     const parsed: ParsedUserAgent | null = meta.rawUserAgent
       ? parseUserAgent(meta.rawUserAgent)

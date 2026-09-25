@@ -197,6 +197,17 @@ describe('TrustPublishGateService', () => {
       expect(result.locked).toBe(false);
       expect(emitted).toHaveLength(0);
     });
+
+    it('throws 403 PUBLISHING_DISABLED when the ops kill-switch is off', async () => {
+      (settings.get as jest.Mock).mockResolvedValueOnce(false);
+      await expect(
+        service.evaluate({ id: organizationId.toString() }),
+      ).rejects.toMatchObject({
+        status: 403,
+        code: 'PUBLISHING_DISABLED',
+      });
+      expect(emitted).toHaveLength(0);
+    });
   });
 
   describe('4 status read', () => {

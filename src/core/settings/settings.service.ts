@@ -5,6 +5,7 @@ import {
   SystemSettingModel,
   SystemSettingsCollection,
 } from './system-setting.schema';
+import { SETTING_DEFAULTS } from './setting-keys';
 
 const CACHE_TTL_MS = 30_000;
 
@@ -15,8 +16,8 @@ interface CacheEntry<T = unknown> {
 
 /**
  * Reads/writes `system_settings` with a per-key in-memory cache (30s TTL).
- * The admin settings controller ships in Session 16; this session exposes the
- * service only. Keys are created lazily via upsert.
+ * Canonical defaults live in `setting-keys.ts`; the admin module owns the
+ * write whitelist. Keys are created lazily via upsert.
  */
 @Injectable()
 export class SettingsService {
@@ -47,8 +48,17 @@ export class SettingsService {
     this.cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
   }
 
-  /** Bumps `publishGate.maxPendingOpportunities` default into settings (S6+ reads it). */
+  /**
+   * Seeds every canonical default into settings (S6+ reads the gate
+   * threshold; settings-expansion owns the full set). Absent-only: stored
+   * values are never overwritten, so admin edits survive restarts.
+   */
   async ensureDefaults(): Promise<void> {
-    await this.set('publishGate.maxPendingOpportunities', 3);
+    for (const [key, value] of Object.entries(SETTING_DEFAULTS)) {
+      const existing = await this.settingModel.findOne({ key }).lean().exec();
+      if (!existing) {
+        await this.set(key, value);
+      }
+    }
   }
 }

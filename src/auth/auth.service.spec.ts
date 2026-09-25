@@ -27,6 +27,12 @@ import {
   stopMemoryConnection,
   MemoryConnectionHandle,
 } from '../../test/utils/memory-connection';
+import { SettingsService } from '../core/settings/settings.service';
+import {
+  SystemSettingModel,
+  SystemSettingSchema,
+  SystemSettingsCollection,
+} from '../core/settings/system-setting.schema';
 
 class FakeMail implements MailService {
   sent: Array<{ to: string; kind: 'verify' | 'reset'; token: string }> = [];
@@ -51,6 +57,7 @@ describe('AuthService', () => {
   let sessionModel: Model<SessionModel>;
   let tokenModel: Model<VerificationTokenModel>;
   let mail: FakeMail;
+  let settings: SettingsService;
 
   const email = 'volunteer@example.com';
   const password = 'Password123!';
@@ -65,6 +72,11 @@ describe('AuthService', () => {
     userModel = handle.connection.model(UsersCollection, UserSchema);
     const users = new UsersService(userModel);
     mail = new FakeMail();
+    const settingModel = handle.connection.model<SystemSettingModel>(
+      SystemSettingsCollection,
+      SystemSettingSchema,
+    );
+    settings = new SettingsService(settingModel);
     service = new AuthService(
       new ConfigService({ JWT_REFRESH_TTL: '30d' }),
       new JwtService({
@@ -77,6 +89,7 @@ describe('AuthService', () => {
       tokenModel,
       mail,
       new InertRegistrationExtrasService(),
+      settings,
     );
   });
 
@@ -92,6 +105,10 @@ describe('AuthService', () => {
     await handle.connection
       .collection(VerificationTokensCollection)
       .deleteMany({});
+    await handle.connection.collection(SystemSettingsCollection).deleteMany({});
+    // Reset the settings cache so kill-switch writes never leak across tests.
+    await settings.set('ops.registrationEnabled', true);
+    await handle.connection.collection(SystemSettingsCollection).deleteMany({});
     mail.sent.length = 0;
   });
 
@@ -112,6 +129,53 @@ describe('AuthService', () => {
       status: 409,
       code: 'EMAIL_ALREADY_REGISTERED',
     });
+  });
+
+  it('rejects registration with 403 when the kill-switch is off', async () => {
+    await settings.set('ops.registrationEnabled', false);
+    await expect(registerVolunteer()).rejects.toMatchObject({
+      status: 403,
+      code: 'REGISTRATION_DISABLED',
+    });
+    expect(await userModel.countDocuments({}).exec()).toBe(0);
+  });
+
+  it('registers normally when the kill-switch is unset or on', async () => {
+    await registerVolunteer();
+    await settings.set('ops.registrationEnabled', true);
+    await service.register('volunteer', {
+      email: 'second@example.com',
+      password,
+    });
+    expect(await userModel.countDocuments({}).exec()).toBe(2);
+  });
+
+  it('honors auth.adminSessionDurationDays for admin sessions only', async () => {
+    await settings.set('auth.adminSessionDurationDays', 7);
+    const before = Date.now();
+    await service.register('admin', { email: 'admin@example.com', password });
+    await registerVolunteer();
+    const adminSession = await sessionModel
+      .findOne({
+        userId: (await userModel
+          .findOne({ email: 'admin@example.com' })
+          .exec())!._id,
+      })
+      .exec();
+    const volunteerSession = await sessionModel
+      .findOne({ userId: (await userModel.findOne({ email }).exec())!._id })
+      .exec();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    expect(adminSession!.expiresAt.getTime() - before).toBeGreaterThanOrEqual(
+      sevenDays - 60_000,
+    );
+    expect(adminSession!.expiresAt.getTime() - before).toBeLessThanOrEqual(
+      sevenDays + 60_000,
+    );
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    expect(
+      volunteerSession!.expiresAt.getTime() - before,
+    ).toBeGreaterThanOrEqual(thirtyDays - 60_000);
   });
 
   it('login compares the bcrypt hash and rejects wrong passwords', async () => {

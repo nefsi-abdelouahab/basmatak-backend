@@ -5,6 +5,7 @@ import { EmailVerifiedGuard } from './email-verified.guard';
 import { IS_PUBLIC_KEY } from '../../common/decorators/auth.decorators';
 import { AccountToken } from '../../common/interfaces/account-token.interface';
 import { UsersService } from '../../users/users.service';
+import { SettingsService } from '../../core/settings/settings.service';
 
 function makeContext(user: AccountToken | undefined): ExecutionContext {
   return {
@@ -18,6 +19,12 @@ function makeContext(user: AccountToken | undefined): ExecutionContext {
 function handler(): void {}
 
 describe('EmailVerifiedGuard', () => {
+  function makeSettings(flag: boolean): SettingsService {
+    return {
+      get: async () => flag,
+    } as unknown as SettingsService;
+  }
+
   function makeUsers(
     status: 'verified' | 'unverified' | 'missing',
   ): UsersService {
@@ -40,6 +47,7 @@ describe('EmailVerifiedGuard', () => {
       new ConfigService({ EMAIL_VERIFICATION_REQUIRED: 'true' }),
       new Reflector(),
       makeUsers('unverified'),
+      makeSettings(true),
     );
     await expect(
       guard.canActivate(
@@ -53,6 +61,7 @@ describe('EmailVerifiedGuard', () => {
       new ConfigService({ EMAIL_VERIFICATION_REQUIRED: 'true' }),
       new Reflector(),
       makeUsers('verified'),
+      makeSettings(true),
     );
     await expect(
       guard.canActivate(
@@ -66,6 +75,7 @@ describe('EmailVerifiedGuard', () => {
       new ConfigService({ EMAIL_VERIFICATION_REQUIRED: 'false' }),
       new Reflector(),
       makeUsers('unverified'),
+      makeSettings(true),
     );
     await expect(
       guard.canActivate(
@@ -80,6 +90,22 @@ describe('EmailVerifiedGuard', () => {
       new ConfigService({ EMAIL_VERIFICATION_REQUIRED: 'true' }),
       new Reflector(),
       makeUsers('unverified'),
+      makeSettings(true),
+    );
+    await expect(
+      guard.canActivate(
+        makeContext({ sub: 'u1', role: 'volunteer', sessionId: 's1' }),
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it('relaxes the gate at runtime when moderation.requireVerifiedEmail is false', async () => {
+    Reflect.defineMetadata(IS_PUBLIC_KEY, false, handler);
+    const guard = new EmailVerifiedGuard(
+      new ConfigService({ EMAIL_VERIFICATION_REQUIRED: 'true' }),
+      new Reflector(),
+      makeUsers('unverified'),
+      makeSettings(false),
     );
     await expect(
       guard.canActivate(

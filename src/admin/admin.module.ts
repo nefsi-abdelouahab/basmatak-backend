@@ -81,6 +81,7 @@ import { AdminReviewsController } from './reviews.controller';
 import { AdminReviewsService } from './reviews.service';
 import { AdminSettingsController } from './settings.controller';
 import { AdminSettingsService } from './settings.service';
+import { AdminOpsController } from './ops.controller';
 import { AdminStatsController } from './stats.controller';
 import { AdminStatsService } from './stats.service';
 import { AdminUsersController } from './users.controller';
@@ -135,6 +136,7 @@ import { AdminVolunteersService } from './volunteers.service';
     AdminAuditController,
     AdminStatusHistoriesController,
     AdminSettingsController,
+    AdminOpsController,
   ],
   providers: [
     AdminAnalyticsService,

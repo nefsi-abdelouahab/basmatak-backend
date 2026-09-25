@@ -30,6 +30,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 import { SuspendedGuard } from './common/guards/suspended.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { MaintenanceGuard } from './core/maintenance/maintenance.guard';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { EmailVerifiedGuard } from './auth/guards/email-verified.guard';
 
@@ -94,6 +95,7 @@ const DEFAULT_MONGO_URI = 'mongodb://127.0.0.1:27017/basmatak';
     { provide: APP_GUARD, useClass: SuspendedGuard },
     { provide: APP_GUARD, useClass: EmailVerifiedGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: MaintenanceGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

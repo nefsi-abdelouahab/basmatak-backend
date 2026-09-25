@@ -7,12 +7,14 @@ import {
   SystemSettingsCollection,
 } from '../core/settings/system-setting.schema';
 import { SettingsService } from '../core/settings/settings.service';
+import {
+  KNOWN_SETTING_KEYS,
+  KnownSettingKey,
+  SETTING_VALIDATORS,
+} from '../core/settings/setting-keys';
 
-export const KNOWN_SETTING_KEYS = [
-  'publishGate.maxPendingOpportunities',
-] as const;
-
-export type KnownSettingKey = (typeof KNOWN_SETTING_KEYS)[number];
+export { KNOWN_SETTING_KEYS };
+export type { KnownSettingKey };
 
 /**
  * Admin settings surface (inventory §2.20, roadmap S16; the Session 1 deferral).
@@ -40,10 +42,11 @@ export class AdminSettingsService {
         400,
       );
     }
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
+    const validator = SETTING_VALIDATORS[key as KnownSettingKey];
+    if (!validator(value)) {
       throw new BusinessException(
         'INVALID_SETTING_VALUE',
-        `Setting '${key}' must be a finite number`,
+        `Setting '${key}' has an invalid value shape`,
         400,
       );
     }

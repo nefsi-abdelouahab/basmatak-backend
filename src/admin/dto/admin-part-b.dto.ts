@@ -1,9 +1,10 @@
 import {
+  IsBoolean,
   IsDateString,
+  IsDefined,
   IsIn,
   IsMongoId,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -238,12 +239,27 @@ export class AuditLogsQueryDto {
 }
 export class SettingsValueDto {
   @ApiProperty({
-    description: 'Numeric value stored under the setting key',
+    description:
+      'Value stored under the setting key (shape validated per key by the settings service)',
     example: 3,
-    type: 'number',
   })
-  @IsNumber({ allowInfinity: false })
-  value!: number;
+  @IsDefined()
+  value!: unknown;
+}
+
+export class MaintenanceToggleDto {
+  @ApiProperty({ description: 'Switch maintenance mode on or off' })
+  @IsBoolean()
+  enabled!: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Neutral message shown on 503s and system status',
+    maxLength: 500,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  message?: string;
 }
 
 /** Read one entity's status history (both params required). */
