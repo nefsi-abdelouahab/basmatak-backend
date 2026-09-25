@@ -1,9 +1,19 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import {
+  ApplicationsCollection,
+  ApplicationSchema,
+} from '../applications/schemas/application.schema';
 import { StatusTransitionRegistry } from '../core/status-transitions/status-transition.registry';
 import { OpportunitiesModule } from '../opportunities/opportunities.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
+import {
+  SubmissionsCollection,
+  SubmissionSchema,
+} from '../submissions/schemas/submission.schema';
 import { VolunteersModule } from '../volunteers/volunteers.module';
+import { OrgDashboardController } from './org-dashboard.controller';
+import { OrgDashboardService } from './org-dashboard.service';
 import { ParticipationsController } from './participations.controller';
 import { ParticipationsService } from './participations.service';
 import {
@@ -24,10 +34,14 @@ import {
     VolunteersModule,
     MongooseModule.forFeature([
       { name: TaskParticipantsCollection, schema: TaskParticipantSchema },
+      // Session 16 reads (no writes): application counts for the private
+      // stats object and submission joins for the cross-opportunity roster.
+      { name: ApplicationsCollection, schema: ApplicationSchema },
+      { name: SubmissionsCollection, schema: SubmissionSchema },
     ]),
   ],
-  controllers: [ParticipationsController],
-  providers: [ParticipationsService],
+  controllers: [ParticipationsController, OrgDashboardController],
+  providers: [ParticipationsService, OrgDashboardService],
   exports: [MongooseModule],
 })
 export class ParticipationsModule implements OnModuleInit {

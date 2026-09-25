@@ -9,10 +9,8 @@ import {
   ApplicationsCollection,
   ApplicationSchema,
 } from '../applications/schemas/application.schema';
-import {
-  InertOrgFootprintProvider,
-  ORG_FOOTPRINT_PROVIDER,
-} from '../common/seams/org-footprint';
+import { ORG_FOOTPRINT_PROVIDER } from '../common/seams/org-footprint';
+import { OrgFootprintProviderImpl } from '../participations/org-footprint.provider';
 import { ADMIN_EXPERIENCE_DISPLAY } from '../common/seams/admin-experience-display';
 import { ExperienceAdminDisplayProvider } from '../verifications/admin-experience-display.provider';
 import {
@@ -149,7 +147,7 @@ import { AdminVolunteersService } from './volunteers.service';
   ],
   providers: [
     AdminAnalyticsService,
-    { provide: ORG_FOOTPRINT_PROVIDER, useClass: InertOrgFootprintProvider },
+    { provide: ORG_FOOTPRINT_PROVIDER, useClass: OrgFootprintProviderImpl },
     {
       provide: ADMIN_EXPERIENCE_DISPLAY,
       useClass: ExperienceAdminDisplayProvider,

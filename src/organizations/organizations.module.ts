@@ -4,10 +4,8 @@ import {
   SessionsCollection,
   SessionSchema,
 } from '../auth/schemas/session.schema';
-import {
-  ORG_PUBLIC_STATS_PROVIDER,
-  InertOrgPublicStatsProvider,
-} from '../common/seams/org-public-stats';
+import { ORG_PUBLIC_STATS_PROVIDER } from '../common/seams/org-public-stats';
+import { OrgPublicStatsProviderImpl } from '../participations/org-public-stats.provider';
 import {
   StatusHistoryCollection,
   StatusHistorySchema,
@@ -31,6 +29,14 @@ import {
   OrganizationsCollection,
   OrganizationSchema,
 } from './schemas/organization.schema';
+import {
+  TaskParticipantSchema,
+  TaskParticipantsCollection,
+} from '../participations/schemas/task-participant.schema';
+import {
+  VolunteerExperienceSchema,
+  VolunteerExperiencesCollection,
+} from '../verifications/schemas/volunteer-experience.schema';
 import {
   OrganizationVerificationsCollection,
   OrganizationVerificationSchema,
@@ -68,6 +74,14 @@ import {
       { name: UsersCollection, schema: UserSchema },
       { name: StatusHistoryCollection, schema: StatusHistorySchema },
       { name: SkillCategoriesCollection, schema: SkillCategorySchema },
+      // Session 16 fills the `OrgPublicStatsProvider` seam: the real
+      // provider reads participant + experience rows, so its models are
+      // registered here (Session 15 precedent in the admin module).
+      { name: TaskParticipantsCollection, schema: TaskParticipantSchema },
+      {
+        name: VolunteerExperiencesCollection,
+        schema: VolunteerExperienceSchema,
+      },
     ]),
   ],
   controllers: [OrganizationsController],
@@ -76,7 +90,7 @@ import {
     OrganizationRegistrationExtrasService,
     {
       provide: ORG_PUBLIC_STATS_PROVIDER,
-      useClass: InertOrgPublicStatsProvider,
+      useClass: OrgPublicStatsProviderImpl,
     },
   ],
   exports: [MongooseModule, OrganizationsService],
