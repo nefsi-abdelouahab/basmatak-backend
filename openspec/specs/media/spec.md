@@ -72,31 +72,28 @@ The system SHALL expose `POST /media/links` (authenticated) accepting `{ url, pu
 - **THEN** the request fails with `400`
 
 ### Requirement: Read media
-The system SHALL expose `GET /media/:mediaId` (authenticated) returning the media metadata and, for `type=file`, a signed URL. Unauthenticated callers SHALL receive `404` (media is not discoverable by guests). `visibility=public` media SHALL be readable by any authenticated actor. `visibility=private` media SHALL be readable only by the owner, an admin, or the organization that owns the opportunity the media is attached to (per the §6 matrix); anyone else SHALL receive `403`. Deleted media SHALL NOT be returned.
 
-#### Scenario: Public media readable by any authenticated user
-- **WHEN** an authenticated actor reads public media
-- **THEN** the metadata and a signed URL are returned
+The system SHALL expose `GET /media/:mediaId` returning the media metadata and, for `type=file`, a signed URL, gated by the read matrix in `MediaAccessService.canRead` (§6). Guests SHALL read `visibility=public` media (no authentication required); any other read of private media SHALL be denied for guests (response `404`). An authenticated actor SHALL read `visibility=public` media. An admin SHALL read any media. The owner SHALL read their own media. The organization owning the opportunity SHALL read `visibility=private` `submission_evidence` attached to a submission on that opportunity via the real `OrganizationOpportunityMediaAccess` branch (submission resolved via the media's `submissionId`, else via the indexed `submissions.evidence.mediaId` reverse lookup; match on `submission.organizationId` → `organizations.userId`). Deleted media SHALL NOT be returned.
 
-#### Scenario: Guest gets 404
-- **WHEN** an unauthenticated caller reads any media
-- **THEN** the response is `404`
+#### Scenario: Org reads evidence on its opportunity
 
-#### Scenario: Private media owner read
-- **WHEN** the owner reads their own private media
-- **THEN** a signed URL is returned
+- **WHEN** an organization reads `visibility=private` `submission_evidence` attached to a submission on one of its own opportunities
+- **THEN** a signed URL is returned (status `200`)
 
-#### Scenario: Private media stranger blocked
-- **WHEN** an authenticated stranger (not owner, not admin, not the owning org) reads private media
+#### Scenario: Org reads evidence via reverse lookup (no submissionId on the media)
+
+- **WHEN** the evidence media carries no `submissionId` but is referenced by `submissions.evidence.mediaId` on the org's opportunity submission
+- **THEN** a signed URL is returned (status `200`)
+
+#### Scenario: Foreign org still denied
+
+- **WHEN** an organization reads `visibility=private` `submission_evidence` attached to a submission on another organization's opportunity
 - **THEN** the response is `403`
 
-#### Scenario: Owning organization read
-- **WHEN** the organization that owns the opportunity the media is attached to reads private media
-- **THEN** a signed URL is returned
+#### Scenario: Non-organization callers unaffected
 
-#### Scenario: Deleted media hidden
-- **WHEN** an authorized caller reads soft-deleted media
-- **THEN** the response is `404`
+- **WHEN** a volunteer (non-owner), a guest, or any actor reads private evidence outside the owner/admin/org branches
+- **THEN** the existing matrix applies (`403` authenticated stranger, `404` guest)
 
 ### Requirement: Delete media
 

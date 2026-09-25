@@ -95,8 +95,10 @@ export const SubmissionSchema: Schema<SubmissionModel> = createSchema({
 // filters `(opportunityId, status)`; the volunteer's own list filters
 // `(volunteerId, status)`; the `(organizationId, status)` gate-aggregation
 // index serves the publish-gate pending distinct and reliability's org-scoped
-// reads (S19 index review).
+// reads (S19 index review); `evidence.mediaId` serves the media org-read
+// reverse lookup (backend-v2-media-org-read).
 SubmissionSchema.index({ participantId: 1 }, { unique: true });
 SubmissionSchema.index({ opportunityId: 1, status: 1 });
 SubmissionSchema.index({ volunteerId: 1, status: 1 });
 SubmissionSchema.index({ organizationId: 1, status: 1 });
+SubmissionSchema.index({ 'evidence.mediaId': 1 });

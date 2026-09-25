@@ -3,11 +3,11 @@ import { AccountToken } from '../common/interfaces/account-token.interface';
 import { MediaModel } from './schemas/media.schema';
 
 /**
- * Inert seam for the §6 "organization that owns the opportunity" read branch:
- * private evidence media is readable by the org whose opportunity the media's
- * submission belongs to. Resolving submission → opportunity → organization
- * needs the submissions model (S10), so this default denies — behaviorally a
- * no-op while no submission evidence rows exist. S10 wires the real lookup.
+ * Organization read branch for §6 private evidence media: the owning
+ * organization (opportunity owner) may read private `submission_evidence`
+ * attached to submissions on its own opportunities. Bound app-wide to
+ * `OrganizationOpportunityMediaAccess` (backend-v2-media-org-read); this base
+ * class remains the inert default, importable for unit tests.
  */
 @Injectable()
 export class OpportunityMediaAccess {
