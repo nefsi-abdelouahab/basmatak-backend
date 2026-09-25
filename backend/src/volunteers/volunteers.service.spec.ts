@@ -59,6 +59,11 @@ import {
   VolunteerExperienceSchema,
 } from '../verifications/schemas/volunteer-experience.schema';
 import {
+  VerificationModel,
+  VerificationsCollection,
+  VerificationSchema,
+} from '../verifications/schemas/verification.schema';
+import {
   startMemoryConnection,
   stopMemoryConnection,
   MemoryConnectionHandle,
@@ -79,6 +84,7 @@ describe('VolunteersService', () => {
   let mediaModel: Model<MediaModel>;
   let portfolioModel: Model<PortfolioItemModel>;
   let experienceModel: Model<VolunteerExperienceModel>;
+  let verificationModel: Model<VerificationModel>;
   let ownership: MediaOwnership;
 
   let volunteerId: string;
@@ -124,6 +130,10 @@ describe('VolunteersService', () => {
       VolunteerExperiencesCollection,
       VolunteerExperienceSchema,
     );
+    verificationModel = handle.connection.model<VerificationModel>(
+      VerificationsCollection,
+      VerificationSchema,
+    );
     portfolioModel = handle.connection.model<PortfolioItemModel>(
       PortfolioItemsCollection,
       PortfolioItemSchema,
@@ -149,6 +159,7 @@ describe('VolunteersService', () => {
       mediaModel,
       experienceModel,
       portfolioModel,
+      verificationModel,
       ownership,
       new PortfolioQueryService(profileModel, portfolioModel, mediaModel),
     );

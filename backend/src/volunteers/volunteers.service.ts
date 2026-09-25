@@ -58,6 +58,14 @@ import {
   PortfolioItemModel,
   PortfolioItemsCollection,
 } from '../portfolio/schemas/portfolio-item.schema';
+import {
+  enrichExperiences,
+  EnrichedExperience,
+} from '../verifications/experience-enrichment';
+import {
+  VerificationModel,
+  VerificationsCollection,
+} from '../verifications/schemas/verification.schema';
 
 /** A skill on a public profile / talent card, joined to the catalog (A5-gated). */
 export interface TalentSkill {
@@ -95,9 +103,19 @@ export interface PublicExperienceCard {
   id: string;
   registryId: string;
   title: string;
-  description: string;
+  description: string | null;
   duration: number;
   skills: string[];
+  organization: {
+    id: string;
+    slug: string;
+    nameFr: string | null;
+    nameAr: string | null;
+  } | null;
+  verifiedAt: Date;
+  verificationCode: string;
+  /** Neutral reviewer notes; only `status=visible` reviews surface publicly. */
+  review: { rating: number; notes: string | null } | null;
   evidence: PublicExperienceEvidence[];
 }
 
@@ -150,7 +168,8 @@ export interface PublicReviewCard {
 export interface VolunteerDashboard {
   completionPercent: number;
   stats: VolunteerProfile['stats'];
-  latestVerifiedExperience: null;
+  /** Newest verified experience (any visibility), enriched — null when none. */
+  latestVerifiedExperience: EnrichedExperience | null;
 }
 
 const FILLABLE_COUNT = 7;
@@ -183,6 +202,8 @@ export class VolunteersService {
     private readonly experienceModel: Model<VolunteerExperienceModel>,
     @InjectModel(PortfolioItemsCollection)
     private readonly portfolioItemModel: Model<PortfolioItemModel>,
+    @InjectModel(VerificationsCollection)
+    private readonly verificationModel: Model<VerificationModel>,
     private readonly mediaOwnership: MediaOwnership,
     private readonly portfolioQuery: PortfolioQueryService,
   ) {}
@@ -448,19 +469,30 @@ export class VolunteersService {
 
   async getDashboard(userId: string): Promise<VolunteerDashboard> {
     const profile = await this.requireProfile(userId);
-    const [hasSkill, availabilityRow] = await Promise.all([
+    const [hasSkill, availabilityRow, latest] = await Promise.all([
       this.volunteerSkillModel.exists({ volunteerId: userId }).exec(),
       this.availabilityModel.findOne({ volunteerId: userId }).lean().exec(),
+      this.experienceModel
+        .findOne({ volunteerId: new Types.ObjectId(userId) })
+        .sort({ _id: -1 })
+        .exec(),
     ]);
     const completionPercent = this.computeCompletion(
       profile,
       Boolean(hasSkill),
       availabilityRow?.schedule,
     );
+    let latestVerifiedExperience: EnrichedExperience | null = null;
+    if (latest) {
+      const [enriched] = await this.enrichExperienceRows([latest], {
+        publicView: false,
+      });
+      latestVerifiedExperience = enriched ?? null;
+    }
     return {
       completionPercent,
       stats: profile.stats,
-      latestVerifiedExperience: null,
+      latestVerifiedExperience,
     };
   }
 
@@ -1226,6 +1258,9 @@ export class VolunteersService {
         },
       },
       async (rows) => {
+        const enriched = await this.enrichExperienceRows(rows, {
+          publicView: true,
+        });
         const evidenceIds = rows.flatMap((row) => row.evidenceIds);
         const publicMedia = evidenceIds.length
           ? await this.mediaModel
@@ -1239,14 +1274,9 @@ export class VolunteersService {
         const mediaById = new Map(
           publicMedia.map((media) => [media._id.toString(), media] as const),
         );
-        return rows.map((row) => ({
-          id: row._id.toString(),
-          registryId: row.registryId,
-          title: row.title,
-          description: row.description ?? '',
-          duration: row.duration,
-          skills: row.skills.map((skill) => skill.toString()),
-          evidence: row.evidenceIds.flatMap((id) => {
+        return enriched.map((entry, index) => ({
+          ...entry,
+          evidence: rows[index].evidenceIds.flatMap((id) => {
             const media = mediaById.get(id.toString());
             if (!media) {
               return [];
@@ -1263,6 +1293,63 @@ export class VolunteersService {
           }),
         }));
       },
+    );
+  }
+
+  /**
+   * Session 15 enrichment reads over this module's models (organizations,
+   * verifications for `verifiedAt`, reviews for neutral notes): three bounded
+   * `$in` queries per call, never per-row. Shared by the public cards and the
+   * dashboard card so both surfaces carry the same identity fields.
+   */
+  private async enrichExperienceRows(
+    rows: VolunteerExperienceModel[],
+    opts: { publicView: boolean },
+  ): Promise<EnrichedExperience[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+    const organizationIds = [
+      ...new Set(rows.map((row) => row.organizationId.toString())),
+    ].map((id) => new Types.ObjectId(id));
+    const submissionIds = [
+      ...new Set(rows.map((row) => row.submissionId.toString())),
+    ].map((id) => new Types.ObjectId(id));
+    const [organizations, verifications, reviews] = await Promise.all([
+      this.organizationModel
+        .find({ _id: { $in: organizationIds } })
+        .select('slug nameFr nameAr')
+        .lean()
+        .exec(),
+      this.verificationModel
+        .find({ submissionId: { $in: submissionIds } })
+        .select('submissionId decidedAt')
+        .lean()
+        .exec(),
+      this.reviewModel
+        .find({ submissionId: { $in: submissionIds } })
+        .select('submissionId rating comment status')
+        .lean()
+        .exec(),
+    ]);
+    return enrichExperiences(
+      rows,
+      new Map(
+        organizations.map((organization) => [
+          organization._id.toString(),
+          organization,
+        ]),
+      ),
+      new Map(
+        verifications.map((verification) => [
+          verification.submissionId.toString(),
+          verification,
+        ]),
+      ),
+      new Map(
+        reviews.map((review) => [review.submissionId.toString(), review]),
+      ),
+      opts,
     );
   }
 

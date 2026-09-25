@@ -16,9 +16,13 @@ import {
   PortfolioItemSchema,
 } from '../portfolio/schemas/portfolio-item.schema';
 import {
-  VolunteerExperiencesCollection,
   VolunteerExperienceSchema,
+  VolunteerExperiencesCollection,
 } from '../verifications/schemas/volunteer-experience.schema';
+import {
+  VerificationSchema,
+  VerificationsCollection,
+} from '../verifications/schemas/verification.schema';
 import {
   VolunteerProfileSchema,
   VolunteerProfilesCollection,
@@ -64,6 +68,9 @@ import { VolunteersService } from './volunteers.service';
         name: VolunteerExperiencesCollection,
         schema: VolunteerExperienceSchema,
       },
+      // Session 15 reads (no writes): verification `decidedAt` for the
+      // enriched `verifiedAt` on public/dashboard experience cards.
+      { name: VerificationsCollection, schema: VerificationSchema },
       // Session 9 reads (no writes): skill categories for the derived
       // contribution areas, reviews + organizations for the public reviews
       // list. Registered here to avoid a cycle (ReviewsModule imports this one).

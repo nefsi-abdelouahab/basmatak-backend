@@ -13,10 +13,8 @@ import {
   InertOrgFootprintProvider,
   ORG_FOOTPRINT_PROVIDER,
 } from '../common/seams/org-footprint';
-import {
-  ADMIN_EXPERIENCE_DISPLAY,
-  InertAdminExperienceDisplayProvider,
-} from '../common/seams/admin-experience-display';
+import { ADMIN_EXPERIENCE_DISPLAY } from '../common/seams/admin-experience-display';
+import { ExperienceAdminDisplayProvider } from '../verifications/admin-experience-display.provider';
 import {
   OpportunitiesCollection,
   OpportunitySchema,
@@ -65,6 +63,10 @@ import {
   VerificationsCollection,
   VerificationSchema,
 } from '../verifications/schemas/verification.schema';
+import {
+  VolunteerExperiencesCollection,
+  VolunteerExperienceSchema,
+} from '../verifications/schemas/volunteer-experience.schema';
 import { AdminAnalyticsController } from './analytics.controller';
 import { AdminAnalyticsService } from './analytics.service';
 import { AdminAuditController } from './audit.controller';
@@ -119,6 +121,13 @@ import { AdminVolunteersService } from './volunteers.service';
       { name: ApplicationsCollection, schema: ApplicationSchema },
       { name: TaskParticipantsCollection, schema: TaskParticipantSchema },
       { name: VerificationsCollection, schema: VerificationSchema },
+      // Session 15 fills the `AdminExperienceDisplay` seam: the real
+      // provider reads experience rows, so its model is registered here
+      // (organizations + reviews were already registered above).
+      {
+        name: VolunteerExperiencesCollection,
+        schema: VolunteerExperienceSchema,
+      },
       { name: StatusHistoryCollection, schema: StatusHistorySchema },
       { name: AuditLogsCollection, schema: AuditLogSchema },
       { name: SystemSettingsCollection, schema: SystemSettingSchema },
@@ -143,7 +152,7 @@ import { AdminVolunteersService } from './volunteers.service';
     { provide: ORG_FOOTPRINT_PROVIDER, useClass: InertOrgFootprintProvider },
     {
       provide: ADMIN_EXPERIENCE_DISPLAY,
-      useClass: InertAdminExperienceDisplayProvider,
+      useClass: ExperienceAdminDisplayProvider,
     },
     AdminStatsService,
     AdminUsersService,

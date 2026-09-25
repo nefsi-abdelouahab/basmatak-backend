@@ -100,3 +100,48 @@ export class ExperienceListQueryDto {
   @IsDateString()
   to?: string;
 }
+
+/** Org experiences list query (Session 15, RP §2.7#1/#2/#6). */
+export class OrgExperienceListQueryDto {
+  @ApiPropertyOptional({ description: 'Opaque base64 cursor' })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({ description: 'Page size (default 20, max 50)' })
+  @IsOptional()
+  @IsString()
+  limit?: string;
+
+  @ApiPropertyOptional({
+    description: 'Literal match on title, verificationCode, or registryId',
+    maxLength: 60,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  q?: string;
+
+  @ApiPropertyOptional({ type: String, format: 'ObjectId' })
+  @IsOptional()
+  @IsMongoId()
+  opportunityId?: string;
+
+  @ApiPropertyOptional({ enum: EXPERIENCE_VISIBILITIES })
+  @IsOptional()
+  @IsIn(EXPERIENCE_VISIBILITIES)
+  visibility?: (typeof EXPERIENCE_VISIBILITIES)[number];
+
+  @ApiPropertyOptional({ enum: ['newest', 'oldest'], default: 'newest' })
+  @IsOptional()
+  @IsIn(['newest', 'oldest'])
+  sort?: string;
+
+  @ApiPropertyOptional({
+    description: 'Set to csv to stream the full filtered set as text/csv',
+    enum: ['csv'],
+  })
+  @IsOptional()
+  @IsIn(['csv'])
+  format?: string;
+}
