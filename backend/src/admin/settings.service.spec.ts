@@ -86,18 +86,76 @@ describe('AdminSettingsService (inventory §2.20 settings)', () => {
     });
   });
 
-  describe('SettingsValueDto validation (400 surface)', () => {
-    it('rejects a non-number body value', async () => {
+  describe('SettingsValueDto validation (defined-value surface)', () => {
+    it('rejects a missing body value', async () => {
       const dto = new SettingsValueDto();
-      (dto as unknown as Record<string, unknown>).value = 'lots';
       const errors = await validate(dto);
       expect(errors.some((e) => e.property === 'value')).toBe(true);
     });
 
-    it('accepts a number body value', async () => {
-      const dto = new SettingsValueDto();
-      dto.value = 6;
-      expect(await validate(dto)).toHaveLength(0);
+    it('accepts any defined body value (per-key shape is checked by the service)', async () => {
+      for (const value of [6, false, 'Basmatak', '']) {
+        const dto = new SettingsValueDto();
+        (dto as unknown as Record<string, unknown>).value = value;
+        expect(await validate(dto)).toHaveLength(0);
+      }
+    });
+  });
+
+  describe('canonical whitelist matrix (16 keys)', () => {
+    const valid: Array<[string, unknown]> = [
+      ['publishGate.maxPendingOpportunities', 5],
+      ['platform.name', 'Basmatak Tatatoua'],
+      ['platform.summary', 'National volunteering platform'],
+      ['platform.contactEmail', 'contact@example.org'],
+      ['platform.contactEmail', ''],
+      ['locale.defaultLanguage', 'ar'],
+      ['locale.defaultTimezone', 'Africa/Algiers'],
+      ['locale.dateFormat', 'YYYY-MM-DD'],
+      ['auth.adminSessionDurationDays', 7],
+      ['moderation.requireVerifiedEmail', false],
+      ['moderation.suspendOnReport', true],
+      ['ops.registrationEnabled', false],
+      ['ops.publishingEnabled', false],
+      ['maintenance.enabled', true],
+      ['maintenance.message', 'Upgrading search'],
+      ['notifications.digest.enabled', true],
+      ['notifications.digest.intervalDays', 10],
+    ];
+    it.each(valid)('upserts %s', async (key, value) => {
+      await service.upsert(key, value);
+      expect(await settings.get(key)).toBe(value);
+    });
+
+    const invalid: Array<[string, unknown]> = [
+      ['publishGate.maxPendingOpportunities', 'lots'],
+      ['platform.name', ''],
+      ['platform.name', 42],
+      ['platform.summary', 'x'.repeat(501)],
+      ['platform.contactEmail', 'not-an-email'],
+      ['locale.defaultLanguage', 'de'],
+      ['locale.defaultTimezone', ''],
+      ['locale.dateFormat', 'MM-YYYY'],
+      ['auth.adminSessionDurationDays', 0],
+      ['auth.adminSessionDurationDays', 1.5],
+      ['moderation.requireVerifiedEmail', 'yes'],
+      ['ops.registrationEnabled', 1],
+      ['maintenance.enabled', 'true'],
+      ['maintenance.message', 'x'.repeat(501)],
+      ['notifications.digest.enabled', 0],
+      ['notifications.digest.intervalDays', 0],
+      ['notifications.digest.intervalDays', 7.5],
+    ];
+    it.each(invalid)('rejects %s=%p', async (key, value) => {
+      await expect(service.upsert(key, value)).rejects.toMatchObject({
+        status: 400,
+        code: 'INVALID_SETTING_VALUE',
+      });
+      expect(
+        await handle.connection
+          .collection(SystemSettingsCollection)
+          .countDocuments({ key }),
+      ).toBe(0);
     });
   });
 });

@@ -18,6 +18,8 @@ import { JobRegistry } from './jobs/job-registry';
 import { JobsService } from './jobs/jobs.service';
 import { JobsKeyGuard } from './jobs/jobs-key.guard';
 import { InternalJobsController } from './jobs/internal-jobs.controller';
+import { MaintenanceService } from './maintenance/maintenance.service';
+import { SystemController } from './system/system.controller';
 
 /**
  * Core (inventory §1 modules 1/2/23): status transitions + `status_histories`,
@@ -33,11 +35,12 @@ import { InternalJobsController } from './jobs/internal-jobs.controller';
       { name: SystemSettingsCollection, schema: SystemSettingSchema },
     ]),
   ],
-  controllers: [InternalJobsController],
+  controllers: [InternalJobsController, SystemController],
   providers: [
     StatusTransitionRegistry,
     StatusTransitionService,
     SettingsService,
+    MaintenanceService,
     JobRegistry,
     { provide: 'JobRegistry', useExisting: JobRegistry },
     JobsService,
@@ -48,6 +51,7 @@ import { InternalJobsController } from './jobs/internal-jobs.controller';
     StatusTransitionRegistry,
     StatusTransitionService,
     SettingsService,
+    MaintenanceService,
     JobRegistry,
   ],
 })

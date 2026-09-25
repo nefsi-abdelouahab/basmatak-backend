@@ -79,4 +79,20 @@ describe('SettingsService', () => {
     );
     expect(value).toBe(3);
   });
+
+  it('ensureDefaults seeds every canonical key but never overwrites stored values', async () => {
+    await service.set('maintenance.enabled', true);
+    await service.set('platform.name', 'Custom Name');
+    await service.ensureDefaults();
+    await service.ensureDefaults();
+    expect(await service.get('maintenance.enabled')).toBe(true);
+    expect(await service.get('platform.name')).toBe('Custom Name');
+    expect(await service.get('ops.publishingEnabled')).toBe(true);
+    expect(await service.get('notifications.digest.intervalDays')).toBe(7);
+    expect(await service.get('auth.adminSessionDurationDays')).toBe(30);
+    const count = await handle.connection
+      .collection(SystemSettingsCollection)
+      .countDocuments();
+    expect(count).toBe(16);
+  });
 });
