@@ -279,9 +279,7 @@ describe('experience enrichment e2e (Session 15)', () => {
       .set('Authorization', `Bearer ${volunteerToken}`)
       .expect(200);
     expect(res.body.total).toBe(2);
-    const row = res.body.items.find(
-      (item: any) => item.id === experienceId,
-    );
+    const row = res.body.items.find((item: any) => item.id === experienceId);
     expect(row).toMatchObject({
       title: 'Park, Lake Cleanup',
       duration: 180,
@@ -382,9 +380,7 @@ describe('experience enrichment e2e (Session 15)', () => {
       .set('Authorization', `Bearer ${orgToken}`)
       .expect(200);
     expect(res.headers['content-type']).toContain('text/csv');
-    expect(res.headers['content-disposition']).toContain(
-      'org-experiences.csv',
-    );
+    expect(res.headers['content-disposition']).toContain('org-experiences.csv');
     const lines = res.text.trim().split('\n');
     expect(lines[0]).toContain('registryId');
     expect(lines[0]).toContain('verificationCode');
@@ -399,9 +395,7 @@ describe('experience enrichment e2e (Session 15)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
     expect(res.body.total).toBe(2);
-    const row = res.body.items.find(
-      (item: any) => item.id === experienceId,
-    );
+    const row = res.body.items.find((item: any) => item.id === experienceId);
     expect(row).toMatchObject({
       duration: 180,
       verificationCode,
@@ -415,7 +409,9 @@ describe('experience enrichment e2e (Session 15)', () => {
       .set('Authorization', `Bearer ${volunteerToken}`)
       .expect(403);
     await request(info.app.getHttpServer())
-      .get(`${ADMIN_EXPERIENCES}/${new Types.ObjectId().toString()}/experiences`)
+      .get(
+        `${ADMIN_EXPERIENCES}/${new Types.ObjectId().toString()}/experiences`,
+      )
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(404);
   });

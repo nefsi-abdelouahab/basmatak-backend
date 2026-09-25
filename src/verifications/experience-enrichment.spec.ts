@@ -6,9 +6,7 @@ import {
   toEnrichedExperience,
 } from './experience-enrichment';
 
-function experience(
-  overrides: Record<string, any> = {},
-): ExperienceLike {
+function experience(overrides: Record<string, any> = {}): ExperienceLike {
   return {
     _id: new Types.ObjectId(),
     registryId: 'EXP-000001',
@@ -67,17 +65,18 @@ describe('toEnrichedExperience', () => {
       },
       review: { rating: 5, notes: 'Great work' },
     });
-    expect(enriched.verifiedAt.toISOString()).toBe(
-      '2026-09-05T12:00:00.000Z',
-    );
+    expect(enriched.verifiedAt.toISOString()).toBe('2026-09-05T12:00:00.000Z');
     expect(enriched.skills).toEqual([row.skills[0].toString()]);
   });
 
   it('falls back to createdAt when no verification row exists', () => {
-    const enriched = toEnrichedExperience(experience(), organization(), null, null);
-    expect(enriched.verifiedAt.toISOString()).toBe(
-      '2026-09-01T10:00:00.000Z',
+    const enriched = toEnrichedExperience(
+      experience(),
+      organization(),
+      null,
+      null,
     );
+    expect(enriched.verifiedAt.toISOString()).toBe('2026-09-01T10:00:00.000Z');
     expect(enriched.review).toBeNull();
   });
 
@@ -136,12 +135,23 @@ describe('enrichExperiences', () => {
       rows,
       new Map([[orgId.toString(), org]]),
       new Map([
-        [submissionA.toString(), { submissionId: submissionA, decidedAt: new Date('2026-09-02T00:00:00.000Z') }],
+        [
+          submissionA.toString(),
+          {
+            submissionId: submissionA,
+            decidedAt: new Date('2026-09-02T00:00:00.000Z'),
+          },
+        ],
       ]),
       new Map([
         [
           submissionB.toString(),
-          { submissionId: submissionB, rating: 3, comment: 'OK', status: 'visible' },
+          {
+            submissionId: submissionB,
+            rating: 3,
+            comment: 'OK',
+            status: 'visible',
+          },
         ],
       ]),
     );
@@ -156,8 +166,6 @@ describe('enrichExperiences', () => {
   });
 
   it('returns an empty array without lookups', () => {
-    expect(enrichExperiences([], new Map(), new Map(), new Map())).toEqual(
-      [],
-    );
+    expect(enrichExperiences([], new Map(), new Map(), new Map())).toEqual([]);
   });
 });
