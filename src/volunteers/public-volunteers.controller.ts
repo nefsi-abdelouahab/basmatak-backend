@@ -1,7 +1,9 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { CurrentAccount, Public } from '../common/decorators/auth.decorators';
 import { BusinessException } from '../common/exceptions/business.exception';
-import { Public } from '../common/decorators/auth.decorators';
+import { AccountToken } from '../common/interfaces/account-token.interface';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { PublicExperiencesQueryDto, TalentsQueryDto } from './dto/talents.dto';
 import { VolunteersService } from './volunteers.service';
 
@@ -18,9 +20,15 @@ export class PublicVolunteersController {
 
   @Get('talents')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Talents feed (enabled profiles, filters, cursor)' })
-  talents(@Query() query: TalentsQueryDto) {
-    return this.volunteers.listPublicTalents(query);
+  talents(
+    @Query() query: TalentsQueryDto,
+    @CurrentAccount() account?: AccountToken,
+  ) {
+    // Session 19: optional caller threads through for per-viewer `isFavorited`
+    // (guests unchanged).
+    return this.volunteers.listPublicTalents(query, account?.sub);
   }
 
   @ApiParam({
@@ -30,9 +38,18 @@ export class PublicVolunteersController {
   })
   @Get('volunteers/:username')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Public volunteer profile by username (A5 gating)' })
-  async publicProfile(@Param('username') username: string) {
-    const profile = await this.volunteers.getPublicProfile(username);
+  async publicProfile(
+    @Param('username') username: string,
+    @CurrentAccount() account?: AccountToken,
+  ) {
+    // Session 19: optional caller threads through for per-viewer `isFavorited`
+    // (guests unchanged).
+    const profile = await this.volunteers.getPublicProfile(
+      username,
+      account?.sub,
+    );
     if (!profile) {
       throw new BusinessException(
         'VOLUNTEER_PROFILE_NOT_FOUND',

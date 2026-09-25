@@ -39,7 +39,28 @@ import {
   VolunteerSkillSchema,
 } from '../volunteers/schemas/volunteer-skill.schema';
 import { scoreRecommendedOpportunity } from './opportunities.service';
+import { OpportunityEmbedProvider } from './opportunity-embed.provider';
 import { UpdateOpportunityDto } from './dto/opportunity.dto';
+import {
+  OrganizationSchema,
+  OrganizationsCollection,
+} from '../organizations/schemas/organization.schema';
+import {
+  SkillCategoriesCollection,
+  SkillCategorySchema,
+} from '../skills/schemas/skill-category.schema';
+import {
+  LocationSchema,
+  LocationsCollection,
+} from '../locations/schemas/location.schema';
+import {
+  ApplicationSchema,
+  ApplicationsCollection,
+} from '../applications/schemas/application.schema';
+import {
+  TaskParticipantSchema,
+  TaskParticipantsCollection,
+} from '../participations/schemas/task-participant.schema';
 
 const OP_PAIRS = [
   ['draft', 'published'],
@@ -125,6 +146,22 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
     adapter = new TaskParticipantsAdapter(handle.connection);
     emitter = new EventEmitter2();
 
+    // Session 19: real embed provider over memory models with a stubbed
+    // favorites store (zero-state lookups keep legacy assertions stable).
+    const embeds = new OpportunityEmbedProvider(
+      handle.connection.model(OrganizationsCollection, OrganizationSchema),
+      handle.connection.model(SkillCategoriesCollection, SkillCategorySchema),
+      skillModel,
+      handle.connection.model(LocationsCollection, LocationSchema),
+      handle.connection.model(ApplicationsCollection, ApplicationSchema),
+      handle.connection.model(
+        TaskParticipantsCollection,
+        TaskParticipantSchema,
+      ),
+      volunteerProfileModel,
+      { lookup: async () => ({}) } as never,
+    );
+
     service = new OpportunitiesService(
       opportunityModel,
       skillModel,
@@ -136,6 +173,7 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       adapter,
       registryId as never,
       mediaOwnership as never,
+      embeds,
       emitter,
     );
   });
@@ -493,15 +531,19 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       });
 
       const first = await service.getRecommended(volunteerAccount(sub), {});
-      expect(first.items.map((item) => item._id.toString())).toEqual([
+      expect(
+        first.items.map((item) => (item._id as Types.ObjectId).toString()),
+      ).toEqual([
         matchId.toString(),
         skillOnlyId.toString(),
         wilayaOnlyId.toString(),
         noMatchId.toString(),
       ]);
       const second = await service.getRecommended(volunteerAccount(sub), {});
-      expect(second.items.map((item) => item._id.toString())).toEqual(
-        first.items.map((item) => item._id.toString()),
+      expect(
+        second.items.map((item) => (item._id as Types.ObjectId).toString()),
+      ).toEqual(
+        first.items.map((item) => (item._id as Types.ObjectId).toString()),
       );
     });
 
@@ -534,7 +576,9 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       });
 
       const page = await service.getRecommended(volunteerAccount(sub), {});
-      const ids = page.items.map((item) => item._id.toString());
+      const ids = page.items.map((item) =>
+        (item._id as Types.ObjectId).toString(),
+      );
       expect(ids).toContain(openId.toString());
       expect(ids).toContain(mixedId.toString());
       expect(ids).not.toContain(draftId.toString());
@@ -551,10 +595,9 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       await seedOpportunity({ _id: secondId, title: 'Newer' });
 
       const page = await service.getRecommended(volunteerAccount(sub), {});
-      expect(page.items.map((item) => item._id.toString())).toEqual([
-        secondId.toString(),
-        firstId.toString(),
-      ]);
+      expect(
+        page.items.map((item) => (item._id as Types.ObjectId).toString()),
+      ).toEqual([secondId.toString(), firstId.toString()]);
     });
 
     it('still returns candidates for an account with no profile at all', async () => {
@@ -562,9 +605,9 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       const id = new Types.ObjectId('64b000000000000000000001');
       await seedOpportunity({ _id: id, title: 'For everyone' });
       const page = await service.getRecommended(ghost, {});
-      expect(page.items.map((item) => item._id.toString())).toEqual([
-        id.toString(),
-      ]);
+      expect(
+        page.items.map((item) => (item._id as Types.ObjectId).toString()),
+      ).toEqual([id.toString()]);
     });
 
     it('clamps the limit and advances via cursor in memory', async () => {
@@ -588,20 +631,18 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
         limit: '2',
       });
       expect(first.limit).toBe(2);
-      expect(first.items.map((item) => item._id.toString())).toEqual([
-        ids[4].toString(),
-        ids[3].toString(),
-      ]);
+      expect(
+        first.items.map((item) => (item._id as Types.ObjectId).toString()),
+      ).toEqual([ids[4].toString(), ids[3].toString()]);
       expect(first.nextCursor).not.toBeNull();
 
       const second = await service.getRecommended(volunteerAccount(sub), {
         limit: '2',
         cursor: first.nextCursor ?? undefined,
       });
-      expect(second.items.map((item) => item._id.toString())).toEqual([
-        ids[2].toString(),
-        ids[1].toString(),
-      ]);
+      expect(
+        second.items.map((item) => (item._id as Types.ObjectId).toString()),
+      ).toEqual([ids[2].toString(), ids[1].toString()]);
 
       const clamped = await service.getRecommended(volunteerAccount(sub), {
         limit: '500',
@@ -795,8 +836,8 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
         durationMinutes: 45,
       });
       const found = await service.getOwnById(account, opp._id.toString());
-      expect(found._id.toString()).toBe(opp._id.toString());
-      expect(found.mode).toBe('remote');
+      expect((found._id as Types.ObjectId).toString()).toBe(opp._id.toString());
+      expect(found['mode']).toBe('remote');
     });
 
     it('hides foreign and malformed ids with 404', async () => {
@@ -866,7 +907,10 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       expect(copy.positions[0].deliverables).toEqual(['Done']);
 
       const fresh = await service.getOwnById(account, source._id.toString());
-      expect(fresh.positions[0].filledCount).toBe(2);
+      const freshPositions = fresh['positions'] as Array<
+        Record<string, unknown>
+      >;
+      expect(freshPositions[0]['filledCount']).toBe(2);
     });
 
     it('rejects duplicating a foreign id with 404', async () => {

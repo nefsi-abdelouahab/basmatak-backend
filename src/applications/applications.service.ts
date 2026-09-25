@@ -306,7 +306,7 @@ export class ApplicationsService {
   async listMyApplications(
     account: AccountToken,
     query: ApplicationListQueryDto,
-  ): Promise<CursorPage<ApplicationModel>> {
+  ): Promise<CursorPage<ApplicationInboxRow>> {
     const filter: FilterQuery<ApplicationModel> = {
       volunteerId: new Types.ObjectId(account.sub),
     };
@@ -323,13 +323,19 @@ export class ApplicationsService {
       }
       filter.createdAt = createdAt;
     }
-    return this.paginateSorted(filter, query);
+    const page = await this.paginateSorted(filter, query);
+    // Session 19: display-name joins on the volunteer's own rows.
+    const items = await this.inboxJoiner.enrich(
+      page.items[0]?.organizationId ?? new Types.ObjectId(),
+      page.items as unknown as ApplicationInboxRow[],
+    );
+    return { ...page, items };
   }
 
   async getApplication(
     account: AccountToken,
     applicationId: string,
-  ): Promise<ApplicationModel> {
+  ): Promise<ApplicationInboxRow> {
     const application = await this.requireById(applicationId);
     if (account.role === 'volunteer') {
       if (application.volunteerId.toString() !== account.sub) {
@@ -339,7 +345,12 @@ export class ApplicationsService {
           404,
         );
       }
-      return application;
+      // Session 19: display-name joins on the detail payload.
+      const [enriched] = await this.inboxJoiner.enrich(
+        application.organizationId,
+        [application as unknown as ApplicationInboxRow],
+      );
+      return enriched;
     }
     if (account.role === 'organization') {
       const organization = await this.requireOwnOrganization(account);
@@ -352,7 +363,11 @@ export class ApplicationsService {
           404,
         );
       }
-      return application;
+      // Session 19: display-name joins on the detail payload.
+      const [enriched] = await this.inboxJoiner.enrich(organization._id, [
+        application as unknown as ApplicationInboxRow,
+      ]);
+      return enriched;
     }
     throw new BusinessException(
       'APPLICATION_NOT_FOUND',
@@ -365,7 +380,7 @@ export class ApplicationsService {
     account: AccountToken,
     opportunityId: string,
     query: OpportunityApplicationsQueryDto,
-  ): Promise<CursorPage<ApplicationModel>> {
+  ): Promise<CursorPage<ApplicationInboxRow>> {
     const organization = await this.requireOwnOrganization(account);
     await this.requireOwnedOpportunity(organization, opportunityId);
     const filter: FilterQuery<ApplicationModel> = {
@@ -377,7 +392,13 @@ export class ApplicationsService {
     if (query.status) {
       filter.status = query.status;
     }
-    return this.paginateSorted(filter, query);
+    const page = await this.paginateSorted(filter, query);
+    // Session 19: display-name joins on the per-opportunity rows.
+    const items = await this.inboxJoiner.enrich(
+      organization._id,
+      page.items as unknown as ApplicationInboxRow[],
+    );
+    return { ...page, items };
   }
 
   /**

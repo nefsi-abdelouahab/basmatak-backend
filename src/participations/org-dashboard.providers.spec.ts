@@ -427,6 +427,9 @@ describe('org-dashboard providers and service (Session 16)', () => {
       verificationModel,
       organizationModel,
       organizationsStub as unknown as OrganizationsService,
+      // Session 19: label helper stub (empty labels keep legacy assertions
+      // stable; new-field tests assert deliverables, not labels).
+      { resolveLocationLabels: async () => new Map() } as never,
     );
   });
 

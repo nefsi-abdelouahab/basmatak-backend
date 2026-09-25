@@ -8,6 +8,7 @@ import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import { execPage } from '../common/pagination/pagination.util';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
+import { OpportunityEmbedProvider } from '../opportunities/opportunity-embed.provider';
 import {
   OpportunitiesCollection,
   OpportunityModel,
@@ -52,6 +53,7 @@ export class ParticipationsService {
     private readonly opportunityModel: Model<OpportunityModel>,
     private readonly organizations: OrganizationsService,
     private readonly statusTransitions: StatusTransitionService,
+    private readonly embeds: OpportunityEmbedProvider,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -146,20 +148,22 @@ export class ParticipationsService {
   async listMyParticipations(
     account: AccountToken,
     query: ParticipationListQueryDto,
-  ): Promise<CursorPage<TaskParticipantModel>> {
+  ): Promise<CursorPage<Record<string, unknown>>> {
     const filter: FilterQuery<TaskParticipantModel> = {
       volunteerId: new Types.ObjectId(account.sub),
     };
     if (query.status) {
       filter.status = query.status;
     }
-    return this.paginate(filter, query);
+    const page = await this.paginate(filter, query);
+    // Session 19: org/task/schedule/location + deliverable joins.
+    return { ...page, items: await this.enrichParticipations(page.items) };
   }
 
   async getParticipation(
     account: AccountToken,
     participationId: string,
-  ): Promise<TaskParticipantModel> {
+  ): Promise<Record<string, unknown>> {
     const participant = await this.requireById(participationId);
     if (account.role === 'volunteer') {
       if (participant.volunteerId.toString() !== account.sub) {
@@ -169,7 +173,8 @@ export class ParticipationsService {
           404,
         );
       }
-      return participant;
+      // Session 19: org/task/schedule/location + deliverable joins.
+      return (await this.enrichParticipations([participant]))[0];
     }
     if (account.role === 'organization') {
       const organization = await this.requireOwnOrganization(account);
@@ -182,13 +187,115 @@ export class ParticipationsService {
           404,
         );
       }
-      return participant;
+      // Session 19: org/task/schedule/location + deliverable joins.
+      return (await this.enrichParticipations([participant]))[0];
     }
     throw new BusinessException(
       'PARTICIPATION_NOT_FOUND',
       'Participation not found',
       404,
     );
+  }
+
+  /**
+   * Session 19 identity joins for participation rows (page-batched: one query
+   * per joined entity). Unknown references yield `null`, never an error.
+   */
+  private async enrichParticipations(
+    items: TaskParticipantModel[],
+  ): Promise<Record<string, unknown>[]> {
+    if (items.length === 0) {
+      return [];
+    }
+    const orgIds = [
+      ...new Set(items.map((item) => item.organizationId.toString())),
+    ];
+    const opportunityIds = [
+      ...new Set(items.map((item) => item.opportunityId.toString())),
+    ];
+    const [orgs, opportunities] = await Promise.all([
+      this.organizations.listForIds(orgIds),
+      this.opportunityModel
+        .find({
+          _id: { $in: opportunityIds.map((id) => new Types.ObjectId(id)) },
+        })
+        .select('title slug status location positions startDate endDate')
+        .lean()
+        .exec(),
+    ]);
+    const locationLabels = await this.embeds.resolveLocationLabels(
+      opportunities
+        .flatMap((opportunity) => [
+          opportunity.location?.wilayaId,
+          opportunity.location?.municipalityId,
+        ])
+        .filter((code): code is string => Boolean(code)),
+    );
+    const orgById = new Map(orgs.map((org) => [org._id.toString(), org]));
+    const opportunityById = new Map(
+      opportunities.map((opportunity) => [
+        opportunity._id.toString(),
+        opportunity,
+      ]),
+    );
+    return items.map((item) => {
+      const base =
+        typeof item.toObject === 'function' ? item.toObject() : { ...item };
+      const org = orgById.get(item.organizationId.toString()) ?? null;
+      const opportunity =
+        opportunityById.get(item.opportunityId.toString()) ?? null;
+      const position =
+        opportunity?.positions?.find(
+          (entry) =>
+            (entry as { _id?: Types.ObjectId })._id?.toString() ===
+            item.positionId.toString(),
+        ) ?? null;
+      const wilayaCode = opportunity?.location?.wilayaId ?? null;
+      const municipalityCode = opportunity?.location?.municipalityId ?? null;
+      return {
+        ...base,
+        organization: org
+          ? {
+              id: org._id.toString(),
+              slug: org.slug,
+              nameFr: org.nameFr ?? null,
+              nameAr: org.nameAr ?? null,
+            }
+          : null,
+        opportunity: opportunity
+          ? {
+              id: opportunity._id.toString(),
+              title: opportunity.title,
+              slug: opportunity.slug,
+              status: opportunity.status,
+            }
+          : null,
+        position: position
+          ? {
+              id: (position as { _id: Types.ObjectId })._id.toString(),
+              title: position.title,
+              deliverables: [...(position.deliverables ?? [])],
+              startAt: position.startAt ?? null,
+            }
+          : null,
+        schedule: opportunity
+          ? {
+              startDate: opportunity.startDate ?? null,
+              endDate: opportunity.endDate ?? null,
+            }
+          : null,
+        locationLabels: {
+          wilaya:
+            wilayaCode != null
+              ? (locationLabels.get(wilayaCode) ?? null)
+              : null,
+          municipality:
+            municipalityCode != null
+              ? (locationLabels.get(municipalityCode) ?? null)
+              : null,
+        },
+      };
+    });
   }
 
   async listParticipants(
@@ -208,15 +315,27 @@ export class ParticipationsService {
     const volunteerIds = page.items.map(
       (participant) => participant.volunteerId,
     );
-    const profiles = await this.profileModel
-      .find({ userId: { $in: volunteerIds } })
-      .exec();
+    const [profiles, opportunities] = await Promise.all([
+      this.profileModel.find({ userId: { $in: volunteerIds } }).exec(),
+      // Session 19 (Q2): position deliverables for the per-opportunity roster.
+      this.opportunityModel
+        .findOne({ _id: new Types.ObjectId(opportunityId) })
+        .select('positions')
+        .lean()
+        .exec(),
+    ]);
     const byId = new Map(
       profiles.map((profile) => [profile.userId.toString(), profile]),
     );
 
     const items = page.items.map((participant) => {
       const profile = byId.get(participant.volunteerId.toString());
+      const position =
+        opportunities?.positions?.find(
+          (entry) =>
+            (entry as { _id?: Types.ObjectId })._id?.toString() ===
+            participant.positionId.toString(),
+        ) ?? null;
       return {
         ...participant.toObject(),
         volunteer: profile
@@ -224,6 +343,14 @@ export class ParticipationsService {
               username: profile.username,
               firstName: profile.firstName ?? null,
               lastName: profile.lastName ?? null,
+              avatarMediaId: profile.avatar ? profile.avatar.toString() : null,
+            }
+          : null,
+        position: position
+          ? {
+              id: (position as { _id: Types.ObjectId })._id.toString(),
+              title: position.title,
+              deliverables: [...(position.deliverables ?? [])],
             }
           : null,
       };

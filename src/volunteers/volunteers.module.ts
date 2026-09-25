@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { FavoritesModule } from '../favorites/favorites.module';
 import { SkillsModule } from '../skills/skills.module';
 import {
   SkillCategoriesCollection,
@@ -82,6 +83,9 @@ import { VolunteersService } from './volunteers.service';
       { name: OrganizationsCollection, schema: OrganizationSchema },
     ]),
     SkillsModule,
+    // Session 19: favorites card state on talents/profile reuses the
+    // favorites store service-to-service (no duplicated counting logic).
+    FavoritesModule,
   ],
   controllers: [
     VolunteersController,

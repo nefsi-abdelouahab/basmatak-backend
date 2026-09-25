@@ -18,14 +18,33 @@ export interface ApplicationInboxRow {
   reason?: string;
   createdAt: Date;
   updatedAt: Date;
+  /**
+   * Session 19 display joins (all optional; absent until the real joiner
+   * enriches the row — the inert default leaves rows name-free).
+   */
+  volunteer?: {
+    userId: string;
+    username: string;
+    fullName: string | null;
+    avatarMediaId: string | null;
+  } | null;
+  organization?: {
+    id: string;
+    slug: string;
+    nameFr: string | null;
+    nameAr: string | null;
+  } | null;
+  opportunity?: { id: string; title: string; slug: string } | null;
+  position?: { id: string; title: string } | null;
+  decidedBy?: { userId: string; displayName: string | null } | null;
 }
 
 /**
  * Seam (S1 convention): the org aggregate inbox routes its result rows through
- * `enrich` before returning them. Session 17 (`org-embed-labels`) overrides
- * the token with the real implementation that joins volunteer / organization /
- * opportunity / position display names onto the rows; the applications module
- * is unchanged.
+ * `enrich` before returning them. Session 19 (`org-embed-labels`) binds the
+ * real implementation that joins volunteer / organization / opportunity /
+ * position display names onto the rows; the applications module consumes the
+ * token unchanged.
  */
 export interface ApplicationInboxJoiner {
   enrich(

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { isDuplicateKeyError } from '../common/slug/slugify.util';
+import { FavoritesService } from '../favorites/favorites.service';
 import { SkillModel, SkillsCollection } from '../skills/schemas/skill.schema';
 import {
   SkillCategoriesCollection,
@@ -87,6 +88,9 @@ export interface TalentCard {
   avatar: string | null;
   /** Present only when `showStats` is true (Session 9). */
   stats: VolunteerProfile['stats'] | null;
+  /** Session 19 favorites card state (counts public; `isFavorited` per viewer). */
+  isFavorited: boolean;
+  favoriteCount: number;
 }
 
 /** Evidence metadata restricted to `visibility=public` media (A6). */
@@ -149,6 +153,9 @@ export interface PublicVolunteerProfile {
   experiences: PublicExperienceCard[] | null;
   availability: WeeklySchedule | null;
   portfolio: unknown | null;
+  /** Session 19 favorites card state (counts public; `isFavorited` per viewer). */
+  isFavorited: boolean;
+  favoriteCount: number;
 }
 
 /** Neutral public review card with the writing-organization identity. */
@@ -206,6 +213,7 @@ export class VolunteersService {
     private readonly verificationModel: Model<VerificationModel>,
     private readonly mediaOwnership: MediaOwnership,
     private readonly portfolioQuery: PortfolioQueryService,
+    private readonly favorites: FavoritesService,
   ) {}
 
   async requireProfile(userId: string): Promise<VolunteerProfileModel> {
@@ -512,6 +520,7 @@ export class VolunteersService {
    */
   async getPublicProfile(
     username: string,
+    viewerUserId?: string,
   ): Promise<PublicVolunteerProfile | null> {
     const profile = await this.findEnabledProfile(username);
     if (!profile) {
@@ -547,6 +556,14 @@ export class VolunteersService {
       .filter(Boolean)
       .join(' ');
 
+    // Session 19: favorites card state via the shared lookup mechanism
+    // (guests receive counts with `isFavorited: false`).
+    const favoriteMap = await this.talentFavoriteMap([username], viewerUserId);
+    const favorite = favoriteMap.get(username) ?? {
+      favorited: false,
+      favoriteCount: 0,
+    };
+
     return {
       username: profile.username,
       registryId: profile.registryId,
@@ -572,6 +589,8 @@ export class VolunteersService {
       experiences: flags.showExperiences ? experiences : null,
       availability: flags.showAvailability ? availability : null,
       portfolio,
+      isFavorited: favorite.favorited,
+      favoriteCount: favorite.favoriteCount,
     };
   }
 
@@ -582,7 +601,10 @@ export class VolunteersService {
    * counted cursor paging, skill/wilaya facets from the filtered population,
    * public-safety projection only. Card mapping stays batched (no N+1).
    */
-  async listPublicTalents(query: TalentsQueryDto): Promise<
+  async listPublicTalents(
+    query: TalentsQueryDto,
+    viewerUserId?: string,
+  ): Promise<
     CursorPage<TalentCard> & {
       facets: {
         skills: Array<{ skillId: string; count: number }>;
@@ -701,7 +723,7 @@ export class VolunteersService {
           return undefined;
         },
       },
-      async (rows) => this.mapTalentCards(rows),
+      async (rows) => this.mapTalentCards(rows, viewerUserId),
     );
 
     const facets = await this.talentFacets(filter);
@@ -976,6 +998,7 @@ export class VolunteersService {
 
   private async mapTalentCards(
     profiles: VolunteerProfileModel[],
+    viewerUserId?: string,
   ): Promise<TalentCard[]> {
     const avatarIds = profiles
       .filter((profile) => profile.publicProfile.showAvatar && profile.avatar)
@@ -989,9 +1012,21 @@ export class VolunteersService {
       .map((profile) => profile.userId);
     const skillsByOwner = await this.loadPublicSkillsForOwners(skillOwners);
 
+    // Session 19: favorites card state for the page in one shared lookup
+    // (guests receive counts with `isFavorited: false`).
+    const usernames = profiles.map((profile) => profile.username);
+    const favoriteByUsername = await this.talentFavoriteMap(
+      usernames,
+      viewerUserId,
+    );
+
     const cards: TalentCard[] = [];
     for (const profile of profiles) {
       const flags = profile.publicProfile;
+      const favorite = favoriteByUsername.get(profile.username) ?? {
+        favorited: false,
+        favoriteCount: 0,
+      };
       cards.push({
         username: profile.username,
         registryId: profile.registryId,
@@ -1011,9 +1046,38 @@ export class VolunteersService {
             ? profile.avatar.toString()
             : null,
         stats: flags.showStats ? profile.stats : null,
+        isFavorited: favorite.favorited,
+        favoriteCount: favorite.favoriteCount,
       });
     }
     return cards;
+  }
+
+  /**
+   * Session 19 favorites state via the shared lookup mechanism (no duplicated
+   * counting logic). Usernames containing commas are excluded defensively
+   * (lookup splits keys on commas) and resolve to the zero state.
+   */
+  private async talentFavoriteMap(
+    usernames: string[],
+    viewerUserId?: string,
+  ): Promise<Map<string, { favorited: boolean; favoriteCount: number }>> {
+    const safe = [...new Set(usernames)].filter(
+      (username) => username.length > 0 && !username.includes(','),
+    );
+    if (safe.length === 0) {
+      return new Map();
+    }
+    const lookup = await this.favorites.lookup(
+      { targetType: 'talent', targetIds: safe.join(',') },
+      viewerUserId,
+    );
+    return new Map(
+      safe.map((username) => [
+        username,
+        lookup[username] ?? { favorited: false, favoriteCount: 0 },
+      ]),
+    );
   }
 
   /**
