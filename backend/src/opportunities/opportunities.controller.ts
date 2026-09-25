@@ -108,6 +108,26 @@ export class OpportunitiesController {
     return this.opportunities.listOwn(account, query);
   }
 
+  @ApiBearerAuth()
+  @Get('organizations/me/opportunities/:id')
+  @Roles('organization')
+  @ApiOperation({
+    summary: 'Read one own opportunity (any status, incl. drafts)',
+  })
+  getOwnById(@CurrentAccount() account: AccountToken, @Param('id') id: string) {
+    return this.opportunities.getOwnById(account, id);
+  }
+
+  @ApiBearerAuth()
+  @Post('organizations/me/opportunities/:id/duplicate')
+  @Roles('organization')
+  @ApiOperation({
+    summary: 'Duplicate an owned opportunity as a new draft',
+  })
+  duplicate(@CurrentAccount() account: AccountToken, @Param('id') id: string) {
+    return this.opportunities.duplicateOpportunity(account, id);
+  }
+
   @ApiParam({
     name: 'slug',
     description: 'Organization slug',

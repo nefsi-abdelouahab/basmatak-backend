@@ -14,6 +14,7 @@ import {
   toArray,
 } from '../common/pagination/pagination.util';
 import { PublishGateService } from '../common/seams/publish-gate.service';
+import { MediaOwnership } from '../common/seams/media-ownership';
 import { createWithUniqueSlug, slugifyText } from '../common/slug/slugify.util';
 import { RegistryIdService } from '../common/counters/registry-id.service';
 import { StatusTransitionService } from '../core/status-transitions/status-transition.service';
@@ -113,6 +114,7 @@ export class OpportunitiesService {
     private readonly publishGate: PublishGateService,
     private readonly adapter: TaskParticipantsAdapter,
     private readonly registryId: RegistryIdService,
+    private readonly mediaOwnership: MediaOwnership,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -207,6 +209,14 @@ export class OpportunitiesService {
       (position) => position.requiredSkills ?? [],
     );
     await this.assertSkillsExist(skillIds);
+    if (dto.coverMediaId !== undefined) {
+      await this.mediaOwnership.assertFor(
+        dto.coverMediaId,
+        account.sub,
+        'opportunity_cover',
+      );
+    }
+    this.assertEndDateOnOrAfterStart(dto.startDate, dto.endDate);
 
     const positions: Array<Omit<Position, '_id'>> = (dto.positions ?? []).map(
       (position) => ({
@@ -217,6 +227,8 @@ export class OpportunitiesService {
         requiredSkills: (position.requiredSkills ?? []).map(
           (id) => new Types.ObjectId(id),
         ),
+        deliverables: position.deliverables ?? [],
+        startAt: position.startAt ? new Date(position.startAt) : undefined,
       }),
     );
 
@@ -232,7 +244,14 @@ export class OpportunitiesService {
           categoryId: dto.categoryId
             ? new Types.ObjectId(dto.categoryId)
             : undefined,
+          mode: dto.mode,
+          coverMediaId: dto.coverMediaId
+            ? new Types.ObjectId(dto.coverMediaId)
+            : undefined,
           startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+          endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+          durationMinutes: dto.durationMinutes,
+          prerequisites: dto.prerequisites ?? [],
           applicationDeadline: dto.applicationDeadline
             ? new Date(dto.applicationDeadline)
             : undefined,
@@ -242,6 +261,26 @@ export class OpportunitiesService {
       slugifyText(dto.title),
     );
     return doc;
+  }
+
+  /**
+   * Shared `endDate ≥ startDate` guard (create + patch). Either side may be
+   * absent; only the fully-known pair is ordered.
+   */
+  private assertEndDateOnOrAfterStart(
+    startDate?: string | Date,
+    endDate?: string | Date,
+  ): void {
+    if (startDate === undefined || endDate === undefined) {
+      return;
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+      throw new BusinessException(
+        'INVALID_END_DATE',
+        'endDate must not precede startDate',
+        400,
+      );
+    }
   }
 
   async updateOpportunity(
@@ -261,7 +300,11 @@ export class OpportunitiesService {
           409,
         );
       }
-      const allowed = new Set(['description', 'applicationDeadline']);
+      const allowed = new Set([
+        'description',
+        'applicationDeadline',
+        'coverMediaId',
+      ]);
       for (const key of Object.keys(dto)) {
         if (!allowed.has(key)) {
           throw new BusinessException(
@@ -284,6 +327,18 @@ export class OpportunitiesService {
       }
     }
 
+    if (dto.coverMediaId !== undefined) {
+      await this.mediaOwnership.assertFor(
+        dto.coverMediaId,
+        account.sub,
+        'opportunity_cover',
+      );
+    }
+    this.assertEndDateOnOrAfterStart(
+      dto.startDate ?? opportunity.startDate,
+      dto.endDate ?? opportunity.endDate,
+    );
+
     const $set: Record<string, unknown> = {};
     if (dto.title !== undefined) {
       $set.title = dto.title;
@@ -294,8 +349,23 @@ export class OpportunitiesService {
     if (dto.categoryId !== undefined) {
       $set.categoryId = new Types.ObjectId(dto.categoryId);
     }
+    if (dto.mode !== undefined) {
+      $set.mode = dto.mode;
+    }
+    if (dto.coverMediaId !== undefined) {
+      $set.coverMediaId = new Types.ObjectId(dto.coverMediaId);
+    }
     if (dto.startDate !== undefined) {
       $set.startDate = new Date(dto.startDate);
+    }
+    if (dto.endDate !== undefined) {
+      $set.endDate = new Date(dto.endDate);
+    }
+    if (dto.durationMinutes !== undefined) {
+      $set.durationMinutes = dto.durationMinutes;
+    }
+    if (dto.prerequisites !== undefined) {
+      $set.prerequisites = dto.prerequisites;
     }
     if (dto.applicationDeadline !== undefined) {
       $set.applicationDeadline = new Date(dto.applicationDeadline);
@@ -761,6 +831,65 @@ export class OpportunitiesService {
     });
   }
 
+  /**
+   * Org single read (any status, incl. drafts). Ownership-scoped:
+   * foreign/malformed ids surface as `404` via `requireOwned`.
+   */
+  async getOwnById(
+    account: AccountToken,
+    id: string,
+  ): Promise<OpportunityModel> {
+    const organization = await this.resolveOwnOrganization(account);
+    return this.requireOwned(organization, id);
+  }
+
+  /**
+   * Duplicate an owned opportunity: independent copy with `status=draft`,
+   * a fresh slug + `registryId`, full position copies, and zeroed seat
+   * fills. Descriptive/schedule/mode/cover/prerequisite content is carried
+   * over unchanged.
+   */
+  async duplicateOpportunity(
+    account: AccountToken,
+    id: string,
+  ): Promise<OpportunityModel> {
+    const organization = await this.resolveOwnOrganization(account);
+    const source = await this.requireOwned(organization, id);
+    const positions = source.positions.map((position) => ({
+      title: position.title,
+      description: position.description,
+      requiredCount: position.requiredCount,
+      filledCount: 0,
+      requiredSkills: [...position.requiredSkills],
+      deliverables: [...(position.deliverables ?? [])],
+      startAt: position.startAt,
+    }));
+    const registryId = await this.registryId.getNext('opportunity');
+    const { doc } = await createWithUniqueSlug(
+      (slug) =>
+        this.opportunityModel.create({
+          organizationId: organization._id,
+          slug,
+          registryId,
+          title: source.title,
+          description: source.description,
+          categoryId: source.categoryId,
+          status: 'draft',
+          mode: source.mode,
+          coverMediaId: source.coverMediaId,
+          startDate: source.startDate,
+          endDate: source.endDate,
+          durationMinutes: source.durationMinutes,
+          prerequisites: [...(source.prerequisites ?? [])],
+          applicationDeadline: source.applicationDeadline,
+          location: source.location ? { ...source.location } : undefined,
+          positions,
+        }),
+      slugifyText(source.title),
+    );
+    return doc;
+  }
+
   /** Published opportunities of a verified+active org (shadows S5's empty stub). */
   async listByOrganizationSlug(slug: string): Promise<OpportunityModel[]> {
     const organization = await this.organizations.getPublicBySlug(slug);
@@ -818,6 +947,8 @@ export class OpportunitiesService {
               requiredSkills: (dto.requiredSkills ?? []).map(
                 (id) => new Types.ObjectId(id),
               ),
+              deliverables: dto.deliverables ?? [],
+              startAt: dto.startAt ? new Date(dto.startAt) : undefined,
             },
           },
         },
@@ -871,6 +1002,12 @@ export class OpportunitiesService {
       $set['positions.$[pos].requiredSkills'] = dto.requiredSkills.map(
         (id) => new Types.ObjectId(id),
       );
+    }
+    if (dto.deliverables !== undefined) {
+      $set['positions.$[pos].deliverables'] = dto.deliverables;
+    }
+    if (dto.startAt !== undefined) {
+      $set['positions.$[pos].startAt'] = new Date(dto.startAt);
     }
 
     await this.opportunityModel

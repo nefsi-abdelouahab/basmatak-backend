@@ -32,6 +32,16 @@ export const OWN_OPPORTUNITY_SORTS = ['newest', 'oldest'] as const;
 
 export type OwnOpportunitySort = (typeof OWN_OPPORTUNITY_SORTS)[number];
 
+export const OPPORTUNITY_MODES = ['onsite', 'remote', 'hybrid'] as const;
+
+export type OpportunityMode = (typeof OPPORTUNITY_MODES)[number];
+
+/** Bounds for the free-text string arrays (prerequisites, deliverables). */
+export const MAX_PREREQUISITES = 20;
+export const MAX_PREREQUISITE_LENGTH = 500;
+export const MAX_DELIVERABLES = 20;
+export const MAX_DELIVERABLE_LENGTH = 500;
+
 export class LocationDto {
   @ApiPropertyOptional({ description: 'Wilaya code (01-58)', example: '16' })
   @IsOptional()
@@ -95,6 +105,24 @@ export class CreatePositionDto {
   @IsArray()
   @IsMongoId({ each: true })
   requiredSkills?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Expected contributions / deliverables for this position',
+    type: 'array',
+    items: { type: 'string', maxLength: MAX_DELIVERABLE_LENGTH },
+    maxItems: MAX_DELIVERABLES,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_DELIVERABLES)
+  @IsString({ each: true })
+  @MaxLength(MAX_DELIVERABLE_LENGTH, { each: true })
+  deliverables?: string[];
+
+  @ApiPropertyOptional({ description: 'Optional per-position schedule start' })
+  @IsOptional()
+  @IsDateString()
+  startAt?: string;
 }
 
 export class UpdatePositionDto {
@@ -131,6 +159,24 @@ export class UpdatePositionDto {
   @IsArray()
   @IsMongoId({ each: true })
   requiredSkills?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Expected contributions / deliverables for this position',
+    type: 'array',
+    items: { type: 'string', maxLength: MAX_DELIVERABLE_LENGTH },
+    maxItems: MAX_DELIVERABLES,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_DELIVERABLES)
+  @IsString({ each: true })
+  @MaxLength(MAX_DELIVERABLE_LENGTH, { each: true })
+  deliverables?: string[];
+
+  @ApiPropertyOptional({ description: 'Optional per-position schedule start' })
+  @IsOptional()
+  @IsDateString()
+  startAt?: string;
 }
 
 export class CreateOpportunityDto {
@@ -162,6 +208,52 @@ export class CreateOpportunityDto {
   @IsOptional()
   @IsDateString()
   startDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'ISO date; must not precede startDate',
+  })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Real duration in minutes (positive int)',
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  durationMinutes?: number;
+
+  @ApiPropertyOptional({
+    description: 'Participation mode',
+    enum: OPPORTUNITY_MODES,
+  })
+  @IsOptional()
+  @IsIn(OPPORTUNITY_MODES)
+  mode?: OpportunityMode;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: 'ObjectId',
+    description: 'Cover media id (purpose opportunity_cover)',
+  })
+  @IsOptional()
+  @IsMongoId()
+  coverMediaId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Prerequisites for volunteers',
+    type: 'array',
+    items: { type: 'string', maxLength: MAX_PREREQUISITE_LENGTH },
+    maxItems: MAX_PREREQUISITES,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_PREREQUISITES)
+  @IsString({ each: true })
+  @MaxLength(MAX_PREREQUISITE_LENGTH, { each: true })
+  prerequisites?: string[];
 
   @ApiPropertyOptional({ description: 'Last day applications are accepted' })
   @IsOptional()
@@ -217,6 +309,52 @@ export class UpdateOpportunityDto {
   @IsOptional()
   @IsDateString()
   startDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'ISO date; must not precede startDate',
+  })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Real duration in minutes (positive int)',
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  durationMinutes?: number;
+
+  @ApiPropertyOptional({
+    description: 'Participation mode (pre-publish only)',
+    enum: OPPORTUNITY_MODES,
+  })
+  @IsOptional()
+  @IsIn(OPPORTUNITY_MODES)
+  mode?: OpportunityMode;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: 'ObjectId',
+    description: 'Cover media id (purpose opportunity_cover)',
+  })
+  @IsOptional()
+  @IsMongoId()
+  coverMediaId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Prerequisites for volunteers (pre-publish only)',
+    type: 'array',
+    items: { type: 'string', maxLength: MAX_PREREQUISITE_LENGTH },
+    maxItems: MAX_PREREQUISITES,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_PREREQUISITES)
+  @IsString({ each: true })
+  @MaxLength(MAX_PREREQUISITE_LENGTH, { each: true })
+  prerequisites?: string[];
 
   @ApiPropertyOptional({
     description: 'ISO date (forward-only once published)',
