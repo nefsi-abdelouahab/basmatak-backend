@@ -39,6 +39,7 @@ import {
   VolunteerSkillSchema,
 } from '../volunteers/schemas/volunteer-skill.schema';
 import { scoreRecommendedOpportunity } from './opportunities.service';
+import { UpdateOpportunityDto } from './dto/opportunity.dto';
 
 const OP_PAIRS = [
   ['draft', 'published'],
@@ -79,6 +80,18 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
   const publishGate = {
     evaluate: jest.fn(async () => ({ locked: false })),
   } as unknown as PublishGateService;
+
+  const mediaOwnership = {
+    assertFor: jest.fn(async () => ({})),
+  };
+
+  let registrySeq = 0;
+  const registryId = {
+    getNext: jest.fn(async () => {
+      registrySeq += 1;
+      return `OPP-${String(registrySeq).padStart(6, '0')}`;
+    }),
+  };
 
   const account: AccountToken = {
     sub: '64b000000000000000000020',
@@ -121,7 +134,8 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       transitions,
       publishGate,
       adapter,
-      { getNext: jest.fn().mockResolvedValue('OPP-000001') } as never,
+      registryId as never,
+      mediaOwnership as never,
       emitter,
     );
   });
@@ -133,6 +147,7 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
   });
 
   afterEach(async () => {
+    mediaOwnership.assertFor.mockClear();
     await handle.connection.collection(OpportunitiesCollection).deleteMany({});
     await handle.connection.collection(StatusHistoryCollection).deleteMany({});
     await handle.connection
@@ -592,6 +607,279 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
         limit: '500',
       });
       expect(clamped.limit).toBe(50);
+    });
+  });
+
+  describe('11.1 opportunity fields (mode, cover, dates, duration, prerequisites)', () => {
+    const coverId = new Types.ObjectId().toString();
+
+    async function createFull() {
+      return service.createOpportunity(account, {
+        title: 'Harvest help',
+        description: 'Pick olives with the cooperative',
+        mode: 'onsite',
+        coverMediaId: coverId,
+        startDate: '2026-10-01',
+        endDate: '2026-10-05',
+        durationMinutes: 240,
+        prerequisites: ['Bring gloves'],
+        positions: [
+          {
+            title: 'Picker',
+            description: 'Pick olives',
+            requiredCount: 4,
+            requiredSkills: [],
+            deliverables: ['Two crates a day'],
+            startAt: '2026-10-01',
+          },
+        ],
+      });
+    }
+
+    it('persists all new fields and asserts the cover purpose', async () => {
+      const opp = await createFull();
+      expect(opp.mode).toBe('onsite');
+      expect(opp.coverMediaId?.toString()).toBe(coverId);
+      expect(opp.durationMinutes).toBe(240);
+      expect(opp.prerequisites).toEqual(['Bring gloves']);
+      expect(opp.endDate?.toISOString().slice(0, 10)).toBe('2026-10-05');
+      expect(opp.positions[0].deliverables).toEqual(['Two crates a day']);
+      expect(opp.positions[0].startAt?.toISOString().slice(0, 10)).toBe(
+        '2026-10-01',
+      );
+      expect(mediaOwnership.assertFor).toHaveBeenCalledWith(
+        coverId,
+        account.sub,
+        'opportunity_cover',
+      );
+    });
+
+    it('rejects an endDate preceding startDate with INVALID_END_DATE', async () => {
+      await expect(
+        service.createOpportunity(account, {
+          title: 'Bad window',
+          description: 'Ends before it starts',
+          startDate: '2026-10-05',
+          endDate: '2026-10-01',
+        }),
+      ).rejects.toMatchObject({ status: 400, code: 'INVALID_END_DATE' });
+    });
+
+    it('propagates cover ownership failures', async () => {
+      mediaOwnership.assertFor.mockRejectedValueOnce(
+        Object.assign(new Error('Media not found'), {
+          status: 404,
+          code: 'MEDIA_NOT_FOUND',
+        }),
+      );
+      await expect(
+        service.createOpportunity(account, {
+          title: 'Bad cover',
+          description: 'Foreign media',
+          coverMediaId: new Types.ObjectId().toString(),
+        }),
+      ).rejects.toMatchObject({ status: 404, code: 'MEDIA_NOT_FOUND' });
+    });
+
+    it('allows the full new field set on a draft patch', async () => {
+      const opp = await createDraft('Draft patch', 1);
+      const patched = await service.updateOpportunity(
+        account,
+        opp._id.toString(),
+        {
+          mode: 'hybrid',
+          durationMinutes: 90,
+          prerequisites: ['Bike'],
+          endDate: '2026-11-01',
+          coverMediaId: coverId,
+        },
+      );
+      expect(patched.mode).toBe('hybrid');
+      expect(patched.durationMinutes).toBe(90);
+      expect(patched.prerequisites).toEqual(['Bike']);
+      expect(patched.coverMediaId?.toString()).toBe(coverId);
+    });
+
+    it('locks mode/prerequisites/duration/endDate once published', async () => {
+      const opp = await createFull();
+      await opportunityModel
+        .updateOne({ _id: opp._id }, { $set: { status: 'published' } })
+        .exec();
+      const lockedPatches: UpdateOpportunityDto[] = [
+        { mode: 'remote' },
+        { prerequisites: ['Late'] },
+        { durationMinutes: 60 },
+        { endDate: '2026-10-06' },
+      ];
+      for (const patch of lockedPatches) {
+        await expect(
+          service.updateOpportunity(account, opp._id.toString(), patch),
+        ).rejects.toMatchObject({
+          status: 409,
+          code: 'OPPORTUNITY_FIELD_LOCKED',
+        });
+      }
+    });
+
+    it('allows cover changes until the first acceptance', async () => {
+      const opp = await createFull();
+      await opportunityModel
+        .updateOne({ _id: opp._id }, { $set: { status: 'published' } })
+        .exec();
+      const nextCover = new Types.ObjectId().toString();
+      const patched = await service.updateOpportunity(
+        account,
+        opp._id.toString(),
+        { coverMediaId: nextCover },
+      );
+      expect(patched.coverMediaId?.toString()).toBe(nextCover);
+
+      await handle.connection.db!.collection('task_participants').insertOne({
+        opportunityId: opp._id,
+        positionId: opp.positions[0]._id,
+        volunteerId: new Types.ObjectId(),
+        status: 'accepted',
+      });
+      await expect(
+        service.updateOpportunity(account, opp._id.toString(), {
+          coverMediaId: new Types.ObjectId().toString(),
+        }),
+      ).rejects.toMatchObject({
+        status: 409,
+        code: 'OPPORTUNITY_HAS_ACCEPTED_PARTICIPANTS',
+      });
+    });
+
+    it('stores deliverables/startAt on position add and patch', async () => {
+      const opp = await createDraft('Position extras', 1);
+      const withAdded = await service.addPosition(account, opp._id.toString(), {
+        title: 'Driver',
+        requiredCount: 1,
+        deliverables: ['Deliver crates'],
+        startAt: '2026-10-02',
+      });
+      const added = withAdded.positions.find((p) => p.title === 'Driver')!;
+      expect(added.deliverables).toEqual(['Deliver crates']);
+      const patched = await service.updatePosition(
+        account,
+        opp._id.toString(),
+        added._id.toString(),
+        { deliverables: ['Deliver crates', 'Fuel log'] },
+      );
+      expect(
+        patched.positions.find(
+          (p) => p._id.toString() === added._id.toString(),
+        )!.deliverables,
+      ).toEqual(['Deliver crates', 'Fuel log']);
+    });
+
+    it('never exposes perks or logistics paths on the schema', async () => {
+      const paths = Object.keys(opportunityModel.schema.paths);
+      for (const banned of [
+        'perks',
+        'hostLogistics',
+        'accommodation',
+        'languageOfRecord',
+      ]) {
+        expect(paths).not.toContain(banned);
+      }
+    });
+  });
+
+  describe('11.2 org single-read and duplicate', () => {
+    it('reads back an own draft via getOwnById', async () => {
+      const opp = await service.createOpportunity(account, {
+        title: 'Own draft read',
+        description: 'Draft detail',
+        mode: 'remote',
+        durationMinutes: 45,
+      });
+      const found = await service.getOwnById(account, opp._id.toString());
+      expect(found._id.toString()).toBe(opp._id.toString());
+      expect(found.mode).toBe('remote');
+    });
+
+    it('hides foreign and malformed ids with 404', async () => {
+      const opp = await createDraft('Foreign hidden', 1);
+      const otherOrg = {
+        _id: new Types.ObjectId(),
+        slug: 'other',
+        verificationStatus: 'verified',
+        status: 'active',
+      } as unknown as OrganizationModel;
+      (organizations.findByUserId as jest.Mock).mockResolvedValueOnce(otherOrg);
+      await expect(
+        service.getOwnById(account, opp._id.toString()),
+      ).rejects.toMatchObject({ status: 404 });
+      await expect(
+        service.getOwnById(account, 'not-an-id'),
+      ).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('duplicates as an independent draft with fresh identity', async () => {
+      const source = await service.createOpportunity(account, {
+        title: 'Source to copy',
+        description: 'Copy me',
+        mode: 'hybrid',
+        durationMinutes: 120,
+        prerequisites: ['Boots'],
+        startDate: '2026-10-01',
+        endDate: '2026-10-03',
+        positions: [
+          {
+            title: 'Helper',
+            description: 'Help out',
+            requiredCount: 3,
+            requiredSkills: [],
+            deliverables: ['Done'],
+            startAt: '2026-10-01',
+          },
+        ],
+      });
+      await opportunityModel
+        .updateOne(
+          { _id: source._id },
+          { $set: { 'positions.$[pos].filledCount': 2 } },
+          {
+            arrayFilters: [{ 'pos._id': source.positions[0]._id }],
+          },
+        )
+        .exec();
+
+      const copy = await service.duplicateOpportunity(
+        account,
+        source._id.toString(),
+      );
+      expect(copy._id.toString()).not.toBe(source._id.toString());
+      expect(copy.slug).not.toBe(source.slug);
+      expect(copy.registryId).not.toBe(source.registryId);
+      expect(copy.status).toBe('draft');
+      expect(copy.mode).toBe('hybrid');
+      expect(copy.durationMinutes).toBe(120);
+      expect(copy.prerequisites).toEqual(['Boots']);
+      expect(copy.positions).toHaveLength(1);
+      expect(copy.positions[0]._id.toString()).not.toBe(
+        source.positions[0]._id.toString(),
+      );
+      expect(copy.positions[0].filledCount).toBe(0);
+      expect(copy.positions[0].requiredCount).toBe(3);
+      expect(copy.positions[0].deliverables).toEqual(['Done']);
+
+      const fresh = await service.getOwnById(account, source._id.toString());
+      expect(fresh.positions[0].filledCount).toBe(2);
+    });
+
+    it('rejects duplicating a foreign id with 404', async () => {
+      const otherOrg = {
+        _id: new Types.ObjectId(),
+        slug: 'stranger',
+        verificationStatus: 'verified',
+        status: 'active',
+      } as unknown as OrganizationModel;
+      (organizations.findByUserId as jest.Mock).mockResolvedValueOnce(otherOrg);
+      await expect(
+        service.duplicateOpportunity(account, new Types.ObjectId().toString()),
+      ).rejects.toMatchObject({ status: 404 });
     });
   });
 });

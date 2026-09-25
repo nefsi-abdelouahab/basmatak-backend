@@ -14,6 +14,10 @@ export const OPPORTUNITY_STATUSES = [
 
 export type OpportunityStatus = (typeof OPPORTUNITY_STATUSES)[number];
 
+export const OPPORTUNITY_MODES = ['onsite', 'remote', 'hybrid'] as const;
+
+export type OpportunityMode = (typeof OPPORTUNITY_MODES)[number];
+
 export interface OpportunityLocation {
   wilayaId?: string;
   municipalityId?: string;
@@ -26,6 +30,8 @@ export interface Position {
   requiredCount: number;
   filledCount: number;
   requiredSkills: Types.ObjectId[];
+  deliverables: string[];
+  startAt?: Date;
 }
 
 export class PositionModel extends Document implements Position {
@@ -35,6 +41,8 @@ export class PositionModel extends Document implements Position {
   requiredCount!: number;
   filledCount!: number;
   requiredSkills!: Types.ObjectId[];
+  deliverables!: string[];
+  startAt?: Date;
 }
 
 export interface Opportunity {
@@ -45,7 +53,12 @@ export interface Opportunity {
   description: string;
   categoryId: Types.ObjectId;
   status: OpportunityStatus;
+  mode?: OpportunityMode;
+  coverMediaId?: Types.ObjectId;
   startDate?: Date;
+  endDate?: Date;
+  durationMinutes?: number;
+  prerequisites: string[];
   applicationDeadline?: Date;
   location?: OpportunityLocation;
   positions: Position[];
@@ -59,7 +72,12 @@ export class OpportunityModel extends Document implements Opportunity {
   description!: string;
   categoryId!: Types.ObjectId;
   status!: OpportunityStatus;
+  mode?: OpportunityMode;
+  coverMediaId?: Types.ObjectId;
   startDate?: Date;
+  endDate?: Date;
+  durationMinutes?: number;
+  prerequisites!: string[];
   applicationDeadline?: Date;
   location?: OpportunityLocation;
   positions!: Types.DocumentArray<PositionModel>;
@@ -86,6 +104,8 @@ export const PositionSchema: Schema<PositionModel> = new Schema<PositionModel>({
   requiredCount: { type: Number, required: true, min: 1 },
   filledCount: { type: Number, required: true, default: 0, min: 0 },
   requiredSkills: { type: [Schema.Types.ObjectId], default: [] },
+  deliverables: { type: [String], default: [] },
+  startAt: { type: Date },
 });
 
 export const OpportunitySchema: Schema<OpportunityModel> = createSchema({
@@ -103,7 +123,12 @@ export const OpportunitySchema: Schema<OpportunityModel> = createSchema({
     required: true,
     default: 'draft',
   },
+  mode: { type: String, enum: OPPORTUNITY_MODES },
+  coverMediaId: { type: Schema.Types.ObjectId },
   startDate: { type: Date },
+  endDate: { type: Date },
+  durationMinutes: { type: Number, min: 1 },
+  prerequisites: { type: [String], default: [] },
   applicationDeadline: { type: Date },
   location: { type: locationSchema },
   positions: { type: [PositionSchema], default: [] },

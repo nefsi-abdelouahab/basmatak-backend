@@ -445,6 +445,190 @@ describe('opportunities e2e (task lifecycle, feed, positions, job tick)', () => 
     });
   });
 
+  describe('11 opportunity fields, single-read and duplicate', () => {
+    let token: string;
+
+    beforeAll(async () => {
+      token = await registerVerifiedOrg('fields-org@example.com');
+    });
+
+    async function createFull(title: string): Promise<Record<string, any>> {
+      return createOpportunity(token, {
+        title,
+        description: 'Full field coverage',
+        mode: 'hybrid',
+        durationMinutes: 180,
+        prerequisites: ['Bring gloves', 'Arrive early'],
+        startDate: '2026-10-01',
+        endDate: '2026-10-05',
+        positions: [
+          {
+            title: 'Picker',
+            requiredCount: 2,
+            requiredSkills: [],
+            deliverables: ['Two crates a day'],
+            startAt: '2026-10-02',
+          },
+        ],
+      });
+    }
+
+    it('creates with all fields and reads them back on the own single-read (draft)', async () => {
+      const opp = await createFull('Field coverage');
+      expect(opp.mode).toBe('hybrid');
+      expect(opp.durationMinutes).toBe(180);
+      expect(opp.prerequisites).toEqual(['Bring gloves', 'Arrive early']);
+      expect(opp.positions[0].deliverables).toEqual(['Two crates a day']);
+
+      const single = await request(info.app.getHttpServer())
+        .get(`${ME_OPPORTUNITIES}/${opp._id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(single.body.mode).toBe('hybrid');
+      expect(single.body.durationMinutes).toBe(180);
+      expect(single.body.positions[0].deliverables).toEqual([
+        'Two crates a day',
+      ]);
+      for (const banned of [
+        'perks',
+        'hostLogistics',
+        'accommodation',
+        'languageOfRecord',
+      ]) {
+        expect(single.body).not.toHaveProperty(banned);
+      }
+    });
+
+    it('publishes and exposes the fields on public detail and feed cards', async () => {
+      const opp = await createFull('Public field exposure');
+      await request(info.app.getHttpServer())
+        .post(`${OPPORTUNITIES}/${opp._id}/publish`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const detail = await request(info.app.getHttpServer())
+        .get(`${OPPORTUNITIES}/${opp._id}`)
+        .expect(200);
+      expect(detail.body.mode).toBe('hybrid');
+      expect(detail.body.durationMinutes).toBe(180);
+      expect(detail.body.prerequisites).toEqual([
+        'Bring gloves',
+        'Arrive early',
+      ]);
+      expect(detail.body.positions[0].deliverables).toEqual([
+        'Two crates a day',
+      ]);
+
+      const feed = await listFeed('?q=Public+field+exposure');
+      const card = feed.find((entry) => entry.slug === detail.body.slug)!;
+      expect(card).toBeDefined();
+      expect(card.mode).toBe('hybrid');
+      expect(card.durationMinutes).toBe(180);
+    });
+
+    it('rejects invalid mode, duration, date window and unknown cover', async () => {
+      await request(info.app.getHttpServer())
+        .post(ME_OPPORTUNITIES)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: 'Bad mode task',
+          description: 'Invalid mode',
+          mode: 'teleport',
+        })
+        .expect(400);
+
+      await request(info.app.getHttpServer())
+        .post(ME_OPPORTUNITIES)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: 'Bad duration task',
+          description: 'Zero minutes',
+          durationMinutes: 0,
+        })
+        .expect(400);
+
+      await request(info.app.getHttpServer())
+        .post(ME_OPPORTUNITIES)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: 'Bad window task',
+          description: 'Ends before it starts',
+          startDate: '2026-10-05',
+          endDate: '2026-10-01',
+        })
+        .expect(400)
+        .then((response) => {
+          expect(response.body.code).toBe('INVALID_END_DATE');
+        });
+
+      await request(info.app.getHttpServer())
+        .post(ME_OPPORTUNITIES)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          title: 'Unknown cover task',
+          description: 'Missing media',
+          coverMediaId: await uuid0(),
+        })
+        .expect(404)
+        .then((response) => {
+          expect(response.body.code).toBe('MEDIA_NOT_FOUND');
+        });
+    });
+
+    it('locks mode once published but allows description edits', async () => {
+      const opp = await createFull('Published field lock');
+      await request(info.app.getHttpServer())
+        .post(`${OPPORTUNITIES}/${opp._id}/publish`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      await request(info.app.getHttpServer())
+        .patch(`${OPPORTUNITIES}/${opp._id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ mode: 'remote' })
+        .expect(409)
+        .then((response) => {
+          expect(response.body.code).toBe('OPPORTUNITY_FIELD_LOCKED');
+        });
+
+      await request(info.app.getHttpServer())
+        .patch(`${OPPORTUNITIES}/${opp._id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ description: 'Still editable after publish' })
+        .expect(200)
+        .then((response) => {
+          expect(response.body.description).toBe(
+            'Still editable after publish',
+          );
+        });
+    });
+
+    it('duplicates as an independent draft and hides foreign rows', async () => {
+      const opp = await createFull('Duplicate source');
+      const copy = await request(info.app.getHttpServer())
+        .post(`${ME_OPPORTUNITIES}/${opp._id}/duplicate`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(201);
+      expect(copy.body._id).not.toBe(opp._id);
+      expect(copy.body.slug).not.toBe(opp.slug);
+      expect(copy.body.registryId).not.toBe(opp.registryId);
+      expect(copy.body.status).toBe('draft');
+      expect(copy.body.mode).toBe('hybrid');
+      expect(copy.body.positions[0].filledCount).toBe(0);
+      expect(copy.body.positions[0].deliverables).toEqual(['Two crates a day']);
+
+      const stranger = await registerVerifiedOrg('stranger-org@example.com');
+      await request(info.app.getHttpServer())
+        .get(`${ME_OPPORTUNITIES}/${opp._id}`)
+        .set('Authorization', `Bearer ${stranger}`)
+        .expect(404);
+      await request(info.app.getHttpServer())
+        .post(`${ME_OPPORTUNITIES}/${opp._id}/duplicate`)
+        .set('Authorization', `Bearer ${stranger}`)
+        .expect(404);
+    });
+  });
+
   describe('5.8 job tick activates accepted participants exactly once', () => {
     it('moves started opportunities to in_progress and participants to active, idempotently', async () => {
       const token = await registerVerifiedOrg('job-org@example.com');
