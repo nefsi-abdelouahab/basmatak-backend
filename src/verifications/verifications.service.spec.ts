@@ -535,6 +535,45 @@ describe('VerificationsService (S11 Part B)', () => {
       expect(experience.verificationCode).toMatch(CODE_PATTERN);
     });
 
+    it('stamps the opportunity durationMinutes and falls back to 0 for legacy rows', async () => {
+      const { opportunityId, evidenceId } = await seedBase();
+      await opportunityModel.updateOne(
+        { _id: opportunityId },
+        { $set: { durationMinutes: 180 } },
+      );
+      const participant = await seedExtraParticipant(opportunityId);
+      const submission = await seedSubmission(
+        'submitted',
+        participant,
+        evidenceId,
+        opportunityId,
+      );
+      await service.verify(orgAccount(), String(submission._id), {});
+      const experience = await experienceModel.findOne({
+        submissionId: submission._id,
+      });
+      expect(experience.duration).toBe(180);
+      const profile = await profileModel.findOne({ userId: VOLUNTEER_ID });
+      expect(profile.stats.volunteerHours).toBe(180);
+
+      await opportunityModel.updateOne(
+        { _id: opportunityId },
+        { $unset: { durationMinutes: 1 } },
+      );
+      const legacyParticipant = await seedExtraParticipant(opportunityId);
+      const legacySubmission = await seedSubmission(
+        'submitted',
+        legacyParticipant,
+        evidenceId,
+        opportunityId,
+      );
+      await service.verify(orgAccount(), String(legacySubmission._id), {});
+      const legacy = await experienceModel.findOne({
+        submissionId: legacySubmission._id,
+      });
+      expect(legacy.duration).toBe(0);
+    });
+
     it('inserts a review only when provided', async () => {
       const first = await verifyHappyPath({
         review: { rating: 5, comment: 'Outstanding' },

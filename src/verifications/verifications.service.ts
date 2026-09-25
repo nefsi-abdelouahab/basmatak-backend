@@ -46,12 +46,15 @@ const INVALID_STATUS_TRANSITION = 'INVALID_STATUS_TRANSITION';
 const REVIEW_ALREADY_EXISTS = 'REVIEW_ALREADY_EXISTS';
 
 /**
- * Snapshot duration for an experience (D13). No source schema carries a
- * duration today, so the value is `0` with no producer; a later session can
- * add a position `duration` and this seam starts returning it unchanged.
+ * Real duration source for an experience (Session 15 `experience-enrichment`).
+ * Opportunities carry the configured `durationMinutes` (Session 11); positions
+ * have no duration field, so position-level math is impossible and a
+ * wall-clock `endDate − startDate` span would conflate scheduling with
+ * volunteered hours. Legacy opportunities predating Session 11 fields mint `0`
+ * (roadmap-defined fallback; stored rows are never backfilled).
  */
-function positionDuration(_position: unknown): number {
-  return 0;
+function experienceDuration(opportunity: OpportunityModel): number {
+  return opportunity.durationMinutes ?? 0;
 }
 
 /**
@@ -350,7 +353,7 @@ export class VerificationsService {
                     title: position.title,
                     description: position.description ?? undefined,
                     skills: position.requiredSkills,
-                    duration: positionDuration(position),
+                    duration: experienceDuration(opportunity),
                     evidenceIds,
                     verificationCode,
                   },

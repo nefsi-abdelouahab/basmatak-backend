@@ -10,6 +10,7 @@ import { SkillsModule } from '../skills/skills.module';
 import { SubmissionsModule } from '../submissions/submissions.module';
 import { VolunteersModule } from '../volunteers/volunteers.module';
 import { ExperiencesController } from './experiences.controller';
+import { ExperienceEnrichmentService } from './experience-enrichment.service';
 import { ExperiencesService } from './experiences.service';
 import { PublicVerificationController } from './public-verification.controller';
 import {
@@ -55,7 +56,11 @@ import { VerificationsService } from './verifications.service';
     PublicVerificationController,
     ExperiencesController,
   ],
-  providers: [VerificationsService, ExperiencesService],
+  providers: [
+    VerificationsService,
+    ExperiencesService,
+    ExperienceEnrichmentService,
+  ],
   exports: [MongooseModule],
 })
 export class VerificationsModule {}
