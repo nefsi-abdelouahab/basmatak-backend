@@ -21,8 +21,19 @@ context: |
   POST /api/v1/internal/jobs/run with X-Jobs-Key; sessions in P1 rely on end-to-end
   tests calling that endpoint directly. Media never stored in MongoDB (StorageProvider
   interface, Supabase Storage; dev fallback local). Soft delete via status: deleted.
-  Extension seams: when a session needs a capability owned by a later session it
-  depends on an interface + inert default in src/common/seams/ swapped via DI later.
+   Extension seams: when a session needs a capability owned by a later session it
+   depends on an interface + inert default in src/common/seams/ swapped via DI later.
+
+   Frontend (F0 foundation): Next.js 14 App Router + TypeScript strict + Tailwind
+   v3 + Axios + TanStack Query + next-intl + zod. Code lives in /frontend (own
+   git repo, ignored by the parent). Message catalogs are per-area files
+   (messages/<area>/en.json + ar.json) merged by the next-intl config. The 4
+   mandates bind every screen: THEME (single tokens in src/theme, zero hardcoded
+   values), I18N (no hardcoded JSX strings, RTL via logical properties),
+   API ACCESS (one axios instance with 401 refresh-and-retry, one typed function
+   per backend endpoint, TanStack Query hooks only), RESPONSIVE (1440/1100/390).
+   One hook file per session; shared primitives in components/ui are consumed,
+   never re-edited.
 
   Phases: P1 = core loop (sessions 1-12), P2 = trust layer (13-14), P3 = admin/moderation
   (15-16), 17-21 integration/finalisation. One session = one OpenSpec change. Sessions
