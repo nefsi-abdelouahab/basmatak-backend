@@ -5,6 +5,32 @@ marketplace: organizations publish volunteering opportunities, volunteers apply,
 submit evidence of completed tasks, and verified experiences turn into a public
 "trust layer".
 
+**V2 reconciliation (delivered):** on top of the v1 core loop, the backend now
+ships neutral registry IDs (`VOL-/ORG-/OPP-/EXP-`) on volunteers, organizations,
+opportunities and experiences; opt-out public volunteer profiles with stats and
+public reviews; a full organization surface (fact sheet, profile completion,
+participant roster, aggregates, activity feed, application/submission/experience
+inboxes); enriched experiences (real durations, org identity, CSV export,
+streamed PDF attestations); bookmarks (favorites) with card state; notification
+preferences; admin analytics, filterable/CSV-exportable admin lists, status
+histories, dossier assignment, atomic moderation actions and system notices;
+and a settings/maintenance system-status surface. See
+[`docs/ROADMAP_V2_REPORT.md`](../docs/ROADMAP_V2_REPORT.md) for the per-session
+record.
+
+## Modules
+
+Core loop: `auth`, `users`, `volunteers`, `organizations`, `opportunities`,
+`applications`, `participations`, `submissions`, `verifications` (experiences),
+`reviews`, `media`, `notifications`, `portfolio`, `locations`, `skills`,
+`admin`, `reports`, `trust`, `core` (settings, maintenance, system-status,
+status-transitions, jobs), `common` (pagination, counters, seams).
+
+V2 additions: `favorites` (bookmarks), `activity` (org + volunteer streams),
+`counters` (registry-ID sequences), `notification_prefs` (per-user toggles);
+`verifications/attestation` (streamed PDFs), `participations/org-dashboard`
+(roster + aggregates), `admin` analytics/moderation-actions surfaces.
+
 ## Stack
 
 - [NestJS 10](https://nestjs.com) + TypeScript (strict), MVC layout per module
@@ -76,6 +102,7 @@ are exact — see [`backend/.env.example`](./.env.example) for per-line comments
 | `npm run seed:skills` | Seed skill categories + skills |
 | `npm run seed:admin` | Create the admin account from `ADMIN_EMAIL`/`ADMIN_PASSWORD` |
 | `npm run seed:demo` | Seed a demo organization + a few opportunities |
+| `npm run seed:backfill-registry-ids` | Idempotently mint missing `VOL-/ORG-/OPP-/EXP-` IDs on existing rows |
 | `npm run seed:all` | Locations → skills → admin → demo |
 
 Seed scripts are idempotent and driven by `src/scripts/seed.ts`
@@ -94,7 +121,12 @@ npm run test:e2e
 
 The database rig lives in `test/utils/test-db.ts` and is shared by every unit
 and e2e test. E2E covers the full core loop (register → apply → submit →
-verify) plus the deployment configuration contract (`deployment-config`).
+verify), every V2 surface, plus the deployment configuration contract
+(`deployment-config`). Current scale: 64 unit suites (627 tests), 42 e2e
+suites (487 tests). The final acceptance gate is
+`test/e2e/reconciliation.e2e-spec.ts` (Session 21): registry-ID presence and
+legacy-code absence, presence + authz smoke on every RP Part 7 route, the
+re-verified product decisions, CSV/PDF streaming checks, and a perf smoke.
 
 ## Deployment
 
@@ -121,7 +153,10 @@ Out of MVP by design (tracked in [`backend-inventory.md`](../backend-inventory.m
 
 ## Docs & specs
 
-- Roadmap (sessions, acceptance criteria): [`docs/ROADMAP.md`](../docs/ROADMAP.md)
+- Roadmap v2 (sessions, acceptance criteria): [`docs/ROADMAP_V2.md`](../docs/ROADMAP_V2.md)
+- V2 delivery report (per-session record + frontend-readiness verdict): [`docs/ROADMAP_V2_REPORT.md`](../docs/ROADMAP_V2_REPORT.md)
+- Reconciliation source (conflict classification, contract decisions): [`docs/RESOLUTION_PLAN.md`](../docs/RESOLUTION_PLAN.md)
+- Roadmap v1 (sessions, acceptance criteria): [`docs/ROADMAP.md`](../docs/ROADMAP.md)
 - Route/API reference: [`docs/API.md`](../docs/API.md)
 - Source of truth for scope: [`backend-inventory.md`](../backend-inventory.md)
 - Deployment runbook: [`docs/DEPLOY.md`](../docs/DEPLOY.md)
