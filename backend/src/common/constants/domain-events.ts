@@ -17,6 +17,8 @@ export const DomainEvents = {
   OpportunityStarted: 'opportunity.started',
   OrgVerificationUpdated: 'org.verification.updated',
   PublishGateLocked: 'publish-gate.locked',
+  /** Neutral admin-to-user system notice (Session 20 moderation-actions). */
+  AdminNotice: 'admin.notice',
 } as const;
 
 export type DomainEventName = (typeof DomainEvents)[keyof typeof DomainEvents];

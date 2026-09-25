@@ -1,5 +1,6 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { StatusTransitionRegistry } from '../core/status-transitions/status-transition.registry';
 import {
   StatusHistoryCollection,
@@ -77,6 +78,7 @@ import { AdminOrganizationsController } from './organizations.controller';
 import { AdminOrganizationsService } from './organizations.service';
 import { AdminReportsController } from './reports.controller';
 import { AdminReportsService } from './reports.service';
+import { ModerationActionsService } from './moderation-actions.service';
 import { AdminReviewsController } from './reviews.controller';
 import { AdminReviewsService } from './reviews.service';
 import { AdminSettingsController } from './settings.controller';
@@ -101,6 +103,10 @@ import { AdminVolunteersService } from './volunteers.service';
  */
 @Module({
   imports: [
+    // Session 20 moderation-actions: notice delivery reuses the exported
+    // NotificationsService + NotificationPrefsService (no cycles: nothing in
+    // that tree imports AdminModule).
+    NotificationsModule,
     MongooseModule.forFeature([
       { name: UsersCollection, schema: UserSchema },
       { name: OrganizationsCollection, schema: OrganizationSchema },
@@ -159,6 +165,7 @@ import { AdminVolunteersService } from './volunteers.service';
     AdminOpportunitiesService,
     AdminReviewsService,
     AdminReportsService,
+    ModerationActionsService,
     AdminAuditService,
     AdminStatusHistoriesService,
     AdminSettingsService,

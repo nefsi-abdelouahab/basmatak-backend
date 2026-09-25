@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Res,
   StreamableFile,
@@ -20,7 +21,9 @@ import { AccountToken } from '../common/interfaces/account-token.interface';
 import { CursorPage } from '../common/pagination/paginated.interface';
 import { UserModel } from '../users/schemas/user.schema';
 import { UserStatusDto, UsersQueryDto } from './dto/admin-query.dto';
+import { AdminNoticeDto } from './dto/moderation-action.dto';
 import { AdminUsersService } from './users.service';
+import { ModerationActionsService } from './moderation-actions.service';
 import { adminCsvFilename, adminCsvStream } from './csv/admin-csv';
 
 @ApiBearerAuth()
@@ -28,7 +31,10 @@ import { adminCsvFilename, adminCsvStream } from './csv/admin-csv';
 @Controller('admin/users')
 @Roles('admin')
 export class AdminUsersController {
-  constructor(private readonly users: AdminUsersService) {}
+  constructor(
+    private readonly users: AdminUsersService,
+    private readonly moderation: ModerationActionsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List users with role/status/email filters' })
@@ -77,5 +83,20 @@ export class AdminUsersController {
       reason: dto.reason,
       notes: dto.notes,
     });
+  }
+
+  @ApiParam({
+    name: 'userId',
+    description: 'The user id',
+    type: String,
+    format: 'ObjectId',
+  })
+  @Post(':userId/notice')
+  @ApiOperation({ summary: 'Send a neutral system notice to a user' })
+  sendNotice(
+    @Param('userId') userId: string,
+    @Body() dto: AdminNoticeDto,
+  ): Promise<{ delivered: boolean }> {
+    return this.moderation.sendNotice(userId, dto.message);
   }
 }
