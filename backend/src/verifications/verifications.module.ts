@@ -10,6 +10,8 @@ import { SkillsModule } from '../skills/skills.module';
 import { SubmissionsModule } from '../submissions/submissions.module';
 import { VolunteersModule } from '../volunteers/volunteers.module';
 import { ExperiencesController } from './experiences.controller';
+import { AttestationController } from './attestation/attestation.controller';
+import { AttestationService } from './attestation/attestation.service';
 import { ExperienceEnrichmentService } from './experience-enrichment.service';
 import { ExperiencesService } from './experiences.service';
 import { PublicVerificationController } from './public-verification.controller';
@@ -55,11 +57,14 @@ import { VerificationsService } from './verifications.service';
     VerificationsController,
     PublicVerificationController,
     ExperiencesController,
+    // Session 18 attestation download (registration-line-only addition).
+    AttestationController,
   ],
   providers: [
     VerificationsService,
     ExperiencesService,
     ExperienceEnrichmentService,
+    AttestationService,
   ],
   exports: [MongooseModule],
 })
