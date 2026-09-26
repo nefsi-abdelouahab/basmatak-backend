@@ -727,7 +727,7 @@ PHASE 1 — AUTHOR THE OPENSPEC CHANGE (then stop for my review):
 4. STOP. Reply with capabilities, task count, deviations. Wait for my go.
 
 PHASE 2 — IMPLEMENT (only after I say go):
-5. Work tasks.md in /frontend; check off each item. Stay inside the session scope. Honor the section's file-disjointness: only touch the session's route dir + its lib/api/* + its hooks/* + its message-key prefix; shared primitives are consumed, not edited. If another session's file needs a change, STOP and flag.
+5. Work tasks.md in /frontend; check off each item. Stay inside the session scope. Honor the section's file-disjointness: only touch the session's route dir + its lib/api/* + its hooks/* + its message-key prefix (message catalogs are auto-discovered -- never edit src/i18n/request.ts); shared primitives are consumed, not edited. If another session's file needs a change, STOP and flag.
 6. Verify from /frontend: npm run build; npm run lint; npm test; npm run test:e2e (viewport matrix 1440/1100/390; locales en+ar). Then from repo root: openspec validate frontend-<TOPIC> (final: also openspec validate --all --strict).
 7. Archive: openspec archive frontend-<TOPIC> -y   (skip for Session F19 — no change).
 8. Commit locally: git add -A; git commit -m "<suggested commit message>". Never push, never amend, never branch unless asked.
