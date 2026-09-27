@@ -1,0 +1,32 @@
+## 1. API layer (API ACCESS mandate: one typed fn per endpoint, via F0 axios client)
+
+- [x] 1.1 Add `lib/api/adminLists.ts` — volunteer fns (base `/api/v1`, zod-validated, `CursorPage` totals): `listAdminVolunteers` (`GET /admin/volunteers`, `?q=&wilayaId=&municipalityId=&skillId=&from=&to=&sort=&page=&pageSize=`), `getAdminVolunteerExperiences` (`GET /admin/volunteers/:volunteerId/experiences`), `getAdminUser` (`GET /admin/users/:userId`), `setAdminUserStatus` (`PATCH /admin/users/:userId/status`, `{status, reason?, notes?}`), `sendAdminNotice` (`POST /admin/users/:userId/notice`, `{message}` required).
+- [x] 1.2 Add `lib/api/adminLists.ts` — organization + verification fns: `listAdminOrganizations` (`GET /admin/organizations`, `?q=&type=&wilayaId=&municipalityId=&verificationStatus=&status=&sort=&page=&pageSize=`), `setAdminOrganizationStatus` (`PATCH /admin/organizations/:organizationId/status`, `{status, reason?, notes?}`), `listAdminVerifications` (`GET /admin/organizations/verifications`, `?status=&assignedAdminId=&page=&pageSize=`), `assignAdminVerification` (`PATCH /admin/organizations/verifications/:rowId/assign`, `{assignedAdminId}`), `getAdminLatestDossier` (`GET /admin/organizations/:organizationId/verification/latest`), `approveAdminVerification` (`POST /admin/organizations/:organizationId/verification/approve`), `rejectAdminVerification` (`POST .../reject`, `{rejectionReason}` required), `getDossierMedia` (`GET /media/:mediaId`, admin dossier read).
+- [x] 1.3 Add `lib/api/adminLists.ts` — opportunity + history fns: `listAdminOpportunities` (`GET /admin/opportunities`, `?q=&status=&organizationId=&sort=&page=&pageSize=`), `setAdminOpportunityStatus` (`PATCH /admin/opportunities/:opportunityId/status`, `{status: 'closed'|'cancelled', reason?, notes?}` — force-close via status-PATCH per §A#16, never a close POST), `getAdminStatusHistories` (`GET /admin/status-histories`, `?entityType=&entityId=`), CSV exporters (`format=csv` variants of the three list endpoints via the shared `downloadBlob` helper).
+- [x] 1.4 Add pure `buildAdminListQuery` helper (filter/sort/page/`pageSize` composition, `pageSize` default 20 cap 50 — never 100) plus status-vocab guards (`USER_STATUSES = active|suspended`, `OPP_CLOSE_STATUSES = closed|cancelled`, `VERIFICATION_QUEUE_STATUSES = pending|verified|rejected`); no `lib/query/keys.ts` edit — the generic F0 factory covers the `admin-manage` namespace (no archived-file touch).
+
+## 2. Hooks (TanStack Query only; no fetch/axios in components)
+
+- [x] 2.1 Add `hooks/useAdminLists.ts` (this session's single hook file): four list queries + CSV mutations + detail-gated queries (experiences/latest-dossier/histories, `enabled` on selected id) + status/assign/approve/reject/notice mutations (confirm-then-post with reason/notes gating, re-read on success); all keys from the F0 factory.
+
+## 3. Routes (THEME: tokens only; I18N: no hardcoded strings; RESPONSIVE: 1440/1100/390)
+
+- [x] 3.1 Add `app/[locale]/admin/volunteers/page.tsx`: table with `q`/wilaya/municipality/skill/date-window/sort filters, totals banner, CSV export, detail with skill/location labels + `lastActivityAt`/email-verified + latest engagement (enriched experiences, neutral empty state), suspend/reinstate dialog (`{reason, notes}`), notice dialog (required message), histories view; real vocabularies only.
+- [x] 3.2 Add `app/[locale]/admin/organizations/page.tsx`: table with `q`/type/location/verification-status/status/sort filters, totals banner, CSV export, suspend/reinstate dialog (`{reason, notes}`), histories view; no seal/civic copy.
+- [x] 3.3 Add `app/[locale]/admin/verifications/page.tsx`: pending-default FIFO triage queue (`status` + `assignedAdminId` filters, totals banner), assign-officer dialog, latest-dossier view with dossier media render (404 → neutral empty state), neutral "Approve verification" + "Reject with reason" (`{rejectionReason}` required) decisions; no "Request Info", no "Grant Law 12-06 Seal".
+- [x] 3.4 Add `app/[locale]/admin/opportunities/page.tsx`: table with `q`/status/organization/sort filters, enriched rows (positions/capacity, app counts, location labels, assigned names), totals banner, CSV export, force-close dialog (`closed|cancelled` + `{reason, notes}` via status-PATCH), histories view; no global topbar search.
+- [x] 3.5 Add `messages/admin-manage/en.json` + `ar.json` (prefix `adminManage.*` only; catalogs auto-merge — never touch `src/i18n/request.ts`); RTL logical-properties check (`ms-/me-/ps-/pe-` only, no physical `ml-/mr-/pl-/pr-`).
+- [x] 3.6 Route-local `RequireAdminManage` guard on all four routes (session role from `GET /auth/me`: guest → Login `next` redirect per decision 10, non-admin → 403 state); error/empty/loading states via F0 error mapping incl. 400/401/403/404/409/422/429; DOM asserts: no Pending/Incomplete/Legal Review/Flagged, no Request Info, no seal, no close-POST affordances anywhere.
+
+## 4. Tests (vitest + Playwright, viewports 1440/1100/390, locales en+ar)
+
+- [x] 4.1 Unit: query-builder (filters/sort/page/CSV, `pageSize` cap 50) + status-vocab guards (user/org `active|suspended` only, opp `closed|cancelled` only, queue default `pending`); reason/notes length caps; required-field gating (reject `{rejectionReason}`, notice `{message}` blocked while empty).
+- [x] 4.2 E2E (volunteers): search/filter/sort/paginate; CSV downloads as attachment; suspend-with-reason → histories show `{reason, notes}`; notice send; latest-engagement renders; non-admin 403.
+- [x] 4.3 E2E (organizations + verifications): org search/filter/sort/paginate + CSV; suspend-with-reason → histories; assign officer; approve → `verified`; reject-with-reason → `rejected` (empty blocked); latest dossier renders; non-admin 403.
+- [x] 4.4 E2E (opportunities): search/filter/sort/paginate + CSV; force-close via status-PATCH (re-read `closed`, no close-POST call); histories show `{reason, notes}`; non-admin 403.
+- [x] 4.5 E2E: full pass at 1440/1100/390 in en + ar (RTL mirror spot-check); no hardcoded theme/string/fetch violations (F0 grep gates).
+
+## 5. Verify + archive (from /frontend, then repo root)
+
+- [x] 5.1 `npm run build`, `npm run lint`, `npm test`, `npm run test:e2e` green.
+- [x] 5.2 `openspec validate frontend-admin-manage` + `openspec status --change frontend-admin-manage` clean; file-disjointness re-check vs parallel FE sessions (F14 `adminAnalytics.ts`/`useAdminAnalytics.ts`, F16 `adminModeration.ts`/`useAdminModeration.ts`) before archive; archive + commit locally (never push).
