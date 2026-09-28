@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet, { HelmetOptions } from 'helmet';
 import { AppModule } from './app.module';
+import { buildCorsOptions, parseCorsOrigins } from './common/cors/cors-options';
 
 /** Swagger interests before it except when `NODE_ENV=production` (S19). */
 function isSwaggerEnabled(): boolean {
@@ -33,9 +34,9 @@ function helmetOptions(): HelmetOptions | undefined {
 /** Shared app wiring so e2e tests exercise the real Swagger/CSP behaviour. */
 export function configureApp(app: INestApplication): INestApplication {
   app.setGlobalPrefix('api/v1');
-  app.enableCors({
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true,
-  });
+  const corsRaw = process.env.CORS_ORIGIN;
+  const corsParsed = parseCorsOrigins(corsRaw);
+  app.enableCors(buildCorsOptions(corsParsed.origins));
   app.use(helmet(helmetOptions()));
 
   if (isSwaggerEnabled()) {
@@ -54,6 +55,19 @@ export function configureApp(app: INestApplication): INestApplication {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   configureApp(app);
+
+  const allowedOrigins = parseCorsOrigins(process.env.CORS_ORIGIN);
+  if (allowedOrigins.droppedWildcard) {
+    Logger.warn(
+      'CORS_ORIGIN contained a bare "*" entry, which is not an explicit allowlist and was dropped',
+      'Bootstrap',
+    );
+  }
+  const allowlistSummary =
+    allowedOrigins.origins.length > 0
+      ? allowedOrigins.origins.join(', ')
+      : '(empty — cross-origin requests will be denied)';
+  Logger.log(`CORS allowlist: ${allowlistSummary}`, 'Bootstrap');
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
