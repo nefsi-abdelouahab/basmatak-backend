@@ -5,21 +5,50 @@ TBD - created by archiving change frontend-foundation. Update Purpose after arch
 ## Requirements
 ### Requirement: Per-area message catalogs merged by config
 
-The system SHALL organize translations as per-area files (`messages/<area>/en.json` + `messages/<area>/ar.json`, e.g. `messages/auth/en.json`, `messages/common/en.json`) merged by the next-intl configuration — per owner decision — so that sessions own disjoint key-prefix areas and never collide in one monolithic catalog.
+The system SHALL organize translations as per-area files (`messages/<area>/en.json` + `messages/<area>/ar.json`, e.g. `messages/auth/en.json`, `messages/common/en.json`) merged automatically by the next-intl configuration at build time — per owner decision — so that sessions own disjoint key-prefix areas and never collide in one monolithic catalog, and so that no session ever hand-edits the merge configuration: shipping the two locale files is sufficient for both locales to pick them up under the area key derived from the directory name (kebab-to-camelCase, e.g. `volunteer-account` becomes `volunteerAccount`).
 
 #### Scenario: Both locales load per-area catalogs
 
 - **WHEN** the app boots under `locale=en` and under `locale=ar`
-- **THEN** every shipped area contributes its strings in the active locale with zero missing-key errors, and each session's keys live under its declared area prefix
+- **THEN** every shipped area contributes its strings in the active locale with zero missing-key errors, and each session keys live under its declared area prefix
+
+#### Scenario: New area needs no config edit
+
+- **WHEN** a session ships a new `messages/<area>/en.json` + `messages/<area>/ar.json` pair without touching the merge configuration
+- **THEN** both locales serve the new area keys with zero missing-key errors
+
+#### Scenario: Unpaired locale file fails fast
+
+- **WHEN** an area ships only one of `en.json` / `ar.json`
+- **THEN** the configuration raises a descriptive error at build time instead of serving a silently incomplete catalog
 
 ### Requirement: No hardcoded UI strings in JSX
 
-The system SHALL render no hardcoded user-facing string in JSX — all copy resolves through next-intl keys present in both `en` and `ar` catalogs — per mandate I18N (roadmap §2.2).
+The system SHALL render no hardcoded user-facing string in JSX — element text
+nodes, UI-string attributes, AND error-surface renders — all copy resolves
+through next-intl keys present in both `en` and `ar` catalogs, except verbatim
+backend envelope messages (backend-owned copy, identical in both locales),
+per mandate I18N (roadmap §2.2). The provider-less root error boundary
+(`src/app/global-error.tsx`) is the sole documented exception: it renders only
+when the i18n provider itself has crashed, so catalogs are unavailable there by
+definition.
 
 #### Scenario: Catalog coverage check
 
 - **WHEN** the key-coverage audit runs over route and component sources
 - **THEN** every user-facing literal is backed by an en+ar key pair, and any hardcoded JSX string fails the session
+
+#### Scenario: Mutation failure without a backend message shows catalog copy
+
+- **WHEN** an org-review mutation (start-review/accept/reject/verify/remove)
+  fails and the error envelope carries no message
+- **THEN** the error surface shows `shared.actionError` in the active locale,
+  never a hardcoded English fallback
+
+#### Scenario: Backend-provided messages still display verbatim
+
+- **WHEN** a mutation fails and the envelope carries a non-blank message
+- **THEN** that message displays verbatim (backend-owned specificity preserved)
 
 ### Requirement: RTL correctness at locale=ar
 

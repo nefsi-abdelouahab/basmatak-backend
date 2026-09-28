@@ -171,6 +171,9 @@ export async function seedDemo(
       role: 'volunteer',
     });
   }
+  // Mirror the org path above: demo volunteer signs in verified so dev
+  // gating (EMAIL_VERIFICATION_REQUIRED / EMAIL_NOT_VERIFIED) never trips.
+  await users.setEmailVerified(volunteerUser._id.toString());
   const existingProfile = await profileModel
     .findOne({ userId: volunteerUser._id })
     .exec();

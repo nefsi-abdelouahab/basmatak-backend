@@ -57,12 +57,19 @@ export class MailTemplates {
     );
   }
 
+  private frontendLocale(): string {
+    // Frontend routing is locale-prefixed (en|ar, default en). Email
+    // templates are ar|fr, so map to the closest frontend locale: Arabic
+    // emails land on /ar/..., French (no frontend fr) falls back to /en/....
+    return this.locale === 'ar' ? 'ar' : 'en';
+  }
+
   verificationUrl(token: string): string {
-    return `${this.baseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
+    return `${this.baseUrl()}/${this.frontendLocale()}/verify-email?token=${encodeURIComponent(token)}`;
   }
 
   passwordResetUrl(token: string): string {
-    return `${this.baseUrl()}/reset-password?token=${encodeURIComponent(token)}`;
+    return `${this.baseUrl()}/${this.frontendLocale()}/reset-password?token=${encodeURIComponent(token)}`;
   }
 
   verificationSubject(locale: MailLocale = this.locale): string {
