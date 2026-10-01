@@ -1,0 +1,16 @@
+dev-org-nour@basmatak.test
+dev-org-amal@basmatak.test
+dev-org-green@basmatak.test
+dev-org-tutor@basmatak.test
+dev-org-sante@basmatak.test   ← معلّقة (pending)، غير ظاهرة في الصفحات العامة
+
+dev-yasmine@basmatak.test
+dev-amine@basmatak.test
+dev-sara@basmatak.test
+dev-karim@basmatak.test
+dev-lina@basmatak.test
+dev-omar@basmatak.test
+dev-nadia@basmatak.test
+dev-riad@basmatak.test        ← معطَّل (disabled)، لاختبار حالة الإخفاء
+
+DevSeed123!

@@ -722,6 +722,37 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
       ).rejects.toMatchObject({ status: 404, code: 'MEDIA_NOT_FOUND' });
     });
 
+    it('accepts the same required skill on two positions (value dedupe)', async () => {
+      const skill = await skillModel.create({
+        slug: 'regression-skill',
+        categoryId: new Types.ObjectId(),
+        nameAr: 'مهارة',
+        nameFr: 'Compétence',
+        order: 0,
+        active: true,
+      });
+      const skillId = skill._id.toString();
+      const opp = await service.createOpportunity(account, {
+        title: 'Shared skill',
+        description: 'Two positions needing the same skill',
+        positions: [
+          {
+            title: 'First',
+            description: 'First seat',
+            requiredCount: 1,
+            requiredSkills: [skillId],
+          },
+          {
+            title: 'Second',
+            description: 'Second seat',
+            requiredCount: 1,
+            requiredSkills: [skillId],
+          },
+        ],
+      });
+      expect(opp.positions).toHaveLength(2);
+    });
+
     it('allows the full new field set on a draft patch', async () => {
       const opp = await createDraft('Draft patch', 1);
       const patched = await service.updateOpportunity(

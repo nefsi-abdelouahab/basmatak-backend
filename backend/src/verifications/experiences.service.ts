@@ -160,7 +160,23 @@ export class ExperiencesService {
             url: null,
           });
         } else {
-          throw error;
+          // The verify transaction guarantees evidence liveness at approval
+          // time, but the stored object can go missing afterwards (expired /
+          // pruned storage key, deleted media row). That must never brick the
+          // whole experience read: degrade to metadata-only (no URL) so the
+          // record stays readable and the UI can still name the file.
+          let fallback: unknown = null;
+          try {
+            const doc = await this.mediaModel.findById(mediaId).lean().exec();
+            fallback = doc && !doc.deletedAt ? doc : null;
+          } catch {
+            fallback = null;
+          }
+          evidence.push({
+            mediaId: mediaId.toString(),
+            media: fallback,
+            url: null,
+          });
         }
       }
     }
