@@ -183,7 +183,10 @@ export class OpportunitiesService {
   }
 
   private async assertSkillsExist(skillIds: string[]): Promise<void> {
-    const ids = [...new Set(skillIds.map((id) => new Types.ObjectId(id)))];
+    // Dedupe by hex value: `new Types.ObjectId(id)` instances never satisfy
+    // `Set` reference equality, so deduping after construction keeps one
+    // entry per repeated skill and the count comparison below miscounts.
+    const ids = [...new Set(skillIds)].map((id) => new Types.ObjectId(id));
     if (ids.length === 0) {
       return;
     }

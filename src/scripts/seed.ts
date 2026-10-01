@@ -18,6 +18,7 @@ import {
 } from '../seed-data/seed.utils';
 import { seedAdmin } from './seed-admin';
 import { seedDemo } from './seed-demo';
+import { seedDev } from './seed-dev';
 import { backfillRegistryIds } from './backfill-registry-ids';
 import { RegistryIdService } from '../common/counters/registry-id.service';
 import {
@@ -38,13 +39,20 @@ import {
 } from '../volunteers/schemas/volunteer-profile.schema';
 
 type SeedTarget =
-  'locations' | 'skills' | 'admin' | 'demo' | 'backfill-registry-ids' | 'all';
+  | 'locations'
+  | 'skills'
+  | 'admin'
+  | 'demo'
+  | 'dev'
+  | 'backfill-registry-ids'
+  | 'all';
 
 const TARGETS: readonly SeedTarget[] = [
   'locations',
   'skills',
   'admin',
   'demo',
+  'dev',
   'backfill-registry-ids',
   'all',
 ];
@@ -98,6 +106,12 @@ async function run(): Promise<void> {
       const result = await seedDemo(app);
       results.push(
         `demo: org=${result.organizationEmail} verified=${result.organizationVerified}, volunteer=${result.volunteerEmail}`,
+      );
+    }
+    if (target === 'dev' || target === 'all') {
+      const result = await seedDev(app);
+      results.push(
+        `dev: orgs=${result.organizations} (verified=${result.organizationsVerified}) volunteers=${result.volunteers} opportunities=${result.opportunities} open=${result.opportunitiesOpen} applications=${result.applications} experiences=${result.experiences}`,
       );
     }
     if (target === 'backfill-registry-ids' || target === 'all') {

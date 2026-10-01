@@ -749,6 +749,43 @@ describe('VolunteersService', () => {
       const profile = await service.getPublicProfile('volunteer-a');
       expect(profile!.portfolio).toEqual({ items: [] });
     });
+
+    it('counts only public experiences in the public stats block', async () => {
+      await profileModel.updateOne(
+        { userId: new Types.ObjectId(volunteerId) },
+        {
+          $set: {
+            'stats.completedTasks': 1,
+            'stats.verifiedExperiences': 1,
+            'stats.volunteerHours': 9,
+          },
+        },
+      );
+      await experienceModel.create({
+        _id: new Types.ObjectId(),
+        submissionId: new Types.ObjectId(),
+        volunteerId: new Types.ObjectId(volunteerId),
+        organizationId: new Types.ObjectId(),
+        opportunityId: new Types.ObjectId(),
+        positionId: new Types.ObjectId(),
+        title: 'Hidden shift',
+        description: 'Later set to private',
+        skills: [],
+        duration: 9,
+        evidenceIds: [],
+        verificationCode: 'PRIV1',
+        publicVisibility: 'private',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const profile = await service.getPublicProfile('volunteer-a');
+      expect(profile!.experiences).toEqual([]);
+      expect(profile!.stats).toMatchObject({
+        completedTasks: 1,
+        verifiedExperiences: 0,
+        volunteerHours: 9,
+      });
+    });
   });
 
   describe('derived areas of contribution (FCD #4)', () => {

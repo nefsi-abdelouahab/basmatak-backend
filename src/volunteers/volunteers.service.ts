@@ -140,6 +140,8 @@ export interface PublicVolunteerProfile {
   fullName: string | null;
   firstName: string | null;
   avatar: string | null;
+  /** Cover banner media id when public, else null (same showAvatar gate). */
+  banner: string | null;
   bio: string | null;
   headline: string | null;
   availabilityNote: string | null;
@@ -517,6 +519,10 @@ export class VolunteersService {
    * Session 9 adds `fullName`/`createdAt`/headline fields, the `showStats`-gated
    * stats block, and read-time `areasOfContribution` (gated by `showExperiences`,
    * its data source). No free-form contributions list exists (FCD #4 cut).
+   * The public `stats.verifiedExperiences` counts only `publicVisibility=public`
+   * rows so the public number matches the public list (a later-hidden
+   * experience stays verified but invisible); the stored denormalized counter
+   * is untouched (dashboard/talents semantics).
    */
   async getPublicProfile(
     username: string,
@@ -529,7 +535,7 @@ export class VolunteersService {
     const flags = profile.publicProfile;
     const userId = profile.userId.toString();
 
-    const [skills, experiences, availability, avatar, portfolio, areas] =
+    const [skills, experiences, availability, avatar, banner, portfolio, areas, publicVerified] =
       await Promise.all([
         flags.showSkills ? this.loadPublicSkills(userId) : Promise.resolve([]),
         flags.showExperiences
@@ -543,12 +549,23 @@ export class VolunteersService {
         flags.showAvatar && profile.avatar
           ? this.resolvePublicAvatar(profile.avatar)
           : Promise.resolve(null),
+        flags.showAvatar && profile.banner
+          ? this.resolvePublicAvatar(profile.banner)
+          : Promise.resolve(null),
         flags.showPortfolio
           ? this.portfolioQuery.getPublicPortfolio(username)
           : Promise.resolve(null),
         flags.showExperiences
           ? this.deriveAreasOfContribution(userId)
           : Promise.resolve([]),
+        flags.showStats
+          ? this.experienceModel
+              .countDocuments({
+                volunteerId: new Types.ObjectId(userId),
+                publicVisibility: 'public',
+              })
+              .exec()
+          : Promise.resolve(null),
       ]);
 
     const fullName = [profile.firstName, profile.lastName]
@@ -570,6 +587,7 @@ export class VolunteersService {
       fullName: fullName ? fullName : null,
       firstName: flags.showBiography ? (profile.firstName ?? null) : null,
       avatar: flags.showAvatar && profile.avatar ? avatar : null,
+      banner: flags.showAvatar && profile.banner ? banner : null,
       bio: flags.showBiography ? (profile.bio ?? null) : null,
       headline: flags.showBiography ? (profile.headline ?? null) : null,
       availabilityNote: flags.showBiography
@@ -582,7 +600,14 @@ export class VolunteersService {
         ? (profile.geographicBase ?? null)
         : null,
       createdAt: profile.createdAt,
-      stats: flags.showStats ? profile.stats : null,
+      stats:
+        flags.showStats && profile.stats
+          ? {
+              completedTasks: profile.stats.completedTasks,
+              verifiedExperiences: publicVerified ?? 0,
+              volunteerHours: profile.stats.volunteerHours,
+            }
+          : null,
       areasOfContribution: flags.showExperiences ? areas : null,
       location: flags.showLocation ? (profile.location ?? null) : null,
       skills: flags.showSkills ? skills : null,
