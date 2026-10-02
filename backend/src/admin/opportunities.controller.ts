@@ -26,6 +26,7 @@ import {
 import {
   AdminOpportunitiesService,
   AdminOpportunityRow,
+  AdminOpportunityVerificationRow,
 } from './opportunities.service';
 import { adminCsvFilename, adminCsvStream } from './csv/admin-csv';
 
@@ -52,6 +53,23 @@ export class AdminOpportunitiesController {
       return new StreamableFile(adminCsvStream('opportunities', page.items));
     }
     return page;
+  }
+
+  @ApiParam({
+    name: 'opportunityId',
+    description: 'The opportunity id',
+    type: String,
+    format: 'ObjectId',
+  })
+  @Get(':opportunityId/verification-status')
+  @ApiOperation({
+    summary:
+      'Per-participant submission and verification state for one opportunity',
+  })
+  getVerificationStatus(
+    @Param('opportunityId') opportunityId: string,
+  ): Promise<{ items: AdminOpportunityVerificationRow[] }> {
+    return this.opportunities.getVerificationStatus(opportunityId);
   }
 
   @ApiParam({

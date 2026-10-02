@@ -27,6 +27,14 @@ import {
   VolunteerProfilesCollection,
 } from '../volunteers/schemas/volunteer-profile.schema';
 import {
+  SubmissionModel,
+  SubmissionsCollection,
+} from '../submissions/schemas/submission.schema';
+import {
+  VolunteerExperienceModel,
+  VolunteerExperiencesCollection,
+} from '../verifications/schemas/volunteer-experience.schema';
+import {
   LocationModel,
   LocationsCollection,
 } from '../locations/schemas/location.schema';
@@ -54,6 +62,27 @@ export interface AdminOpportunityRow {
 }
 
 /**
+ * One row of the per-opportunity verification-status read: the participant's
+ * roster state joined with their submission state (if any) and the minted
+ * experience proof (if the submission was approved). Every nullable field is
+ * a genuine absence (no submission yet, not yet approved) — never invented.
+ */
+export interface AdminOpportunityVerificationRow {
+  participantId: string;
+  volunteerName: string | null;
+  username: string | null;
+  volunteerRegistryId: string | null;
+  positionTitle: string | null;
+  participationStatus: string;
+  submissionStatus: string | null;
+  submissionTitle: string | null;
+  verificationCode: string | null;
+  experienceRegistryId: string | null;
+  /** ISO timestamp of the experience mint (= verification time). */
+  verifiedAt: string | null;
+}
+
+/**
  * Admin opportunity control (inventory §2.20 second half). Listing is a
  * read-only enriched projection (positions/capacity, application counts,
  * location labels, assigned volunteer names); status changes (force
@@ -73,6 +102,10 @@ export class AdminOpportunitiesService {
     private readonly participantModel: Model<TaskParticipantModel>,
     @InjectModel(VolunteerProfilesCollection)
     private readonly profileModel: Model<VolunteerProfileModel>,
+    @InjectModel(SubmissionsCollection)
+    private readonly submissionModel: Model<SubmissionModel>,
+    @InjectModel(VolunteerExperiencesCollection)
+    private readonly experienceModel: Model<VolunteerExperienceModel>,
     @InjectModel(LocationsCollection)
     private readonly locationModel: Model<LocationModel>,
     private readonly statusTransitions: StatusTransitionService,
@@ -232,6 +265,122 @@ export class AdminOpportunitiesService {
         assignedNames: assigned,
       };
     });
+  }
+
+  /**
+   * Per-participant submission/verification state for one opportunity (admin
+   * read for the Manage Opportunities detail panel). Participants come from
+   * `task_participants`; each row joins the volunteer's public profile
+   * (name/username/registryId), the embedded position title, the submission
+   * state by `participantId` (unique), and the minted experience proof by
+   * `submissionId` (one row per approved submission). `404` when the id is
+   * not a known opportunity; an empty `items` array when nobody was accepted
+   * yet. Read-only: no writes, no new collections.
+   */
+  async getVerificationStatus(
+    opportunityId: string,
+  ): Promise<{ items: AdminOpportunityVerificationRow[] }> {
+    if (!Types.ObjectId.isValid(opportunityId)) {
+      throw new BusinessException(
+        'OPPORTUNITY_NOT_FOUND',
+        'Opportunity not found',
+        404,
+      );
+    }
+    const opportunity = await this.opportunityModel
+      .findById(opportunityId)
+      .lean()
+      .exec();
+    if (!opportunity) {
+      throw new BusinessException(
+        'OPPORTUNITY_NOT_FOUND',
+        'Opportunity not found',
+        404,
+      );
+    }
+    const participants = await this.participantModel
+      .find({ opportunityId: opportunity._id })
+      .sort({ _id: 1 })
+      .lean()
+      .exec();
+    if (participants.length === 0) {
+      return { items: [] };
+    }
+    const participantIds = participants.map((item) => item._id);
+    const volunteerIds = [
+      ...new Set(participants.map((item) => item.volunteerId.toString())),
+    ].map((id) => new Types.ObjectId(id));
+    const [submissions, experiences, profiles] = await Promise.all([
+      this.submissionModel
+        .find({ participantId: { $in: participantIds } })
+        .select('participantId status title')
+        .lean()
+        .exec(),
+      this.experienceModel
+        .find({ opportunityId: opportunity._id })
+        .select('submissionId verificationCode registryId createdAt')
+        .lean()
+        .exec(),
+      this.profileModel
+        .find({ userId: { $in: volunteerIds } })
+        .select('userId username firstName lastName registryId')
+        .lean()
+        .exec(),
+    ]);
+    const submissionByParticipant = new Map(
+      submissions.map((submission) => [
+        submission.participantId.toString(),
+        submission,
+      ]),
+    );
+    const experienceBySubmission = new Map(
+      experiences.map((experience) => [
+        experience.submissionId.toString(),
+        experience,
+      ]),
+    );
+    const profileByUserId = new Map(
+      profiles.map((profile) => [profile.userId.toString(), profile]),
+    );
+    const positionTitleById = new Map(
+      (opportunity.positions ?? []).map((position) => [
+        (position as { _id?: Types.ObjectId })._id?.toString() ?? '',
+        position.title ?? null,
+      ]),
+    );
+    return {
+      items: participants.map((item) => {
+        const profile = profileByUserId.get(item.volunteerId.toString());
+        const fullName = [profile?.firstName, profile?.lastName]
+          .filter(Boolean)
+          .join(' ');
+        const submission =
+          submissionByParticipant.get(item._id.toString()) ?? null;
+        const experience =
+          submission != null
+            ? (experienceBySubmission.get(
+                submission._id.toString(),
+              ) ?? null)
+            : null;
+        return {
+          participantId: item._id.toString(),
+          volunteerName: fullName !== '' ? fullName : (profile?.username ?? null),
+          username: profile?.username ?? null,
+          volunteerRegistryId: profile?.registryId ?? null,
+          positionTitle:
+            positionTitleById.get(item.positionId.toString()) ?? null,
+          participationStatus: item.status,
+          submissionStatus: submission?.status ?? null,
+          submissionTitle: submission?.title ?? null,
+          verificationCode: experience?.verificationCode ?? null,
+          experienceRegistryId: experience?.registryId ?? null,
+          verifiedAt:
+            experience?.createdAt != null
+              ? new Date(experience.createdAt).toISOString()
+              : null,
+        };
+      }),
+    };
   }
 
   async setStatus(

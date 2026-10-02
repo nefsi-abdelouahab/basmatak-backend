@@ -33,6 +33,14 @@ import {
   VolunteerProfileSchema,
 } from '../volunteers/schemas/volunteer-profile.schema';
 import {
+  SubmissionsCollection,
+  SubmissionSchema,
+} from '../submissions/schemas/submission.schema';
+import {
+  VolunteerExperiencesCollection,
+  VolunteerExperienceSchema,
+} from '../verifications/schemas/volunteer-experience.schema';
+import {
   LocationsCollection,
   LocationSchema,
 } from '../locations/schemas/location.schema';
@@ -55,6 +63,10 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
   let service: AdminOpportunitiesService;
   let opportunityModel: Model<OpportunityModel>;
   let historyModel: Model<StatusHistoryModel>;
+  let participantModel: Model<any>;
+  let profileModel: Model<any>;
+  let submissionModel: Model<any>;
+  let experienceModel: Model<any>;
 
   const admin: AccountToken = {
     sub: '507f1f77bcf86cd799439011',
@@ -76,13 +88,21 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
       ApplicationsCollection,
       ApplicationSchema,
     );
-    const participantModel = handle.connection.model(
+    participantModel = handle.connection.model(
       TaskParticipantsCollection,
       TaskParticipantSchema,
     );
-    const profileModel = handle.connection.model(
+    profileModel = handle.connection.model(
       VolunteerProfilesCollection,
       VolunteerProfileSchema,
+    );
+    submissionModel = handle.connection.model(
+      SubmissionsCollection,
+      SubmissionSchema,
+    );
+    experienceModel = handle.connection.model(
+      VolunteerExperiencesCollection,
+      VolunteerExperienceSchema,
     );
     const locationModel = handle.connection.model(
       LocationsCollection,
@@ -101,6 +121,8 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
       applicationModel,
       participantModel,
       profileModel,
+      submissionModel,
+      experienceModel,
       locationModel,
       transitions,
     );
@@ -115,6 +137,14 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
   afterEach(async () => {
     await handle.connection.collection(OpportunitiesCollection).deleteMany({});
     await handle.connection.collection(StatusHistoryCollection).deleteMany({});
+    await handle.connection.collection(TaskParticipantsCollection).deleteMany({});
+    await handle.connection
+      .collection(VolunteerProfilesCollection)
+      .deleteMany({});
+    await handle.connection.collection(SubmissionsCollection).deleteMany({});
+    await handle.connection
+      .collection(VolunteerExperiencesCollection)
+      .deleteMany({});
   });
 
   async function seedOpportunity(status: string, orgSuffix: string) {
@@ -219,6 +249,138 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
       await expect(
         service.setStatus(admin, '507f1f77bcf86cd799439099', 'closed'),
       ).rejects.toMatchObject({ status: 404, code: 'OPPORTUNITY_NOT_FOUND' });
+    });
+  });
+
+  describe('getVerificationStatus', () => {
+    async function seedRoster() {
+      const organizationId = new Types.ObjectId();
+      const opportunity = await opportunityModel.create({
+        organizationId,
+        slug: 'opp-roster',
+        title: 'Roster opportunity',
+        description: 'Roster opportunity description',
+        status: 'in_progress',
+        positions: [
+          {
+            title: 'Photographer',
+            description: 'Take photos',
+            requiredCount: 2,
+            filledCount: 2,
+            requiredSkills: [],
+            deliverables: ['20 RAW captures'],
+          },
+        ],
+      });
+      const positionId = (opportunity.positions as any[])[0]._id;
+      const volunteerA = new Types.ObjectId();
+      const volunteerB = new Types.ObjectId();
+      await profileModel.create({
+        userId: volunteerA,
+        username: 'amina',
+        firstName: 'Amina',
+        lastName: 'Benali',
+        registryId: 'VOL-000001',
+      });
+      const participantA = await participantModel.create({
+        opportunityId: opportunity._id,
+        positionId,
+        applicationId: new Types.ObjectId(),
+        organizationId,
+        volunteerId: volunteerA,
+        status: 'completed',
+      });
+      const participantB = await participantModel.create({
+        opportunityId: opportunity._id,
+        positionId,
+        applicationId: new Types.ObjectId(),
+        organizationId,
+        volunteerId: volunteerB,
+        status: 'active',
+      });
+      const submissionA = await submissionModel.create({
+        participantId: participantA._id,
+        opportunityId: opportunity._id,
+        positionId,
+        organizationId,
+        volunteerId: volunteerA,
+        title: 'Festival coverage',
+        consentConfirmed: true,
+        status: 'approved',
+      });
+      await submissionModel.create({
+        participantId: participantB._id,
+        opportunityId: opportunity._id,
+        positionId,
+        organizationId,
+        volunteerId: volunteerB,
+        status: 'submitted',
+      });
+      await experienceModel.create({
+        submissionId: submissionA._id,
+        volunteerId: volunteerA,
+        organizationId,
+        opportunityId: opportunity._id,
+        positionId,
+        title: 'Festival coverage',
+        registryId: 'EXP-000001',
+        verificationCode: 'ABCDEFGH',
+      });
+      return opportunity;
+    }
+
+    it('joins participant, submission, and experience proof rows', async () => {
+      const opportunity = await seedRoster();
+      const result = await service.getVerificationStatus(
+        opportunity._id.toString(),
+      );
+      expect(result.items).toHaveLength(2);
+
+      const verified = result.items.find(
+        (row) => row.volunteerRegistryId === 'VOL-000001',
+      );
+      expect(verified).toMatchObject({
+        volunteerName: 'Amina Benali',
+        username: 'amina',
+        positionTitle: 'Photographer',
+        participationStatus: 'completed',
+        submissionStatus: 'approved',
+        submissionTitle: 'Festival coverage',
+        verificationCode: 'ABCDEFGH',
+        experienceRegistryId: 'EXP-000001',
+      });
+      expect(typeof verified?.verifiedAt).toBe('string');
+
+      const pending = result.items.find(
+        (row) => row.username === null || row.volunteerRegistryId === null,
+      );
+      expect(pending).toMatchObject({
+        positionTitle: 'Photographer',
+        participationStatus: 'active',
+        submissionStatus: 'submitted',
+        verificationCode: null,
+        verifiedAt: null,
+      });
+    });
+
+    it('returns an empty list when nobody was accepted yet', async () => {
+      const opportunity = await seedOpportunity('published', 'no-roster');
+      await expect(
+        service.getVerificationStatus(opportunity._id.toString()),
+      ).resolves.toEqual({ items: [] });
+    });
+
+    it('404s for an unknown opportunity', async () => {
+      await expect(
+        service.getVerificationStatus('507f1f77bcf86cd799439099'),
+      ).rejects.toMatchObject({ status: 404, code: 'OPPORTUNITY_NOT_FOUND' });
+    });
+
+    it('404s for a malformed id', async () => {
+      await expect(service.getVerificationStatus('not-an-id')).rejects.toMatchObject({
+        status: 404,
+        code: 'OPPORTUNITY_NOT_FOUND',
+      });
     });
   });
 });

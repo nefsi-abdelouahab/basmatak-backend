@@ -505,7 +505,10 @@ export class SubmissionsService {
     );
   }
 
-  /** Attaches each evidence media's metadata (signed URL per §6 matrix). */
+  /** Attaches each evidence media's metadata (signed URL per §6 matrix).
+   * One unreadable evidence item (denied, deleted, or missing storage
+   * object) degrades to minimal metadata without a URL instead of failing
+   * the whole detail read — the same posture as the 403 branch below. */
   private async withEvidence(
     account: AccountToken,
     submission: SubmissionModel,
@@ -524,10 +527,14 @@ export class SubmissionsService {
           typeof error === 'object' &&
           error !== null &&
           'status' in error &&
-          (error as { status?: number }).status === 403
+          ((error as { status?: number }).status === 403 ||
+            (error as { status?: number }).status === 404 ||
+            (error as { status?: number }).status === 502)
         ) {
-          // Non-owner org reading private evidence: matrix denies; surface
-          // minimal metadata without a URL (Open Question: Part B wires
+          // Non-owner org reading private evidence: matrix denies; deleted
+          // media; or a storage object missing behind its metadata row (dev
+          // seed writes metadata-only placeholders). Surface minimal
+          // metadata without a URL (Open Question: Part B wires
           // OpportunityMediaAccess).
           const media = await this.mediaOwnership.findById(
             entry.mediaId.toString(),

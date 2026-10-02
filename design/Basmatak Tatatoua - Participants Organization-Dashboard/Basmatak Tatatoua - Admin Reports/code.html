@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-secondary":"#ffffff","on-background":"#141b2b","on-secondary-fixed":"#1a1b23","on-primary":"#ffffff","error-container":"#ffdad6","surface-container":"#e9edff","tertiary":"#6b3000","tertiary-fixed-dim":"#ffb68b","surface-container-highest":"#dce2f7","primary-container":"#6d28d9","on-tertiary":"#ffffff","on-primary-fixed-variant":"#5b00c5","secondary":"#5d5d67","on-surface":"#141b2b","on-error":"#ffffff","secondary-container":"#e3e1ed","on-primary-container":"#dac5ff","surface-bright":"#f9f9ff","on-tertiary-container":"#ffc19e","surface-container-high":"#e1e8fd","surface-container-low":"#f1f3ff","inverse-on-surface":"#edf0ff","tertiary-fixed":"#ffdbc8","surface-variant":"#dce2f7","surface-dim":"#d3daef","background":"#f9f9ff","outline-variant":"#ccc3d7","surface":"#f9f9ff","on-error-container":"#93000a","primary-fixed-dim":"#d3bbff","on-surface-variant":"#4a4455","inverse-primary":"#d3bbff","on-tertiary-fixed":"#321300","surface-container-lowest":"#ffffff","on-primary-fixed":"#250059","primary-fixed":"#ebddff","outline":"#7b7486","error":"#ba1a1a","primary":"#5300b7","on-tertiary-fixed-variant":"#743400","tertiary-container":"#8f4200","secondary-fixed-dim":"#c7c5d1","on-secondary-fixed-variant":"#46464f","secondary-fixed":"#e3e1ed","surface-tint":"#7331df","on-secondary-container":"#64636d","inverse-surface":"#293040"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xs":"0.25rem","space-xl":"2rem","space-sm":"0.5rem","space-lg":"1.5rem","margin-mobile":"1rem","gutter-mobile":"0.75rem","margin":"1.5rem","space-md":"1rem","gutter":"1.5rem"},fontFamily:{"label-xs":["Inter"],"body-sm":["Inter"],"title-md":["Inter"],"label-md":["Inter"],"label-sm":["Inter"],"body-lg":["Inter"],"headline-md":["Inter"],"title-sm":["Inter"],"headline-lg":["Inter"],"display-lg":["Inter"],"title-lg":["Inter"],"body-md":["Inter"]},fontSize:{"label-xs":["11px",{lineHeight:"14px",fontWeight:"500"}],"body-sm":["13px",{lineHeight:"18px",fontWeight:"400"}],"title-md":["16px",{lineHeight:"24px",fontWeight:"600"}],"label-md":["14px",{lineHeight:"20px",fontWeight:"500"}],"label-sm":["12px",{lineHeight:"16px",fontWeight:"500"}],"body-lg":["15px",{lineHeight:"23px",fontWeight:"400"}],"headline-md":["20px",{lineHeight:"28px",fontWeight:"600"}],"title-sm":["15px",{lineHeight:"22px",fontWeight:"500"}],"headline-lg":["24px",{lineHeight:"32px",fontWeight:"600"}],"display-lg":["30px",{lineHeight:"38px",fontWeight:"600"}],"title-lg":["18px",{lineHeight:"26px",fontWeight:"600"}],"body-md":["14px",{lineHeight:"21px",fontWeight:"400"}]}}}}</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[20px]">volunteer_activism</span></div><div class="flex flex-col"><span class="font-title-sm text-title-sm text-on-surface leading-none">Basmatak</span><span class="font-label-xs text-label-xs text-on-surface-variant leading-none mt-1 tracking-wider uppercase">Tatatoua</span></div></div><nav class="flex flex-col px-space-md mt-space-sm gap-space-xs" data-active-classes="bg-primary-container text-on-primary rounded-lg font-label-md"><div class="px-space-sm pt-space-sm pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">OVERVIEW</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[18px]">space_dashboard</span><span>Dashboard</span></a><div class="px-space-sm pt-space-md pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">MANAGEMENT</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="volunteers" href="#"><span class="material-symbols-outlined text-[18px]">group</span><span>Volunteers</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="organizations" href="#"><span class="material-symbols-outlined text-[18px]">domain</span><span>Organizations</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="opportunities" href="#"><span class="material-symbols-outlined text-[18px]">event_available</span><span>Opportunities</span></a><div class="px-space-sm pt-space-md pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">MODERATION</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="reports" href="#"><span class="material-symbols-outlined text-[18px]">flag</span><span>Reports</span></a><div class="px-space-sm pt-space-md pb-space-xs"><span class="font-label-xs text-label-xs text-outline tracking-wider font-semibold uppercase">SYSTEM</span></div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors font-label-md text-label-md" data-path="settings" href="#"><span class="material-symbols-outlined text-[18px]">settings</span><span>Settings</span></a></nav></div><div class="p-space-lg"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-600"></span><span class="font-label-xs text-label-xs text-on-surface-variant">System v2.4 · All operational</span></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-space-lg flex items-center justify-between"><div class="flex items-center gap-space-md"><span class="font-label-xs text-label-xs font-semibold uppercase tracking-wider text-outline px-space-sm py-1 bg-surface-container-low rounded">PLATFORM ADMINISTRATION</span></div><div class="flex items-center gap-space-lg"><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-3 text-on-surface-variant text-[18px]">search</span><input class="h-10 pl-10 pr-4 w-72 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:bg-surface-container" placeholder="Search records, entities, logs..." type="text"/></div><button aria-label="Notifications" class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 bg-primary-container rounded-full"></span></button><div class="flex items-center gap-space-sm"><div class="flex flex-col text-right"><span class="font-title-sm text-title-sm text-on-surface leading-tight">Platform Admin</span><span class="font-label-xs text-label-xs text-outline leading-tight">Super Administrator</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="max-w-[1440px] w-full mx-auto px-6 py-8 flex flex-col gap-6">
+<!-- Top Administrative Header -->
+<div class="flex flex-col gap-4 bg-surface-container-lowest p-6 rounded-lg shadow-sm">
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 font-label-xs text-label-xs text-secondary mb-1">
+<span class="hover:text-on-surface transition-colors cursor-pointer">Platform Administration</span>
+<span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span>
+<span class="font-label-xs text-label-xs text-on-surface font-semibold">Reports</span>
+</nav>
+<div class="flex items-baseline gap-3">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Reports</h1>
+<span class="font-title-sm text-title-sm text-secondary font-medium" dir="rtl" lang="ar">التقارير والبيانات التشغيلية</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary max-w-3xl">
+            Review factual platform activity and operational statistics across volunteers, accredited civil associations, opportunities, and verified civic records.
+          </p>
+</div>
+<!-- Diagnostic & Test State Controller (Strict testing toggle) -->
+<div class="flex items-center bg-surface-container-low p-1 rounded-lg gap-1">
+<span class="font-label-xs text-label-xs text-secondary px-2 font-medium">VIEW STATE:</span>
+<button class="font-label-xs text-label-xs px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all" id="btn-state-active" onclick="switchState('active')">
+            Standard (Active)
+          </button>
+<button class="font-label-xs text-label-xs px-2.5 py-1 rounded text-secondary hover:text-on-surface transition-all" id="btn-state-empty" onclick="switchState('empty')">
+            No Data (Empty)
+          </button>
+<button class="font-label-xs text-label-xs px-2.5 py-1 rounded text-secondary hover:text-on-surface transition-all" id="btn-state-error" onclick="switchState('error')">
+            Failed (Error)
+          </button>
+</div>
+</div>
+<!-- Controls & Scope Line -->
+<div class="flex flex-wrap items-center justify-between gap-4 pt-4 bg-surface-container-low px-4 py-3 rounded-lg">
+<div class="flex flex-wrap items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">calendar_today</span>
+<label class="font-label-xs text-label-xs uppercase tracking-wider text-secondary font-semibold" for="date-range">Reporting Period:</label>
+<div class="relative inline-block">
+<select class="bg-surface-container-lowest text-on-surface font-body-sm text-body-sm py-1.5 pl-3 pr-8 rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-primary-container cursor-pointer shadow-sm" id="date-range">
+<option value="today">Today</option>
+<option value="7d">Last 7 days</option>
+<option selected="" value="30d">Last 30 days</option>
+<option value="90d">Last 90 days</option>
+<option value="custom">Custom Range</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2 text-[16px] pointer-events-none text-secondary">expand_more</span>
+</div>
+</div>
+<span class="font-body-sm text-body-sm text-secondary">
+            Showing data from <strong class="text-on-surface font-medium">06 Sep 2026</strong> – <strong class="text-on-surface font-medium">06 Oct 2026</strong>
+</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-2 px-3 py-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container font-label-md text-label-md rounded-lg shadow-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">download</span>
+<span>Export CSV</span>
+</button>
+<button class="inline-flex items-center gap-2 px-4 py-1.5 bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md rounded-lg shadow-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">description</span>
+<span>Export PDF Audit</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ERROR STATE VIEW (Hidden by default) -->
+<div class="hidden bg-surface-container-lowest p-12 rounded-lg shadow-sm text-center flex-col items-center justify-center gap-4" id="view-error">
+<div class="w-12 h-12 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[24px]">error</span>
+</div>
+<div class="flex flex-col gap-1 max-w-md">
+<h3 class="font-title-md text-title-md text-on-surface">Unable to load reports</h3>
+<p class="font-body-sm text-body-sm text-secondary">The platform statistical engine encountered a communication timeout. Report data could not be computed for the selected period.</p>
+</div>
+<div class="flex items-center gap-3 mt-2">
+<button class="px-4 py-2 bg-primary-container text-on-primary font-label-md text-label-md rounded-lg hover:bg-primary transition-colors" onclick="switchState('active')">
+          Try Again
+        </button>
+<button class="px-4 py-2 bg-surface-container text-on-surface font-label-md text-label-md rounded-lg hover:bg-surface-container-high transition-colors">
+          View Audit Logs
+        </button>
+</div>
+</div>
+<!-- EMPTY STATE VIEW (Hidden by default) -->
+<div class="hidden bg-surface-container-lowest p-12 rounded-lg shadow-sm text-center flex-col items-center justify-center gap-4" id="view-empty">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]">query_stats</span>
+</div>
+<div class="flex flex-col gap-1 max-w-md">
+<h3 class="font-title-md text-title-md text-on-surface">No report data</h3>
+<p class="font-body-sm text-body-sm text-secondary">There is no documented platform activity or recorded events matching the selected date filters and administrative scopes.</p>
+</div>
+<button class="mt-2 px-4 py-2 bg-surface-container text-on-surface font-label-md text-label-md rounded-lg hover:bg-surface-container-high transition-colors" onclick="document.getElementById('date-range').value='30d'; switchState('active');">
+        Reset to Last 30 Days
+      </button>
+</div>
+<!-- ACTIVE STATE MAIN CONTENT CONTAINER -->
+<div class="flex flex-col gap-6" id="view-active">
+<!-- Section 2: Factual Operational Metrics Summary Grid -->
+<section aria-labelledby="section-metrics-title" class="flex flex-col gap-2">
+<h2 class="sr-only" id="section-metrics-title">Platform Metrics Overview</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+<!-- Metric 1: Total Volunteers -->
+<div class="bg-surface-container-lowest p-4 rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs font-semibold tracking-wider uppercase">Volunteers</span>
+<span class="material-symbols-outlined text-[18px]">group</span>
+</div>
+<div class="mt-2 flex flex-col">
+<span class="font-headline-lg text-headline-lg text-on-surface leading-tight">2,418</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1 flex items-center gap-1">
+<span class="text-emerald-700 font-semibold">+68</span> in selected period
+              </span>
+</div>
+</div>
+<!-- Metric 2: Organizations -->
+<div class="bg-surface-container-lowest p-4 rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs font-semibold tracking-wider uppercase">Organizations</span>
+<span class="material-symbols-outlined text-[18px]">domain</span>
+</div>
+<div class="mt-2 flex flex-col">
+<span class="font-headline-lg text-headline-lg text-on-surface leading-tight">142</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1 flex items-center gap-1">
+<span class="text-emerald-700 font-semibold">+9</span> accredited in period
+              </span>
+</div>
+</div>
+<!-- Metric 3: Published Opportunities -->
+<div class="bg-surface-container-lowest p-4 rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs font-semibold tracking-wider uppercase">Published Opps</span>
+<span class="material-symbols-outlined text-[18px]">campaign</span>
+</div>
+<div class="mt-2 flex flex-col">
+<span class="font-headline-lg text-headline-lg text-on-surface leading-tight">318</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1 flex items-center gap-1">
+<span class="text-emerald-700 font-semibold">+24</span> published in period
+              </span>
+</div>
+</div>
+<!-- Metric 4: Completed Opportunities -->
+<div class="bg-surface-container-lowest p-4 rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs font-semibold tracking-wider uppercase">Completed Opps</span>
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+</div>
+<div class="mt-2 flex flex-col">
+<span class="font-headline-lg text-headline-lg text-on-surface leading-tight">247</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1 flex items-center gap-1">
+<span class="text-emerald-700 font-semibold">+18</span> completed in period
+              </span>
+</div>
+</div>
+<!-- Metric 5: Verified Experiences -->
+<div class="bg-surface-container-lowest p-4 rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs font-semibold tracking-wider uppercase">Verified Records</span>
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div class="mt-2 flex flex-col">
+<span class="font-headline-lg text-headline-lg text-on-surface leading-tight">1,894</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1 flex items-center gap-1">
+<span class="text-emerald-700 font-semibold">+86</span> verified in period
+              </span>
+</div>
+</div>
+<!-- Metric 6: Awaiting Verification -->
+<div class="bg-surface-container-lowest p-4 rounded-lg shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-secondary">
+<span class="font-label-xs text-label-xs font-semibold tracking-wider uppercase">Pending Review</span>
+<span class="material-symbols-outlined text-[18px] text-amber-700">pending_actions</span>
+</div>
+<div class="mt-2 flex flex-col">
+<span class="font-headline-lg text-headline-lg text-amber-700 leading-tight">31</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1">
+                Awaiting association review
+              </span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Activity Overview Over Time (Factual Multi-series Chart) -->
+<section class="bg-surface-container-lowest p-6 rounded-lg shadow-sm flex flex-col gap-5">
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-title-md text-title-md text-on-surface">Activity Overview</h2>
+<span class="font-label-xs text-label-xs text-secondary font-medium" dir="rtl" lang="ar">(تطور النشاط الأسبوعي)</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary mt-0.5">Weekly volume of key operational platform events over the selected 30-day window</p>
+</div>
+<!-- Legend -->
+<div class="flex flex-wrap items-center gap-5 font-label-xs text-label-xs text-secondary">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-primary-container"></span>
+<span>New Volunteers</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-sky-600"></span>
+<span>Published Opps</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-emerald-600"></span>
+<span>Completed Opps</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-amber-600"></span>
+<span>Verified Experiences</span>
+</div>
+</div>
+</div>
+<!-- SVG Structured Chart Canvas -->
+<div class="w-full h-64 relative flex flex-col justify-end pt-6 pb-2">
+<!-- Background Grid lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-4">
+<div class="w-full flex items-center justify-between border-b border-surface-container">
+<span class="font-label-xs text-label-xs text-outline text-[10px]">35</span>
+</div>
+<div class="w-full flex items-center justify-between border-b border-surface-container">
+<span class="font-label-xs text-label-xs text-outline text-[10px]">25</span>
+</div>
+<div class="w-full flex items-center justify-between border-b border-surface-container">
+<span class="font-label-xs text-label-xs text-outline text-[10px]">15</span>
+</div>
+<div class="w-full flex items-center justify-between border-b border-surface-container">
+<span class="font-label-xs text-label-xs text-outline text-[10px]">5</span>
+</div>
+<div class="w-full flex items-center justify-between border-b border-secondary/20">
+<span class="font-label-xs text-label-xs text-outline text-[10px]">0</span>
+</div>
+</div>
+<!-- Bar Columns Grouped by 4 Weeks -->
+<div class="relative z-10 w-full h-full flex items-end justify-around px-8 pb-8 pt-4">
+<!-- Week 37 -->
+<div class="flex flex-col items-center gap-2 w-1/5">
+<div class="flex items-end justify-center gap-1.5 w-full h-44">
+<!-- Volunteers: 14 -->
+<div class="w-3.5 bg-primary-container rounded-t-sm" style="height: 40%;" title="New Volunteers: 14"></div>
+<!-- Published: 5 -->
+<div class="w-3.5 bg-sky-600 rounded-t-sm" style="height: 15%;" title="Published Opps: 5"></div>
+<!-- Completed: 4 -->
+<div class="w-3.5 bg-emerald-600 rounded-t-sm" style="height: 12%;" title="Completed Opps: 4"></div>
+<!-- Verified: 18 -->
+<div class="w-3.5 bg-amber-600 rounded-t-sm" style="height: 52%;" title="Verified Experiences: 18"></div>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-label-xs text-label-xs text-on-surface font-semibold">Week 37</span>
+<span class="font-label-xs text-[10px] text-secondary">06–12 Sep</span>
+</div>
+</div>
+<!-- Week 38 -->
+<div class="flex flex-col items-center gap-2 w-1/5">
+<div class="flex items-end justify-center gap-1.5 w-full h-44">
+<!-- Volunteers: 16 -->
+<div class="w-3.5 bg-primary-container rounded-t-sm" style="height: 46%;" title="New Volunteers: 16"></div>
+<!-- Published: 7 -->
+<div class="w-3.5 bg-sky-600 rounded-t-sm" style="height: 20%;" title="Published Opps: 7"></div>
+<!-- Completed: 5 -->
+<div class="w-3.5 bg-emerald-600 rounded-t-sm" style="height: 15%;" title="Completed Opps: 5"></div>
+<!-- Verified: 22 -->
+<div class="w-3.5 bg-amber-600 rounded-t-sm" style="height: 64%;" title="Verified Experiences: 22"></div>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-label-xs text-label-xs text-on-surface font-semibold">Week 38</span>
+<span class="font-label-xs text-[10px] text-secondary">13–19 Sep</span>
+</div>
+</div>
+<!-- Week 39 -->
+<div class="flex flex-col items-center gap-2 w-1/5">
+<div class="flex items-end justify-center gap-1.5 w-full h-44">
+<!-- Volunteers: 19 -->
+<div class="w-3.5 bg-primary-container rounded-t-sm" style="height: 55%;" title="New Volunteers: 19"></div>
+<!-- Published: 6 -->
+<div class="w-3.5 bg-sky-600 rounded-t-sm" style="height: 18%;" title="Published Opps: 6"></div>
+<!-- Completed: 3 -->
+<div class="w-3.5 bg-emerald-600 rounded-t-sm" style="height: 9%;" title="Completed Opps: 3"></div>
+<!-- Verified: 21 -->
+<div class="w-3.5 bg-amber-600 rounded-t-sm" style="height: 61%;" title="Verified Experiences: 21"></div>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-label-xs text-label-xs text-on-surface font-semibold">Week 39</span>
+<span class="font-label-xs text-[10px] text-secondary">20–26 Sep</span>
+</div>
+</div>
+<!-- Week 40 -->
+<div class="flex flex-col items-center gap-2 w-1/5">
+<div class="flex items-end justify-center gap-1.5 w-full h-44">
+<!-- Volunteers: 19 -->
+<div class="w-3.5 bg-primary-container rounded-t-sm" style="height: 55%;" title="New Volunteers: 19"></div>
+<!-- Published: 6 -->
+<div class="w-3.5 bg-sky-600 rounded-t-sm" style="height: 18%;" title="Published Opps: 6"></div>
+<!-- Completed: 6 -->
+<div class="w-3.5 bg-emerald-600 rounded-t-sm" style="height: 18%;" title="Completed Opps: 6"></div>
+<!-- Verified: 25 -->
+<div class="w-3.5 bg-amber-600 rounded-t-sm" style="height: 72%;" title="Verified Experiences: 25"></div>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-label-xs text-label-xs text-on-surface font-semibold">Week 40</span>
+<span class="font-label-xs text-[10px] text-secondary">27 Sep–03 Oct</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Accessible Table Audit Summary -->
+<details class="group bg-surface-container-low p-3 rounded-lg text-body-sm">
+<summary class="font-label-xs text-label-xs text-secondary font-semibold uppercase tracking-wider cursor-pointer list-none flex items-center justify-between">
+<span>View Accessible Numerical Breakdown</span>
+<span class="material-symbols-outlined text-[16px] group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="overflow-x-auto mt-3">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface-container text-secondary font-label-xs text-label-xs uppercase">
+<tr>
+<th class="py-1.5 px-3">Period</th>
+<th class="py-1.5 px-3 text-right">New Volunteers</th>
+<th class="py-1.5 px-3 text-right">Published Opps</th>
+<th class="py-1.5 px-3 text-right">Completed Opps</th>
+<th class="py-1.5 px-3 text-right">Verified Records</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container text-on-surface">
+<tr>
+<td class="py-1.5 px-3 font-medium">Week 37 (06–12 Sep 2026)</td>
+<td class="py-1.5 px-3 text-right">14</td>
+<td class="py-1.5 px-3 text-right">5</td>
+<td class="py-1.5 px-3 text-right">4</td>
+<td class="py-1.5 px-3 text-right">18</td>
+</tr>
+<tr>
+<td class="py-1.5 px-3 font-medium">Week 38 (13–19 Sep 2026)</td>
+<td class="py-1.5 px-3 text-right">16</td>
+<td class="py-1.5 px-3 text-right">7</td>
+<td class="py-1.5 px-3 text-right">5</td>
+<td class="py-1.5 px-3 text-right">22</td>
+</tr>
+<tr>
+<td class="py-1.5 px-3 font-medium">Week 39 (20–26 Sep 2026)</td>
+<td class="py-1.5 px-3 text-right">19</td>
+<td class="py-1.5 px-3 text-right">6</td>
+<td class="py-1.5 px-3 text-right">3</td>
+<td class="py-1.5 px-3 text-right">21</td>
+</tr>
+<tr>
+<td class="py-1.5 px-3 font-medium">Week 40 (27 Sep–03 Oct 2026)</td>
+<td class="py-1.5 px-3 text-right">19</td>
+<td class="py-1.5 px-3 text-right">6</td>
+<td class="py-1.5 px-3 text-right">6</td>
+<td class="py-1.5 px-3 text-right">25</td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+</section>
+<!-- Section 4: Domain Activity Reports (4 Structured Factual Cards) -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Domain A: Opportunity Activity -->
+<div class="bg-surface-container-lowest p-5 rounded-lg shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary-container">event_note</span>
+<h3 class="font-title-sm text-title-sm text-on-surface font-semibold">Opportunity Activity</h3>
+</div>
+<span class="font-label-xs text-label-xs text-secondary font-medium" dir="rtl" lang="ar">نشاط الفرص التطوعية</span>
+</div>
+<div class="flex flex-col gap-2.5 mt-4">
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Published opportunities</span>
+<span class="font-semibold text-on-surface">318</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Active opportunities</span>
+<span class="font-semibold text-on-surface">47</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Completed opportunities</span>
+<span class="font-semibold text-on-surface">247</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Closed / Archived opportunities</span>
+<span class="font-semibold text-on-surface">24</span>
+</div>
+</div>
+</div>
+<div class="mt-5 pt-3 border-t border-surface-container flex items-center justify-between">
+<span class="font-label-xs text-label-xs text-secondary uppercase font-semibold">Position Fulfillment Rate</span>
+<span class="font-label-md text-label-md text-emerald-700 font-bold">84.2%</span>
+</div>
+</div>
+<!-- Domain B: Volunteer Activity -->
+<div class="bg-surface-container-lowest p-5 rounded-lg shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary-container">badge</span>
+<h3 class="font-title-sm text-title-sm text-on-surface font-semibold">Volunteer Activity</h3>
+</div>
+<span class="font-label-xs text-label-xs text-secondary font-medium" dir="rtl" lang="ar">نشاط المتطوعين</span>
+</div>
+<div class="flex flex-col gap-2.5 mt-4">
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Registered volunteers</span>
+<span class="font-semibold text-on-surface">2,418</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">New registrations (Selected period)</span>
+<span class="font-semibold text-on-surface">68</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Volunteers with verified experiences</span>
+<span class="font-semibold text-on-surface">1,412</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Completed volunteer contributions</span>
+<span class="font-semibold text-on-surface">2,105</span>
+</div>
+</div>
+</div>
+<div class="mt-5 pt-3 border-t border-surface-container flex items-center justify-between">
+<span class="font-label-xs text-label-xs text-secondary uppercase font-semibold">Audit Standards</span>
+<span class="font-label-xs text-label-xs text-secondary">Zero gamification / Non-competitive</span>
+</div>
+</div>
+<!-- Domain C: Organization Activity -->
+<div class="bg-surface-container-lowest p-5 rounded-lg shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary-container">corporate_fare</span>
+<h3 class="font-title-sm text-title-sm text-on-surface font-semibold">Organization Activity</h3>
+</div>
+<span class="font-label-xs text-label-xs text-secondary font-medium" dir="rtl" lang="ar">نشاط الجمعيات المعتمدة</span>
+</div>
+<div class="flex flex-col gap-2.5 mt-4">
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Accredited civil organizations</span>
+<span class="font-semibold text-on-surface">142</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">New associations accredited</span>
+<span class="font-semibold text-on-surface">9</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Actively publishing opportunities</span>
+<span class="font-semibold text-on-surface">38</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Organizations with concluded projects</span>
+<span class="font-semibold text-on-surface">114</span>
+</div>
+</div>
+</div>
+<div class="mt-5 pt-3 border-t border-surface-container flex items-center justify-between">
+<span class="font-label-xs text-label-xs text-secondary uppercase font-semibold">Institutional Compliance</span>
+<span class="font-label-xs text-label-xs text-secondary">100% Legal Status Verified</span>
+</div>
+</div>
+<!-- Domain D: Verified Experiences Breakdown -->
+<div class="bg-surface-container-lowest p-5 rounded-lg shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-surface-container">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary-container">history_edu</span>
+<h3 class="font-title-sm text-title-sm text-on-surface font-semibold">Verified Experiences</h3>
+</div>
+<span class="font-label-xs text-label-xs text-secondary font-medium" dir="rtl" lang="ar">توثيق الخبرات وساعات التطوع</span>
+</div>
+<div class="flex flex-col gap-2.5 mt-4">
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Cumulative verified experiences</span>
+<span class="font-semibold text-on-surface">1,894</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Experiences verified in selected period</span>
+<span class="font-semibold text-on-surface">86</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Pending association verification</span>
+<span class="font-semibold text-amber-700">31</span>
+</div>
+<div class="flex items-center justify-between text-body-sm">
+<span class="text-secondary font-body-sm">Total documented volunteer hours</span>
+<span class="font-semibold text-on-surface">18,460 hrs</span>
+</div>
+</div>
+</div>
+<div class="mt-5 pt-3 border-t border-surface-container flex items-center justify-between">
+<span class="font-label-xs text-label-xs text-secondary uppercase font-semibold">Legal Framework</span>
+<span class="font-label-xs text-label-xs text-secondary">Law 12-06 Civil Standards</span>
+</div>
+</div>
+</section>
+<!-- Section 5: Detailed Operational Activity Log / Data Table -->
+<section class="bg-surface-container-lowest rounded-lg shadow-sm flex flex-col">
+<div class="p-5 flex flex-wrap items-center justify-between gap-4 border-b border-surface-container">
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-semibold">Operational Activity Log</h2>
+<p class="font-body-sm text-body-sm text-secondary">Chronological register of administrative and accredited entity actions</p>
+</div>
+<!-- Table-level Filters -->
+<div class="flex flex-wrap items-center gap-3">
+<div class="relative">
+<input class="h-9 pl-8 pr-3 text-body-sm font-body-sm bg-surface-container-low rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary-container w-52" id="table-search" placeholder="Filter by entity or ref..." type="text"/>
+<span class="material-symbols-outlined absolute left-2.5 top-2.5 text-[16px] text-secondary">search</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg">
+<button class="font-label-xs text-label-xs px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface font-medium shadow-sm">All (214)</button>
+<button class="font-label-xs text-label-xs px-2.5 py-1 rounded text-secondary hover:text-on-surface transition-colors">Opportunities</button>
+<button class="font-label-xs text-label-xs px-2.5 py-1 rounded text-secondary hover:text-on-surface transition-colors">Volunteers</button>
+<button class="font-label-xs text-label-xs px-2.5 py-1 rounded text-secondary hover:text-on-surface transition-colors">Verifications</button>
+</div>
+</div>
+</div>
+<!-- High-density Tabular Layout -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low text-secondary font-label-xs text-label-xs uppercase tracking-wider">
+<tr>
+<th class="py-3 px-5 font-semibold">Date &amp; Time</th>
+<th class="py-3 px-4 font-semibold">Activity Event</th>
+<th class="py-3 px-4 font-semibold">Domain</th>
+<th class="py-3 px-4 font-semibold">Entity / Participant</th>
+<th class="py-3 px-4 font-semibold">Reference</th>
+<th class="py-3 px-5 text-right font-semibold">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-sm text-body-sm text-on-surface">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-3.5 px-5 whitespace-nowrap text-secondary font-mono text-[12px]">06 Oct 2026 11:20</td>
+<td class="py-3.5 px-4 font-medium text-on-surface">Experience verified by association</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-secondary">
+                    Verification
+                  </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Sara Boumediene</span>
+<span class="font-label-xs text-label-xs text-secondary">Ass. Nour de Solidarité</span>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-[12px] text-secondary">EXP-000003</td>
+<td class="py-3.5 px-5 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-emerald-50 text-emerald-700">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Verified
+                  </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-3.5 px-5 whitespace-nowrap text-secondary font-mono text-[12px]">06 Oct 2026 09:45</td>
+<td class="py-3.5 px-4 font-medium text-on-surface">Opportunity published</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-secondary">
+                    Opportunity
+                  </span>
+</td>
+<td class="py-3.5 px-4">
+<span class="font-medium text-on-surface">Timimoun Cultural Association</span>
+</td>
+<td class="py-3.5 px-4 font-mono text-[12px] text-secondary">OPP-000214</td>
+<td class="py-3.5 px-5 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-sky-50 text-sky-700">
+<span class="w-1.5 h-1.5 rounded-full bg-sky-600"></span>
+                    Active
+                  </span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-3.5 px-5 whitespace-nowrap text-secondary font-mono text-[12px]">05 Oct 2026 16:30</td>
+<td class="py-3.5 px-4 font-medium text-on-surface">Volunteer registered &amp; identity confirmed</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-secondary">
+                    Volunteer
+                  </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Yacine Meziani</span>
+<span class="font-label-xs text-label-xs text-secondary">Wilaya d'Alger</span>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-[12px] text-secondary">VOL-002418</td>
+<td class="py-3.5 px-5 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-surface-container text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                    Completed
+                  </span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-3.5 px-5 whitespace-nowrap text-secondary font-mono text-[12px]">05 Oct 2026 14:15</td>
+<td class="py-3.5 px-4 font-medium text-on-surface">Opportunity completed</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-secondary">
+                    Opportunity
+                  </span>
+</td>
+<td class="py-3.5 px-4">
+<span class="font-medium text-on-surface">Casbah Heritage Initiative</span>
+</td>
+<td class="py-3.5 px-4 font-mono text-[12px] text-secondary">OPP-000198</td>
+<td class="py-3.5 px-5 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-surface-container text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                    Completed
+                  </span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-3.5 px-5 whitespace-nowrap text-secondary font-mono text-[12px]">04 Oct 2026 18:00</td>
+<td class="py-3.5 px-4 font-medium text-on-surface">Organization accredited</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-secondary">
+                    Organization
+                  </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Association Éco-Jeunesse Bejaia</span>
+<span class="font-label-xs text-label-xs text-secondary">Accreditation verified</span>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-[12px] text-secondary">ORG-000142</td>
+<td class="py-3.5 px-5 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-emerald-50 text-emerald-700">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Accredited
+                  </span>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-low/60 transition-colors">
+<td class="py-3.5 px-5 whitespace-nowrap text-secondary font-mono text-[12px]">04 Oct 2026 10:10</td>
+<td class="py-3.5 px-4 font-medium text-on-surface">Contribution submitted for review</td>
+<td class="py-3.5 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-surface-container text-secondary">
+                    Verification
+                  </span>
+</td>
+<td class="py-3.5 px-4">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Abdelouahab Nefsi</span>
+<span class="font-label-xs text-label-xs text-secondary">Timimoun Cultural Association</span>
+</div>
+</td>
+<td class="py-3.5 px-4 font-mono text-[12px] text-secondary">SUB-000512</td>
+<td class="py-3.5 px-5 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-amber-50 text-amber-700">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                    Awaiting Review
+                  </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="p-4 border-t border-surface-container flex flex-wrap items-center justify-between gap-4 font-body-sm text-body-sm text-secondary">
+<span>Showing <strong class="text-on-surface font-medium">1–6</strong> of <strong class="text-on-surface font-medium">214</strong> recorded operational events</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface-container-low text-secondary hover:text-on-surface hover:bg-surface-container transition-colors disabled:opacity-40" disabled="">
+              Previous
+            </button>
+<button class="px-2.5 py-1 rounded bg-primary-container text-on-primary font-medium">1</button>
+<button class="px-2.5 py-1 rounded hover:bg-surface-container text-secondary hover:text-on-surface transition-colors">2</button>
+<button class="px-2.5 py-1 rounded hover:bg-surface-container text-secondary hover:text-on-surface transition-colors">3</button>
+<span class="px-1 text-outline">...</span>
+<button class="px-2.5 py-1 rounded hover:bg-surface-container text-secondary hover:text-on-surface transition-colors">36</button>
+<button class="px-2.5 py-1 rounded bg-surface-container-low text-secondary hover:text-on-surface hover:bg-surface-container transition-colors">
+              Next
+            </button>
+</div>
+</div>
+</section>
+<!-- Institutional Integrity & Legal Compliance Footnote -->
+<footer class="flex items-center justify-between text-secondary font-label-xs text-label-xs px-2 py-4 border-t border-surface-container">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-emerald-700">verified_user</span>
+<span>Basmatak Tatatoua Data Integrity: Conforms to Algerian Civil Society Law 12-06. All recorded metrics are strictly unranked and non-monetized.</span>
+</div>
+<div>
+<span>Server Cluster: DZ-North-01 • Audit Checksum Valid</span>
+</div>
+</footer>
+</div>
+</div>
+</div>
+<script>
+  function switchState(state) {
+    const viewActive = document.getElementById('view-active');
+    const viewEmpty = document.getElementById('view-empty');
+    const viewError = document.getElementById('view-error');
+
+    const btnActive = document.getElementById('btn-state-active');
+    const btnEmpty = document.getElementById('btn-state-empty');
+    const btnError = document.getElementById('btn-state-error');
+
+    // Reset buttons styling
+    [btnActive, btnEmpty, btnError].forEach(btn => {
+      btn.className = 'font-label-xs text-label-xs px-2.5 py-1 rounded text-secondary hover:text-on-surface transition-all';
+    });
+
+    // Hide all
+    viewActive.classList.add('hidden');
+    viewEmpty.classList.add('hidden');
+    viewError.classList.add('hidden');
+
+    if (state === 'active') {
+      viewActive.classList.remove('hidden');
+      btnActive.className = 'font-label-xs text-label-xs px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all';
+    } else if (state === 'empty') {
+      viewEmpty.classList.remove('hidden');
+      btnEmpty.className = 'font-label-xs text-label-xs px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all';
+    } else if (state === 'error') {
+      viewError.classList.remove('hidden');
+      btnError.className = 'font-label-xs text-label-xs px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all';
+    }
+  }
+
+  // Micro-interaction: active indicator on sidebar item if within platform shell
+  document.addEventListener('DOMContentLoaded', () => {
+    const reportNav = document.querySelector('aside nav a[data-path="reports"]');
+    if (reportNav) {
+      reportNav.classList.add('bg-primary-container', 'text-on-primary', 'rounded-lg', 'font-label-md');
+      reportNav.classList.remove('text-on-surface-variant', 'hover:bg-surface-container');
+    }
+  });
+</script></main></div></body></html>
