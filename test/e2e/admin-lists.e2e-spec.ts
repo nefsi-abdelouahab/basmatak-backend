@@ -331,6 +331,28 @@ describe('admin lists e2e (Session 10)', () => {
     });
   });
 
+  describe('opportunity verification status', () => {
+    it('returns an empty roster before anyone is accepted', async () => {
+      const response = await admin(
+        `${ADMIN_OPPORTUNITIES}/${opportunityId}/verification-status`,
+      ).expect(200);
+      expect(response.body).toEqual({ items: [] });
+    });
+
+    it('404s for an unknown opportunity', async () => {
+      await admin(
+        `${ADMIN_OPPORTUNITIES}/507f1f77bcf86cd799439099/verification-status`,
+      ).expect(404);
+    });
+
+    it('volunteer gets 403 on the verification-status read', async () => {
+      await request(app.getHttpServer())
+        .get(`${ADMIN_OPPORTUNITIES}/${opportunityId}/verification-status`)
+        .set('Authorization', `Bearer ${volunteerToken}`)
+        .expect(403);
+    });
+  });
+
   describe('reports triage', () => {
     let reportId: string;
 
