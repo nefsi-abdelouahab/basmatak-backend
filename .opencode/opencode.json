@@ -14,5 +14,8 @@
     "webfetch": "allow",
     "websearch": "allow",
     "skill": "allow"
-  }
+  },
+  "plugin": [
+    "list"
+  ]
 }
