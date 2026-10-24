@@ -79,3 +79,45 @@ services:
         sync: false
       - key: PUBLISH_GATE_ENABLED
         sync: false
+      - key: AI_AGENT_ENABLED
+        sync: false
+      - key: AI_AGENT_PROVIDER
+        sync: false
+      - key: AI_AGENT_MODEL
+        sync: false
+      - key: AI_AGENT_KNOWLEDGE_DIR
+        sync: false
+      - key: AI_AGENT_MAX_INPUT_TOKENS
+        sync: false
+      - key: AI_AGENT_MAX_OUTPUT_TOKENS
+        sync: false
+      - key: AI_AGENT_MAX_HISTORY_MESSAGES
+        sync: false
+      - key: AI_AGENT_MAX_HISTORY_CHARS
+        sync: false
+      - key: AI_AGENT_MAX_KNOWLEDGE_CHUNKS
+        sync: false
+      - key: AI_AGENT_MAX_KNOWLEDGE_CHARS
+        sync: false
+      - key: AI_AGENT_MAX_TOOL_ROUNDS
+        sync: false
+      - key: AI_AGENT_MAX_TOOL_ROWS
+        sync: false
+      - key: AI_AGENT_MAX_TOOL_RESULT_CHARS
+        sync: false
+      - key: AI_AGENT_IP_RPM
+        sync: false
+      - key: AI_AGENT_IP_RPD
+        sync: false
+      - key: AI_AGENT_GLOBAL_RPM
+        sync: false
+      - key: AI_AGENT_GLOBAL_RPD
+        sync: false
+      - key: AI_AGENT_MAX_CONCURRENT
+        sync: false
+      - key: AI_AGENT_DAILY_TOKEN_BUDGET
+        sync: false
+      - key: AI_AGENT_RETRIEVAL_FALLBACK
+        sync: false
+      - key: AI_AGENT_FALLBACK_ENABLED
+        sync: false
