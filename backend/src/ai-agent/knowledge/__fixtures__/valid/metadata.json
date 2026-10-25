@@ -1,0 +1,11 @@
+{
+  "title": "Platform topics",
+  "locale": "fr",
+  "topics": [
+    {
+      "title": "Bénévolat",
+      "summary": "Comment participer."
+    }
+  ],
+  "tags": ["plateforme"]
+}

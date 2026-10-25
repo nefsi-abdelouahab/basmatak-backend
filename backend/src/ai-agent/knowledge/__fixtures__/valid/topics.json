@@ -1,0 +1,16 @@
+[
+  {
+    "id": "opportunities",
+    "title_en": "Finding volunteer opportunities",
+    "summary_en": "Browse and filter published opportunities.",
+    "summary_ar": "تصفح الفرص المنشورة وتصفيتها.",
+    "active": true,
+    "rank": 1,
+    "notes": null
+  },
+  {
+    "id": "applications",
+    "title_en": "Applying and participating",
+    "summary_en": "What happens after you apply."
+  }
+]
