@@ -7,8 +7,9 @@ import {
 import { AiAgentMode } from '../ai-agent.types';
 
 /**
- * Internal caps reserved for later sessions. Session 2 parses and exposes the
- * public subset only; it does not enforce quota.
+ * Internal caps reserved for later sessions. Session 3 enforces the request,
+ * concurrency, and daily token caps in memory; the public status response only
+ * exposes the fixed DTO limits.
  *
  * Defaults follow the approved proposal (§4.1). Hard maxima are intentionally
  * conservative so a typo in an environment variable cannot silently remove a

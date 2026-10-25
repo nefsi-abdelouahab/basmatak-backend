@@ -64,6 +64,8 @@ export type AiAgentErrorCode =
 export interface AiAgentErrorEvent {
   code: AiAgentErrorCode;
   message: string;
+  /** Present when a quota/cooldown reset time is known. */
+  retryAfterSeconds?: number;
 }
 
 /**

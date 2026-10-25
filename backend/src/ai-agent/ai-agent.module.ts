@@ -2,17 +2,20 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiAgentController } from './ai-agent.controller';
 import { AI_AGENT_CONFIG } from './ai-agent.constants';
+import { QuotaService } from './budget/quota.service';
 import { loadAiAgentConfig } from './config/ai-agent.config';
 import { MockProvider } from './llm/mock.provider';
 import { SseWriter } from './sse/sse-writer';
+import { UsageController } from './usage/usage.controller';
+import { UsageMeterService } from './usage/usage-meter.service';
 
 /**
- * Public AI assistant transport module. Session 2 deliberately has no database
- * dependency, no provider SDK, and no persistence. Later sessions add quota,
- * knowledge, tools, and the real provider behind the same controller contract.
+ * Public AI assistant transport and quota module. Session 3 adds the in-memory
+ * quota guard, provider cooldowns, usage meter, and admin usage endpoint. There
+ * is still no database dependency, provider SDK, or persistence.
  */
 @Module({
-  controllers: [AiAgentController],
+  controllers: [AiAgentController, UsageController],
   providers: [
     {
       provide: AI_AGENT_CONFIG,
@@ -22,7 +25,9 @@ import { SseWriter } from './sse/sse-writer';
     },
     SseWriter,
     MockProvider,
+    QuotaService,
+    UsageMeterService,
   ],
-  exports: [AI_AGENT_CONFIG, SseWriter],
+  exports: [AI_AGENT_CONFIG, SseWriter, QuotaService, UsageMeterService],
 })
 export class AiAgentModule {}

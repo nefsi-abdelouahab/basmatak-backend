@@ -108,7 +108,8 @@ export class SseStream {
 /**
  * Factory for per-request SSE streams. The heartbeat interval comes from the
  * injected configuration, so tests can use a short interval while production
- * keeps the 15-second default.
+ * keeps the 15-second default. Callers must finish quota checks before calling
+ * `start()`: once it runs, the response can no longer return a JSON error.
  */
 @Injectable()
 export class SseWriter {
