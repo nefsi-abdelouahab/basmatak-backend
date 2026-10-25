@@ -25,6 +25,8 @@ import { KnowledgeLoader } from './knowledge/loader';
 import { KnowledgeNormalizer } from './knowledge/normalizer';
 import { KnowledgeParser } from './knowledge/parser';
 import { MockProvider } from './llm/mock.provider';
+import { PromptBuilder } from './prompt/prompt-builder';
+import { IntentRouter } from './router/intent-router';
 import { SseWriter } from './sse/sse-writer';
 import { PlatformStatsTool } from './tools/platform-stats.tool';
 import { SearchKnowledgeTool } from './tools/search-knowledge.tool';
@@ -51,8 +53,11 @@ import { UsageMeterService } from './usage/usage-meter.service';
  * Session 6 registers four read-only public-data tools (opportunities,
  * organizations, reference data, platform stats), a validated registry, and
  * the bounded executor. Model registrations are read-only references; no
- * feature-module business logic changes. The provider SDK, orchestration, and
- * chat wiring still do not exist.
+ * feature-module business logic changes.
+ *
+ * Session 7 registers the versioned prompt builder and the deterministic
+ * intent router. Neither is wired into the controller: there is still no
+ * provider SDK, orchestration, or chat wiring.
  */
 @Module({
   imports: [
@@ -102,6 +107,8 @@ import { UsageMeterService } from './usage/usage-meter.service';
         }),
     },
     KnowledgeService,
+    PromptBuilder,
+    IntentRouter,
     SearchKnowledgeTool,
     SearchOpportunitiesTool,
     SearchOrganizationsTool,
@@ -148,6 +155,8 @@ import { UsageMeterService } from './usage/usage-meter.service';
     KnowledgeChunker,
     KnowledgeNormalizer,
     KnowledgeService,
+    PromptBuilder,
+    IntentRouter,
     SearchKnowledgeTool,
     SearchOpportunitiesTool,
     SearchOrganizationsTool,

@@ -251,6 +251,7 @@ describe('AiAgent configuration', () => {
       maxToolRounds: 1,
       maxToolRows: 5,
       maxToolResultChars: 1200,
+      routerMinScore: 1.5,
       ipRequestsPerMinute: 4,
       ipRequestsPerDay: 15,
       globalRequestsPerMinute: 10,

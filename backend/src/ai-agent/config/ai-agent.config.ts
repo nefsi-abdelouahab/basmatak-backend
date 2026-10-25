@@ -7,6 +7,15 @@ import {
 import { AiAgentMode } from '../ai-agent.types';
 
 /**
+ * Absolute minimum BM25 top score for the deterministic intent router. Scores
+ * are corpus-dependent, so this is intentionally conservative for the current
+ * seed corpus and is clamped to the documented hard bounds by the router.
+ */
+export const DEFAULT_ROUTER_MIN_SCORE = 1.5;
+export const MIN_ROUTER_MIN_SCORE = 0.5;
+export const MAX_ROUTER_MIN_SCORE = 5;
+
+/**
  * Internal caps reserved for later sessions. Session 3 enforces the request,
  * concurrency, and daily token caps in memory; the public status response only
  * exposes the fixed DTO limits.
@@ -25,6 +34,11 @@ export interface AiAgentLimits {
   maxToolRounds: number;
   maxToolRows: number;
   maxToolResultChars: number;
+  /**
+   * Optional for compatibility with existing `Partial<AiAgentLimits>` fixtures.
+   * The router falls back to `DEFAULT_ROUTER_MIN_SCORE` when omitted.
+   */
+  routerMinScore?: number;
   ipRequestsPerMinute: number;
   ipRequestsPerDay: number;
   globalRequestsPerMinute: number;
@@ -66,6 +80,7 @@ export function defaultAiAgentLimits(): AiAgentLimits {
     maxToolRounds: 1,
     maxToolRows: 5,
     maxToolResultChars: 1200,
+    routerMinScore: DEFAULT_ROUTER_MIN_SCORE,
     ipRequestsPerMinute: 4,
     ipRequestsPerDay: 15,
     globalRequestsPerMinute: 10,
@@ -217,6 +232,9 @@ export function loadAiAgentConfig(
       1,
       3000,
     ),
+    // Prompt/router tuning is intentionally internal in Session 7. Keeping it
+    // out of the environment preserves the existing deployment contract.
+    routerMinScore: DEFAULT_ROUTER_MIN_SCORE,
     ipRequestsPerMinute: readInteger(read, 'AI_AGENT_IP_RPM', 4, 1, 1000),
     ipRequestsPerDay: readInteger(read, 'AI_AGENT_IP_RPD', 15, 1, 100_000),
     globalRequestsPerMinute: readInteger(
