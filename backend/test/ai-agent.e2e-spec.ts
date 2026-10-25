@@ -1,6 +1,8 @@
 import { INestApplication } from '@nestjs/common';
+import { getConnectionToken } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import * as http from 'http';
+import { Connection, Types } from 'mongoose';
 import * as request from 'supertest';
 import {
   AI_AGENT_CONFIG,
@@ -23,8 +25,16 @@ import {
 import { MockProvider } from '../src/ai-agent/llm/mock.provider';
 import { KnowledgeService } from '../src/ai-agent/knowledge/knowledge.service';
 import { SseWriter } from '../src/ai-agent/sse/sse-writer';
+import { SearchKnowledgeTool } from '../src/ai-agent/tools/search-knowledge.tool';
+import { ToolExecutor } from '../src/ai-agent/tools/tool-executor';
+import { ToolRegistry } from '../src/ai-agent/tools/tool-registry';
+import { findForbiddenToolResultKey } from '../src/ai-agent/tools/tool.types';
 import { UsageMeterService } from '../src/ai-agent/usage/usage-meter.service';
 import { AppLogger } from '../src/common/logger/app.logger';
+import { LocationsCollection } from '../src/locations/schemas/location.schema';
+import { OpportunitiesCollection } from '../src/opportunities/schemas/opportunity.schema';
+import { OrganizationsCollection } from '../src/organizations/schemas/organization.schema';
+import { SkillsCollection } from '../src/skills/schemas/skill.schema';
 import { UsersService } from '../src/users/users.service';
 import { createTestApp, TestAppHandle } from './utils/test-db';
 
@@ -745,4 +755,287 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
       clientRequest.end();
     });
   }
+});
+
+describe('ai-agent public tools e2e (Session 6)', () => {
+  let handle: TestAppHandle;
+  let app: INestApplication;
+  let connection: Connection;
+  let registry: ToolRegistry;
+  let executor: ToolExecutor;
+
+  const ORG_ID = new Types.ObjectId('64c000000000000000000101');
+  const CATEGORY_ID = new Types.ObjectId('64a000000000000000000101');
+  const SKILL_ID = new Types.ObjectId('64b000000000000000000101');
+  const OPP_ID = new Types.ObjectId('64d000000000000000000101');
+
+  beforeAll(async () => {
+    handle = await createTestApp([], {
+      env: { THROTTLE_LIMIT: '100000' },
+    });
+    app = handle.app;
+    connection = app.get<Connection>(getConnectionToken());
+    registry = app.get(ToolRegistry);
+    executor = app.get(ToolExecutor);
+  });
+
+  afterAll(async () => {
+    if (handle) {
+      await handle.close();
+    }
+  });
+
+  beforeEach(async () => {
+    await Promise.all([
+      connection.collection(OpportunitiesCollection).deleteMany({}),
+      connection.collection(OrganizationsCollection).deleteMany({}),
+      connection.collection(SkillsCollection).deleteMany({}),
+      connection.collection(LocationsCollection).deleteMany({}),
+    ]);
+
+    await connection.collection(SkillsCollection).insertOne({
+      _id: SKILL_ID,
+      slug: 'e2e-first-aid',
+      categoryId: CATEGORY_ID,
+      nameAr: 'إسعافات أولية',
+      nameFr: 'E2E First Aid',
+      order: 1,
+      active: true,
+    });
+    await connection.collection(LocationsCollection).insertMany([
+      {
+        code: '16',
+        type: 'wilaya',
+        nameAr: 'الجزائر',
+        nameFr: 'Algiers',
+      },
+      {
+        code: '1601',
+        type: 'municipality',
+        parentCode: '16',
+        nameAr: 'باب الوادي',
+        nameFr: 'Bab El Oued',
+      },
+    ]);
+    await connection.collection(OrganizationsCollection).insertOne({
+      _id: ORG_ID,
+      userId: new Types.ObjectId('64f000000000000000000101'),
+      slug: 'e2e-green',
+      registryId: 'ORG-E2E-SECRET',
+      nameAr: 'الأرض الخضراء',
+      nameFr: 'E2E Green',
+      description: 'E2E environmental organization.',
+      type: 'association',
+      registrationNumber: 'REG-E2E-SECRET',
+      location: {
+        wilayaId: '16',
+        municipalityId: '1601',
+        address: 'E2E secret street',
+      },
+      website: 'https://e2e-green.example',
+      foundedYear: 2012,
+      contact: {
+        email: 'e2e-secret@example.com',
+        phone: '0550000101',
+      },
+      publicProfile: { enabled: true },
+      reliability: { score: 90 },
+      verificationStatus: 'verified',
+      status: 'active',
+    });
+    await connection.collection(OpportunitiesCollection).insertOne({
+      _id: OPP_ID,
+      organizationId: ORG_ID,
+      slug: 'e2e-beach',
+      registryId: 'OPP-E2E-SECRET',
+      title: 'E2E Beach cleanup',
+      description: 'E2E beach cleanup description.',
+      categoryId: CATEGORY_ID,
+      status: 'published',
+      mode: 'onsite',
+      coverMediaId: new Types.ObjectId('64e000000000000000000101'),
+      startDate: new Date('2026-11-01T00:00:00.000Z'),
+      endDate: new Date('2026-11-02T00:00:00.000Z'),
+      applicationDeadline: new Date('2026-10-30T00:00:00.000Z'),
+      prerequisites: ['E2E secret prerequisite'],
+      location: {
+        wilayaId: '16',
+        municipalityId: '1601',
+        coordinates: [3.05, 36.75],
+      },
+      positions: [
+        {
+          title: 'Volunteer',
+          description: 'Help out',
+          requiredCount: 5,
+          filledCount: 2,
+          requiredSkills: [SKILL_ID],
+          deliverables: ['E2E secret deliverable'],
+        },
+      ],
+    });
+  });
+
+  it('registers exactly the four Session 6 tools and keeps search_knowledge separate', () => {
+    expect(registry.names().sort()).toEqual([
+      'platform_stats',
+      'search_opportunities',
+      'search_organizations',
+      'search_reference_data',
+    ]);
+    expect(registry.has('search_knowledge')).toBe(false);
+    expect(app.get(SearchKnowledgeTool)).toBeInstanceOf(SearchKnowledgeTool);
+
+    for (const descriptor of registry.list()) {
+      expect(descriptor.readOnly).toBe(true);
+      expect(descriptor.description.length).toBeLessThanOrEqual(400);
+      expect(descriptor.inputSchema).toMatchObject({
+        type: 'object',
+        additionalProperties: false,
+      });
+      expect(descriptor).not.toHaveProperty('handler');
+    }
+  });
+
+  it('returns stricter public fields than the existing public endpoints', async () => {
+    const orgResponse = await request(app.getHttpServer())
+      .get('/api/v1/organizations?limit=10')
+      .expect(200);
+    const oppResponse = await request(app.getHttpServer())
+      .get('/api/v1/opportunities?limit=10')
+      .expect(200);
+
+    const publicOrg = (
+      orgResponse.body.items as Array<Record<string, any>>
+    ).find((item) => item.slug === 'e2e-green');
+    const publicOpp = (
+      oppResponse.body.items as Array<Record<string, any>>
+    ).find((item) => item.slug === 'e2e-beach');
+    expect(publicOrg).toBeDefined();
+    expect(publicOpp).toBeDefined();
+    if (!publicOrg || !publicOpp) {
+      throw new Error('Public endpoint fixtures were not returned');
+    }
+
+    // The existing endpoints still expose private/registry/geo fields; the
+    // tool projection must be strictly smaller than these payloads.
+    expect(publicOrg.userId).toBeDefined();
+    expect(publicOrg.contact).toBeDefined();
+    expect(publicOrg.registryId).toBeDefined();
+    expect(publicOrg.location.address).toBeDefined();
+    expect(publicOpp.registryId).toBeDefined();
+    expect(publicOpp.prerequisites).toBeDefined();
+    expect(publicOpp.location.coordinates).toBeDefined();
+
+    const orgResult = await executor.execute('search_organizations', {
+      name: 'e2e-green',
+    });
+    const oppResult = await executor.execute('search_opportunities', {
+      text: 'beach',
+    });
+    expect(orgResult.ok).toBe(true);
+    expect(oppResult.ok).toBe(true);
+    if (!orgResult.ok || !oppResult.ok) {
+      throw new Error('Tool execution failed');
+    }
+
+    const toolOrg = (orgResult.data as { items: Array<Record<string, any>> })
+      .items[0];
+    const toolOpp = (oppResult.data as { items: Array<Record<string, any>> })
+      .items[0];
+
+    expect(toolOrg).toMatchObject({
+      id: publicOrg._id,
+      slug: publicOrg.slug,
+      nameAr: publicOrg.nameAr,
+      nameFr: publicOrg.nameFr,
+      type: publicOrg.type,
+      location: {
+        wilaya: publicOrg.location.wilayaId,
+        municipality: publicOrg.location.municipalityId,
+      },
+    });
+    expect(toolOpp).toMatchObject({
+      id: publicOpp._id,
+      slug: publicOpp.slug,
+      title: publicOpp.title,
+      mode: publicOpp.mode,
+      location: {
+        wilaya: publicOpp.location.wilayaId,
+        municipality: publicOpp.location.municipalityId,
+      },
+    });
+
+    const orgSerialized = JSON.stringify(orgResult.data);
+    for (const key of [
+      'userId',
+      'contact',
+      'email',
+      'phone',
+      'registryId',
+      'registrationNumber',
+      'address',
+      'publicProfile',
+      'reliability',
+      'ORG-E2E-SECRET',
+      'REG-E2E-SECRET',
+      'E2E secret street',
+      'e2e-secret@example.com',
+    ]) {
+      expect(orgSerialized).not.toContain(key);
+    }
+
+    const oppSerialized = JSON.stringify(oppResult.data);
+    for (const key of [
+      'registryId',
+      'prerequisites',
+      'coverMediaId',
+      'coordinates',
+      'organizationId',
+      'deliverables',
+      'OPP-E2E-SECRET',
+      'E2E secret prerequisite',
+      'E2E secret deliverable',
+    ]) {
+      expect(oppSerialized).not.toContain(key);
+    }
+
+    expect(findForbiddenToolResultKey(orgResult.data)).toBeNull();
+    expect(findForbiddenToolResultKey(oppResult.data)).toBeNull();
+  });
+
+  it('executes all four tools through the app-provided executor', async () => {
+    const results = await Promise.all([
+      executor.execute('search_opportunities', { limit: 8 }),
+      executor.execute('search_organizations', { limit: 8 }),
+      executor.execute('search_reference_data', { limit: 8 }),
+      executor.execute('platform_stats'),
+    ]);
+
+    expect(results.map((result) => result.tool)).toEqual([
+      'search_opportunities',
+      'search_organizations',
+      'search_reference_data',
+      'platform_stats',
+    ]);
+    for (const result of results) {
+      expect(result.ok).toBe(true);
+      expect(result.meta.charCount).toBeLessThanOrEqual(1200);
+      expect(
+        findForbiddenToolResultKey(result.ok ? result.data : null),
+      ).toBeNull();
+    }
+
+    const stats = results[3];
+    expect(stats.ok).toBe(true);
+    if (stats.ok) {
+      expect(stats.data).toEqual({
+        publishedOpportunities: 1,
+        verifiedOrganizations: 1,
+        activeSkills: 1,
+        wilayas: 1,
+        municipalities: 1,
+      });
+    }
+  });
 });
