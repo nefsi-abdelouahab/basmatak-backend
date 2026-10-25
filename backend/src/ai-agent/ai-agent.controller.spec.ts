@@ -7,6 +7,7 @@ import { AppLogger } from '../common/logger/app.logger';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AiAgentController } from './ai-agent.controller';
 import { MOCK_ANSWER_DELTAS } from './ai-agent.constants';
+import { AiAgentKnowledgeCounts } from './ai-agent.types';
 import { QuotaService } from './budget/quota.service';
 import {
   ProviderQuotaError,
@@ -23,6 +24,7 @@ import {
   loadAiAgentConfig,
 } from './config/ai-agent.config';
 import { ChatDto } from './dto/chat.dto';
+import { KnowledgeService } from './knowledge/knowledge.service';
 import { MockProvider } from './llm/mock.provider';
 import { SseWriter } from './sse/sse-writer';
 import { UsageMeterService } from './usage/usage-meter.service';
@@ -138,23 +140,29 @@ interface ControllerHarness {
   provider: MockProvider;
   quota: QuotaService;
   usage: UsageMeterService;
+  knowledge: KnowledgeService;
   controller: AiAgentController;
 }
 
 function createController(
   config: AiAgentConfig = createConfig(),
   provider?: MockProvider,
+  knowledgeCounts: AiAgentKnowledgeCounts = { files: 0, chunks: 0 },
 ): ControllerHarness {
   const writer = new SseWriter(config);
   const quota = new QuotaService(config);
   const usage = silentUsageMeter();
   const resolvedProvider = provider ?? new MockProvider(config);
+  const knowledge = {
+    getCounts: () => ({ ...knowledgeCounts }),
+  } as unknown as KnowledgeService;
   const controller = new AiAgentController(
     config,
     writer,
     resolvedProvider,
     quota,
     usage,
+    knowledge,
   );
   return {
     config,
@@ -162,6 +170,7 @@ function createController(
     provider: resolvedProvider,
     quota,
     usage,
+    knowledge,
     controller,
   };
 }
@@ -396,6 +405,18 @@ describe('AiAgentController', () => {
     expect(controller.getStatus()).toMatchObject({
       enabled: false,
       mode: 'normal',
+    });
+  });
+
+  it('returns the knowledge counts supplied by the service', () => {
+    const { controller } = createController(createConfig(), undefined, {
+      files: 8,
+      chunks: 53,
+    });
+
+    expect(controller.getStatus().knowledge).toEqual({
+      files: 8,
+      chunks: 53,
     });
   });
 

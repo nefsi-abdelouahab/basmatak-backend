@@ -38,6 +38,7 @@ import {
 } from './budget/token-estimator';
 import { AiAgentConfig } from './config/ai-agent.config';
 import { ChatDto } from './dto/chat.dto';
+import { KnowledgeService } from './knowledge/knowledge.service';
 import { MockProvider } from './llm/mock.provider';
 import { SseStream, SseWriter } from './sse/sse-writer';
 import { UsageMeterService } from './usage/usage-meter.service';
@@ -69,6 +70,7 @@ export class AiAgentController {
     private readonly mockProvider: MockProvider,
     private readonly quota: QuotaService,
     private readonly usage: UsageMeterService,
+    private readonly knowledge: KnowledgeService,
   ) {}
 
   @Get('status')
@@ -78,7 +80,7 @@ export class AiAgentController {
     return {
       enabled: this.config.enabled,
       mode: this.quota.getMode(),
-      knowledge: { files: 0, chunks: 0 },
+      knowledge: this.knowledge.getCounts(),
       limits: {
         messageChars: MAX_MESSAGE_CHARS,
         historyMessages: MAX_HISTORY_MESSAGES,

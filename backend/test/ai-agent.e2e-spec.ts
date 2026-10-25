@@ -21,6 +21,7 @@ import {
   defaultAiAgentConfig,
 } from '../src/ai-agent/config/ai-agent.config';
 import { MockProvider } from '../src/ai-agent/llm/mock.provider';
+import { KnowledgeService } from '../src/ai-agent/knowledge/knowledge.service';
 import { SseWriter } from '../src/ai-agent/sse/sse-writer';
 import { UsageMeterService } from '../src/ai-agent/usage/usage-meter.service';
 import { AppLogger } from '../src/common/logger/app.logger';
@@ -202,11 +203,14 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
 
   it('returns the public status shape without model, provider, key, or token fields', async () => {
     const response = await getStatus().expect(200);
+    const knowledge = app.get(KnowledgeService).getCounts();
 
+    expect(knowledge).toEqual({ files: 8, chunks: expect.any(Number) });
+    expect(knowledge.chunks).toBeGreaterThan(0);
     expect(response.body).toEqual({
       enabled: true,
       mode: 'normal',
-      knowledge: { files: 0, chunks: 0 },
+      knowledge,
       limits: {
         messageChars: 2000,
         historyMessages: 4,

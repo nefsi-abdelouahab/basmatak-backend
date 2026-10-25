@@ -6,20 +6,23 @@ import { AI_AGENT_CONFIG } from './ai-agent.constants';
 import { QuotaService } from './budget/quota.service';
 import { AiAgentConfig, loadAiAgentConfig } from './config/ai-agent.config';
 import { KnowledgeChunker } from './knowledge/chunker';
+import { KnowledgeService } from './knowledge/knowledge.service';
 import { KnowledgeLoader } from './knowledge/loader';
 import { KnowledgeNormalizer } from './knowledge/normalizer';
 import { KnowledgeParser } from './knowledge/parser';
 import { MockProvider } from './llm/mock.provider';
 import { SseWriter } from './sse/sse-writer';
+import { SearchKnowledgeTool } from './tools/search-knowledge.tool';
 import { UsageController } from './usage/usage.controller';
 import { UsageMeterService } from './usage/usage-meter.service';
 
 /**
  * Public AI assistant transport and quota module. Session 3 adds the in-memory
  * quota guard, provider cooldowns, usage meter, and admin usage endpoint.
- * Session 4 registers the knowledge loader, parser, chunker, and normalizer
- * without scanning the corpus at boot; indexing belongs to Session 5. There is
- * still no database dependency, provider SDK, or persistence.
+ * Session 4 registers the knowledge loader, parser, chunker, and normalizer.
+ * Session 5 builds the boot-time in-memory BM25 index and exposes read-only
+ * retrieval through KnowledgeService and SearchKnowledgeTool. There is still no
+ * database dependency, provider SDK, or persistence.
  */
 @Module({
   controllers: [AiAgentController, UsageController],
@@ -60,6 +63,8 @@ import { UsageMeterService } from './usage/usage-meter.service';
           ),
         }),
     },
+    KnowledgeService,
+    SearchKnowledgeTool,
   ],
   exports: [
     AI_AGENT_CONFIG,
@@ -70,6 +75,8 @@ import { UsageMeterService } from './usage/usage-meter.service';
     KnowledgeParser,
     KnowledgeChunker,
     KnowledgeNormalizer,
+    KnowledgeService,
+    SearchKnowledgeTool,
   ],
 })
 export class AiAgentModule {}
