@@ -30,6 +30,7 @@
     "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only all"
   },
   "dependencies": {
+    "@google/genai": "^2.31.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.0.0",

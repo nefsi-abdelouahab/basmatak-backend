@@ -24,7 +24,11 @@ import { KnowledgeService } from './knowledge/knowledge.service';
 import { KnowledgeLoader } from './knowledge/loader';
 import { KnowledgeNormalizer } from './knowledge/normalizer';
 import { KnowledgeParser } from './knowledge/parser';
+import { FakeProvider } from './llm/fake.provider';
+import { GeminiProvider } from './llm/gemini.provider';
 import { MockProvider } from './llm/mock.provider';
+import { LLM_PROVIDER } from './llm/provider.interface';
+import { selectLlmProvider } from './llm/provider.factory';
 import { PromptBuilder } from './prompt/prompt-builder';
 import { IntentRouter } from './router/intent-router';
 import { SseWriter } from './sse/sse-writer';
@@ -58,6 +62,11 @@ import { UsageMeterService } from './usage/usage-meter.service';
  * Session 7 registers the versioned prompt builder and the deterministic
  * intent router. Neither is wired into the controller: there is still no
  * provider SDK, orchestration, or chat wiring.
+ *
+ * Session 8 registers the provider-neutral LLM contract and its adapters
+ * (Gemini, mock, fake) behind LLM_PROVIDER. The controller/chat path still uses
+ * MockProvider directly, so existing SSE behavior is unchanged; Session 9 will
+ * consume LLM_PROVIDER from the orchestrator.
  */
 @Module({
   imports: [
@@ -77,7 +86,35 @@ import { UsageMeterService } from './usage/usage-meter.service';
         loadAiAgentConfig((key) => config.get(key)),
     },
     SseWriter,
-    MockProvider,
+    {
+      provide: GeminiProvider,
+      inject: [AI_AGENT_CONFIG],
+      useFactory: (config: AiAgentConfig) => new GeminiProvider(config),
+    },
+    {
+      provide: MockProvider,
+      inject: [AI_AGENT_CONFIG],
+      useFactory: (config: AiAgentConfig) => new MockProvider(config),
+    },
+    {
+      provide: FakeProvider,
+      useFactory: () => new FakeProvider(),
+    },
+    {
+      provide: LLM_PROVIDER,
+      inject: [AI_AGENT_CONFIG, GeminiProvider, MockProvider, FakeProvider],
+      useFactory: (
+        config: AiAgentConfig,
+        gemini: GeminiProvider,
+        mock: MockProvider,
+        fake: FakeProvider,
+      ) =>
+        selectLlmProvider(config.provider, {
+          gemini,
+          mock,
+          fake,
+        }),
+    },
     QuotaService,
     UsageMeterService,
     {
@@ -148,6 +185,10 @@ import { UsageMeterService } from './usage/usage-meter.service';
   exports: [
     AI_AGENT_CONFIG,
     SseWriter,
+    LLM_PROVIDER,
+    GeminiProvider,
+    MockProvider,
+    FakeProvider,
     QuotaService,
     UsageMeterService,
     KnowledgeLoader,
