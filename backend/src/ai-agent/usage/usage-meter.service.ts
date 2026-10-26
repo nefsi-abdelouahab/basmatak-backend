@@ -67,6 +67,7 @@ export interface AiAgentRequestLog {
   firstTokenMs?: number;
   latencyMs: number;
   finishReason: AiAgentFinishReason | 'aborted';
+  truncated?: boolean;
   errorCode?: AiAgentErrorCode;
 }
 
@@ -179,6 +180,9 @@ export class UsageMeterService {
 
     if (entry.firstTokenMs !== undefined) {
       payload.firstTokenMs = normalizeCount(entry.firstTokenMs);
+    }
+    if (entry.truncated === true) {
+      payload.truncated = true;
     }
     if (entry.errorCode !== undefined) {
       payload.errorCode = entry.errorCode;

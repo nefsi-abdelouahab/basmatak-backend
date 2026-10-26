@@ -29,6 +29,18 @@ export class LlmInvalidResponseError extends LlmProviderUnavailableError {
   }
 }
 
+/**
+ * A transient upstream 5xx. Session 9 may retry this exactly once, before any
+ * text or tool call has been produced. Other unavailable failures (auth,
+ * malformed responses, missing configuration) are not retried.
+ */
+export class LlmServerError extends LlmProviderUnavailableError {
+  constructor(readonly status: number) {
+    super();
+    this.name = 'LlmServerError';
+  }
+}
+
 export class LlmTimeoutError extends Error {
   readonly code = 'AI_AGENT_TIMEOUT' as const;
 
@@ -67,6 +79,10 @@ export function isLlmInvalidResponseError(
   error: unknown,
 ): error is LlmInvalidResponseError {
   return error instanceof LlmInvalidResponseError;
+}
+
+export function isLlmServerError(error: unknown): error is LlmServerError {
+  return error instanceof LlmServerError;
 }
 
 export function isKnownProviderError(error: unknown): boolean {
@@ -284,6 +300,9 @@ export function normalizeProviderError(error: unknown): Error {
     return quotaError(readString(message));
   }
   if (status !== undefined) {
+    if (status >= 500 && status <= 599) {
+      return new LlmServerError(status);
+    }
     return new LlmProviderUnavailableError();
   }
 

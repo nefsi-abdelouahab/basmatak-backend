@@ -6,17 +6,8 @@ import { Request, Response } from 'express';
 import { AppLogger } from '../common/logger/app.logger';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AiAgentController } from './ai-agent.controller';
-import { MOCK_ANSWER_DELTAS } from './ai-agent.constants';
 import { AiAgentKnowledgeCounts } from './ai-agent.types';
 import { QuotaService } from './budget/quota.service';
-import {
-  ProviderQuotaError,
-  ProviderQuotaErrorOptions,
-} from './budget/quota.types';
-import {
-  estimateMessageTokens,
-  estimateTokens,
-} from './budget/token-estimator';
 import {
   AiAgentConfig,
   AiAgentLimits,
@@ -25,7 +16,11 @@ import {
 } from './config/ai-agent.config';
 import { ChatDto } from './dto/chat.dto';
 import { KnowledgeService } from './knowledge/knowledge.service';
-import { MockProvider } from './llm/mock.provider';
+import {
+  AiAgentOrchestrationResult,
+  AiAgentOrchestrator,
+  AiAgentOrchestratorInput,
+} from './orchestrator/ai-agent.orchestrator';
 import { SseWriter } from './sse/sse-writer';
 import { UsageMeterService } from './usage/usage-meter.service';
 
@@ -68,35 +63,6 @@ class FakeResponse extends EventEmitter {
 
 class FakeRequest extends EventEmitter {}
 
-/** Provider double that counts how often the controller starts a stream. */
-class CountingProvider extends MockProvider {
-  calls = 0;
-
-  override async *streamAnswer(
-    ...args: Parameters<MockProvider['streamAnswer']>
-  ): AsyncGenerator<string> {
-    this.calls += 1;
-    yield* super.streamAnswer(...args);
-  }
-}
-
-/** Deterministic provider-429 seam; no network and no real provider call. */
-class QuotaFailingProvider extends MockProvider {
-  calls = 0;
-
-  constructor(
-    config: AiAgentConfig,
-    private readonly quotaError: ProviderQuotaErrorOptions,
-  ) {
-    super(config);
-  }
-
-  override async *streamAnswer(): AsyncGenerator<string> {
-    this.calls += 1;
-    throw new ProviderQuotaError(this.quotaError);
-  }
-}
-
 type ConfigOverrides = Partial<Omit<AiAgentConfig, 'limits'>> & {
   limits?: Partial<AiAgentLimits>;
 };
@@ -106,6 +72,7 @@ function createConfig(overrides: ConfigOverrides = {}): AiAgentConfig {
   return {
     ...base,
     enabled: true,
+    provider: 'mock',
     ...overrides,
     limits: { ...base.limits, ...(overrides.limits ?? {}) },
   };
@@ -134,10 +101,52 @@ function silentUsageMeter(): UsageMeterService {
   } as unknown as AppLogger);
 }
 
+function defaultResult(
+  overrides: Partial<AiAgentOrchestrationResult> = {},
+): AiAgentOrchestrationResult {
+  return {
+    mode: 'normal',
+    finishReason: 'stop',
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    estimated: false,
+    toolCalls: 0,
+    toolNames: [],
+    refusal: false,
+    rateLimited: false,
+    truncated: false,
+    ...overrides,
+  };
+}
+
+class FakeOrchestrator {
+  readonly inputs: AiAgentOrchestratorInput[] = [];
+  impl: (
+    input: AiAgentOrchestratorInput,
+  ) => Promise<AiAgentOrchestrationResult> = async (input) => {
+    input.stream.event('status', { state: 'answering' });
+    input.stream.event('token', { delta: 'Answer [K1].' });
+    return defaultResult({
+      inputTokens: 30,
+      outputTokens: 10,
+      totalTokens: 40,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+      firstTokenAt: Date.now(),
+    });
+  };
+
+  run(input: AiAgentOrchestratorInput): Promise<AiAgentOrchestrationResult> {
+    this.inputs.push(input);
+    return this.impl(input);
+  }
+}
+
 interface ControllerHarness {
   config: AiAgentConfig;
   writer: SseWriter;
-  provider: MockProvider;
+  orchestrator: FakeOrchestrator;
   quota: QuotaService;
   usage: UsageMeterService;
   knowledge: KnowledgeService;
@@ -145,21 +154,20 @@ interface ControllerHarness {
 }
 
 function createController(
-  config: AiAgentConfig = createConfig(),
-  provider?: MockProvider,
+  config: AiAgentConfig = createConfig({ limits: highLimits() }),
   knowledgeCounts: AiAgentKnowledgeCounts = { files: 0, chunks: 0 },
+  orchestrator = new FakeOrchestrator(),
 ): ControllerHarness {
   const writer = new SseWriter(config);
   const quota = new QuotaService(config);
   const usage = silentUsageMeter();
-  const resolvedProvider = provider ?? new MockProvider(config);
   const knowledge = {
     getCounts: () => ({ ...knowledgeCounts }),
   } as unknown as KnowledgeService;
   const controller = new AiAgentController(
     config,
     writer,
-    resolvedProvider,
+    orchestrator as unknown as AiAgentOrchestrator,
     quota,
     usage,
     knowledge,
@@ -167,7 +175,7 @@ function createController(
   return {
     config,
     writer,
-    provider: resolvedProvider,
+    orchestrator,
     quota,
     usage,
     knowledge,
@@ -224,6 +232,22 @@ async function waitFor(
     }
     await new Promise((resolve) => setTimeout(resolve, 5));
   }
+}
+
+function exhaustBudget(quota: QuotaService, config: AiAgentConfig): void {
+  const seed = quota.reserve({
+    ip: 'budget-seed',
+    estimatedInputTokens: config.limits.dailyTokenBudget,
+    maxOutputTokens: 0,
+  });
+  if (!seed.allowed) throw new Error('Expected the seed reservation');
+  expect(
+    quota.commit(seed.reservationId, {
+      inputTokens: config.limits.dailyTokenBudget,
+      outputTokens: 0,
+      estimated: false,
+    }).committed,
+  ).toBe(true);
 }
 
 async function validateChat(payload: unknown) {
@@ -410,7 +434,7 @@ describe('AiAgentController', () => {
   });
 
   it('returns the knowledge counts supplied by the service', () => {
-    const { controller } = createController(createConfig(), undefined, {
+    const { controller } = createController(createConfig(), {
       files: 8,
       chunks: 53,
     });
@@ -421,38 +445,62 @@ describe('AiAgentController', () => {
     });
   });
 
+  it('exposes the application-level retrieval fallback on status', () => {
+    const config = createConfig({
+      limits: highLimits({
+        dailyTokenBudget: 1000,
+        retrievalFallback: true,
+      }),
+    });
+    const { controller, quota } = createController(config);
+    exhaustBudget(quota, config);
+
+    expect(quota.getMode()).toBe('exhausted');
+    expect(controller.getStatus().mode).toBe('retrieval_only');
+
+    config.limits.retrievalFallback = false;
+    expect(controller.getStatus().mode).toBe('exhausted');
+  });
+
   it('rejects chat with AI_AGENT_DISABLED before opening the stream', async () => {
-    const { controller, writer } = createController(
+    const { controller, writer, usage, orchestrator } = createController(
       createConfig({ enabled: false }),
     );
     const response = new FakeResponse();
-    const request = new FakeRequest() as unknown as Request;
 
-    try {
-      await controller.chat(
-        { message: 'Hello', locale: 'en' },
-        request,
-        response as unknown as Response,
-      );
-      throw new Error('Expected the controller to reject');
-    } catch (error) {
-      expect(error).toBeInstanceOf(BusinessException);
-      expect((error as BusinessException).code).toBe('AI_AGENT_DISABLED');
-      expect((error as BusinessException).getStatus()).toBe(503);
-    }
+    const error = await expectChatRejected(controller, response);
 
     expect(response.chunks).toEqual([]);
     expect(response.headers).toEqual({});
     expect(writer.activeSessionCount).toBe(0);
+    expect(orchestrator.inputs).toHaveLength(0);
+    expect(
+      usage.getReport({
+        dailyLimit: 1,
+        usedToday: 0,
+        remaining: 1,
+        mode: 'normal',
+      }).today.requests,
+    ).toBe(1);
+    expect(error.code).toBe('AI_AGENT_DISABLED');
+    expect(error.getStatus()).toBe(503);
   });
 
-  it('streams meta, a few deterministic tokens, then done with estimated usage', async () => {
-    const { controller, writer, quota, usage } = createController();
+  it('writes meta, delegates to the orchestrator, and closes with done', async () => {
+    const { controller, writer, quota, usage, orchestrator } =
+      createController();
     const response = new FakeResponse();
     const request = new FakeRequest() as unknown as Request;
+    const logSpy = jest
+      .spyOn(usage, 'logRequest')
+      .mockImplementation(() => undefined);
 
     await controller.chat(
-      { message: 'Hello', locale: 'en' },
+      {
+        message: 'What is Basmatak?',
+        locale: 'en',
+        history: [{ role: 'user', content: 'Hello' }],
+      },
       request,
       response as unknown as Response,
     );
@@ -460,12 +508,10 @@ describe('AiAgentController', () => {
     const frames = parseFrames(response.chunks);
     expect(frames.map((frame) => frame.event)).toEqual([
       'meta',
-      'token',
-      'token',
+      'status',
       'token',
       'done',
     ]);
-
     const meta = frames[0].data as {
       conversationId: string;
       locale: string;
@@ -477,88 +523,156 @@ describe('AiAgentController', () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
 
-    const deltas = frames
-      .filter((frame) => frame.event === 'token')
-      .map((frame) => (frame.data as { delta: string }).delta);
-    expect(deltas.join('')).toBe(MOCK_ANSWER_DELTAS.en.join(''));
+    expect(orchestrator.inputs).toHaveLength(1);
+    expect(orchestrator.inputs[0]).toMatchObject({
+      message: 'What is Basmatak?',
+      locale: 'en',
+      mode: 'normal',
+      history: [{ role: 'user', content: 'Hello' }],
+    });
+    expect(orchestrator.inputs[0].stream).toBeDefined();
 
-    const inputTokens = estimateMessageTokens('Hello');
-    const outputTokens = estimateTokens(MOCK_ANSWER_DELTAS.en.join('')).tokens;
     expect(frames[frames.length - 1].data).toEqual({
       finishReason: 'stop',
       usage: {
-        inputTokens,
-        outputTokens,
-        totalTokens: inputTokens + outputTokens,
-        estimated: true,
+        inputTokens: 30,
+        outputTokens: 10,
+        totalTokens: 40,
+        estimated: false,
       },
     });
-    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
-    expect(writer.activeSessionCount).toBe(0);
+    expect(quota.getBudgetSnapshot()).toMatchObject({
+      usedToday: 40,
+      remaining: 10_000_000 - 40,
+      mode: 'normal',
+    });
     expect(quota.activeConcurrencyCount).toBe(0);
     expect(quota.activeReservationCount).toBe(0);
-    expect(usage.getReport(quota.getBudgetSnapshot()).today).toMatchObject({
-      requests: 1,
-      inputTokens,
-      outputTokens,
-      totalTokens: inputTokens + outputTokens,
-    });
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'normal',
+        provider: 'mock',
+        locale: 'en',
+        toolNames: ['search_opportunities'],
+        inputTokens: 30,
+        outputTokens: 10,
+        totalTokens: 40,
+        finishReason: 'stop',
+        firstTokenMs: expect.any(Number),
+      }),
+    );
+    expect(writer.activeSessionCount).toBe(0);
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toBe(
       'text/event-stream; charset=utf-8',
     );
-    expect(response.headers['cache-control']).toBe('no-cache, no-transform');
-    expect(response.headers.connection).toBe('keep-alive');
-    expect(response.headers['x-accel-buffering']).toBe('no');
   });
 
-  it('streams the Arabic mock answer for ar', async () => {
-    const { controller } = createController();
+  it('marks a truncated answer in done and the request log', async () => {
+    const orchestrator = new FakeOrchestrator();
+    orchestrator.impl = async (input) => {
+      input.stream.event('token', { delta: 'Partial [K1].' });
+      return defaultResult({
+        finishReason: 'length',
+        truncated: true,
+        inputTokens: 5,
+        outputTokens: 2,
+        totalTokens: 7,
+      });
+    };
+    const { controller, usage } = createController(
+      createConfig({ limits: highLimits() }),
+      { files: 0, chunks: 0 },
+      orchestrator,
+    );
+    const logSpy = jest
+      .spyOn(usage, 'logRequest')
+      .mockImplementation(() => undefined);
     const response = new FakeResponse();
-    const request = new FakeRequest() as unknown as Request;
 
     await controller.chat(
-      { message: 'مرحبا', locale: 'ar' },
-      request,
+      { message: 'What is Basmatak?', locale: 'en' },
+      new FakeRequest() as unknown as Request,
       response as unknown as Response,
     );
 
     const frames = parseFrames(response.chunks);
-    expect((frames[0].data as { locale: string }).locale).toBe('ar');
-    const deltas = frames
-      .filter((frame) => frame.event === 'token')
-      .map((frame) => (frame.data as { delta: string }).delta);
-    expect(deltas.join('')).toBe(MOCK_ANSWER_DELTAS.ar.join(''));
-  });
-
-  it('emits heartbeat comments on the configured interval', () => {
-    jest.useFakeTimers();
-    try {
-      const config = createConfig({ heartbeatIntervalMs: 1000 });
-      const writer = new SseWriter(config);
-      const response = new FakeResponse();
-      const stream = writer.start(response as unknown as Response);
-
-      expect(response.chunks).toEqual([]);
-      jest.advanceTimersByTime(1000);
-      expect(response.chunks).toEqual([': heartbeat\n\n']);
-      expect(writer.activeSessionCount).toBe(1);
-
-      stream.end();
-      expect(writer.activeSessionCount).toBe(0);
-      jest.advanceTimersByTime(5000);
-      expect(response.chunks).toEqual([': heartbeat\n\n']);
-    } finally {
-      jest.useRealTimers();
-    }
-  });
-
-  it('stops the heartbeat and pending deltas when the client aborts', async () => {
-    const config = createConfig({
-      mockDelayMs: 60,
-      heartbeatIntervalMs: 1000,
+    expect(frames[frames.length - 1].data).toMatchObject({
+      finishReason: 'length',
+      truncated: true,
+      usage: { inputTokens: 5, outputTokens: 2, totalTokens: 7 },
     });
-    const { controller, writer, quota, usage } = createController(config);
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ finishReason: 'length', truncated: true }),
+    );
+  });
+
+  it('does not write done after an orchestrator error but charges partial usage', async () => {
+    const orchestrator = new FakeOrchestrator();
+    orchestrator.impl = async (input) => {
+      input.stream.event('error', {
+        code: 'AI_AGENT_TIMEOUT',
+        message: 'The assistant took too long to answer. Please try again.',
+      });
+      return defaultResult({
+        finishReason: 'error',
+        errorCode: 'AI_AGENT_TIMEOUT',
+        inputTokens: 10,
+        outputTokens: 5,
+        totalTokens: 15,
+      });
+    };
+    const { controller, quota, usage } = createController(
+      createConfig({ limits: highLimits() }),
+      { files: 0, chunks: 0 },
+      orchestrator,
+    );
+    const logSpy = jest
+      .spyOn(usage, 'logRequest')
+      .mockImplementation(() => undefined);
+    const response = new FakeResponse();
+
+    await controller.chat(
+      { message: 'What is Basmatak?', locale: 'en' },
+      new FakeRequest() as unknown as Request,
+      response as unknown as Response,
+    );
+
+    const frames = parseFrames(response.chunks);
+    expect(frames.map((frame) => frame.event)).toEqual(['meta', 'error']);
+    expect(quota.getBudgetSnapshot().usedToday).toBe(15);
+    expect(quota.activeReservationCount).toBe(0);
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        finishReason: 'error',
+        errorCode: 'AI_AGENT_TIMEOUT',
+        inputTokens: 10,
+        outputTokens: 5,
+      }),
+    );
+  });
+
+  it('stops the heartbeat and releases the reservation when the client aborts', async () => {
+    const config = createConfig({
+      heartbeatIntervalMs: 1000,
+      limits: highLimits(),
+    });
+    const orchestrator = new FakeOrchestrator();
+    orchestrator.impl = async (input) =>
+      new Promise<AiAgentOrchestrationResult>((resolve) => {
+        const finish = (): void =>
+          resolve(defaultResult({ finishReason: 'aborted' }));
+        if (input.signal.aborted) {
+          finish();
+          return;
+        }
+        input.signal.addEventListener('abort', finish, { once: true });
+      });
+    const { controller, writer, quota, usage } = createController(
+      config,
+      { files: 0, chunks: 0 },
+      orchestrator,
+    );
     const response = new FakeResponse();
     const request = new FakeRequest() as unknown as Request;
 
@@ -583,13 +697,10 @@ describe('AiAgentController', () => {
       inputTokens: 0,
       outputTokens: 0,
     });
-    const afterAbort = response.chunks.join('');
-    expect(afterAbort).not.toContain('event: token');
-    expect(afterAbort).not.toContain('event: done');
-    expect(afterAbort).not.toContain('event: error');
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(response.chunks.join('')).toBe(afterAbort);
+    const raw = response.chunks.join('');
+    expect(raw).not.toContain('event: token');
+    expect(raw).not.toContain('event: done');
+    expect(raw).not.toContain('event: error');
   });
 
   it('rejects a per-IP overflow with 429 RATE_LIMITED before opening the stream', async () => {
@@ -651,76 +762,109 @@ describe('AiAgentController', () => {
     expect(quota.activeConcurrencyCount).toBe(0);
   });
 
-  it('denies without starting the stream or calling the provider when the budget is exhausted', async () => {
-    const config = createConfig({
-      limits: highLimits({ dailyTokenBudget: 1000 }),
+  it('keeps a provider cooldown as a pre-stream JSON denial', async () => {
+    const { controller, quota } = createController(
+      createConfig({ limits: highLimits() }),
+    );
+    quota.markProviderQuotaExhausted({
+      window: 'day',
+      retryAfterSeconds: 30,
     });
-    const provider = new CountingProvider(config);
-    const { controller, quota } = createController(config, provider);
-
-    const seed = quota.reserve({
-      ip: 'budget-seed',
-      estimatedInputTokens: 1000,
-      maxOutputTokens: 0,
-    });
-    if (!seed.allowed) throw new Error('Expected the seed reservation');
-    expect(
-      quota.commit(seed.reservationId, {
-        inputTokens: 1000,
-        outputTokens: 0,
-        estimated: false,
-      }).committed,
-    ).toBe(true);
-    expect(quota.getMode()).toBe('exhausted');
 
     const denied = new FakeResponse();
     const error = await expectChatRejected(controller, denied);
 
     expect(error.code).toBe('AI_AGENT_QUOTA_EXHAUSTED');
     expect(error.getStatus()).toBe(429);
+    expect(error.details).toMatchObject({ reason: 'cooldown_day' });
     expect(denied.chunks).toEqual([]);
     expect(denied.headers['retry-after']).toBeDefined();
-    expect(Number(denied.headers['retry-after'])).toBeGreaterThan(0);
-    expect(provider.calls).toBe(0);
-    expect(quota.activeConcurrencyCount).toBe(0);
   });
 
-  it('turns a provider 429 into a cooldown, an SSE error, and a blocked next request', async () => {
-    const config = createConfig({ limits: highLimits() });
-    const provider = new QuotaFailingProvider(config, {
-      window: 'day',
-      retryAfterSeconds: 30,
+  it('serves exhausted mode as retrieval-only SSE without a reservation', async () => {
+    const config = createConfig({
+      limits: highLimits({ dailyTokenBudget: 1000, retrievalFallback: true }),
     });
-    const { controller, quota } = createController(config, provider);
-    const request = new FakeRequest() as unknown as Request;
-
+    const { controller, quota, orchestrator } = createController(config);
+    exhaustBudget(quota, config);
+    orchestrator.impl = async (input) => {
+      input.stream.event('token', { delta: 'Extractive answer [K1].' });
+      return defaultResult({ mode: 'retrieval_only' });
+    };
     const response = new FakeResponse();
+
     await controller.chat(
-      { message: 'Hello', locale: 'en' },
-      request,
+      { message: 'What is Basmatak?', locale: 'en' },
+      new FakeRequest() as unknown as Request,
       response as unknown as Response,
     );
 
     const frames = parseFrames(response.chunks);
-    expect(frames.map((frame) => frame.event)).toEqual(['meta', 'error']);
-    expect(frames[1].data).toMatchObject({
-      code: 'AI_AGENT_QUOTA_EXHAUSTED',
-      retryAfterSeconds: expect.any(Number),
-    });
-    expect(frames.some((frame) => frame.event === 'done')).toBe(false);
-    expect(provider.calls).toBe(1);
-    expect(quota.getCooldown()).toMatchObject({ active: true, window: 'day' });
-    expect(quota.getMode()).toBe('exhausted');
-    expect(quota.activeConcurrencyCount).toBe(0);
+    expect(frames.map((frame) => frame.event)).toEqual([
+      'meta',
+      'token',
+      'done',
+    ]);
+    expect((frames[0].data as { mode: string }).mode).toBe('retrieval_only');
+    expect(orchestrator.inputs[0].mode).toBe('retrieval_only');
     expect(quota.activeReservationCount).toBe(0);
+    expect(quota.getBudgetSnapshot().usedToday).toBe(1000);
+  });
 
-    const denied = new FakeResponse();
-    const error = await expectChatRejected(controller, denied, 'Hello again');
+  it('serves exhausted mode with browse links when fallback is disabled', async () => {
+    const config = createConfig({
+      limits: highLimits({ dailyTokenBudget: 1000, retrievalFallback: false }),
+    });
+    const { controller, quota, orchestrator } = createController(config);
+    exhaustBudget(quota, config);
+    orchestrator.impl = async (input) => {
+      input.stream.event('sources', { knowledge: [], data: [] });
+      input.stream.event('token', { delta: 'Quota message.' });
+      return defaultResult({ mode: 'exhausted', refusal: true });
+    };
+    const response = new FakeResponse();
 
-    expect(error.code).toBe('AI_AGENT_QUOTA_EXHAUSTED');
-    expect(denied.chunks).toEqual([]);
-    expect(denied.headers['retry-after']).toBeDefined();
-    expect(provider.calls).toBe(1);
-    expect(quota.activeConcurrencyCount).toBe(0);
+    await controller.chat(
+      { message: 'What is Basmatak?', locale: 'en' },
+      new FakeRequest() as unknown as Request,
+      response as unknown as Response,
+    );
+
+    const frames = parseFrames(response.chunks);
+    expect((frames[0].data as { mode: string }).mode).toBe('exhausted');
+    expect(orchestrator.inputs[0].mode).toBe('exhausted');
+    expect(quota.activeReservationCount).toBe(0);
+  });
+
+  it('degrades a token-budget denial without opening a reservation', async () => {
+    const config = createConfig({
+      limits: highLimits({ dailyTokenBudget: 1000, retrievalFallback: true }),
+    });
+    const { controller, quota, orchestrator } = createController(config);
+    const seed = quota.reserve({
+      ip: 'token-budget-seed',
+      estimatedInputTokens: 900,
+      maxOutputTokens: 0,
+    });
+    if (!seed.allowed) throw new Error('Expected the seed reservation');
+    quota.commit(seed.reservationId, {
+      inputTokens: 900,
+      outputTokens: 0,
+      estimated: false,
+    });
+    expect(quota.getMode()).toBe('knowledge_only');
+
+    const response = new FakeResponse();
+    await controller.chat(
+      { message: 'What is Basmatak?', locale: 'en' },
+      new FakeRequest() as unknown as Request,
+      response as unknown as Response,
+    );
+
+    const frames = parseFrames(response.chunks);
+    expect((frames[0].data as { mode: string }).mode).toBe('retrieval_only');
+    expect(orchestrator.inputs[0].mode).toBe('retrieval_only');
+    expect(quota.activeReservationCount).toBe(0);
+    expect(quota.getBudgetSnapshot().usedToday).toBe(900);
   });
 });

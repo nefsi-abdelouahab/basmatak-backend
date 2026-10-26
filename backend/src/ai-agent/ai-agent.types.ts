@@ -51,6 +51,43 @@ export interface AiAgentDoneEvent {
   usage?: AiAgentUsage;
 }
 
+/**
+ * A knowledge source validated from a `[K#]` citation. `source` is the
+ * corpus-relative document path, never an absolute filesystem path.
+ */
+export interface AiAgentKnowledgeSource {
+  id: string;
+  title: string;
+  source: string;
+  heading?: string;
+}
+
+export type AiAgentDataSourceType =
+  'opportunity' | 'organization' | 'reference' | 'stats';
+
+/**
+ * A public-data source validated from a `[T#]` citation. `citationId` is the
+ * marker the model wrote; `id` is unique per row so clients can key chips.
+ * `path` is a locale-less public frontend route; no internal identifiers leave
+ * the backend.
+ */
+export interface AiAgentDataSource {
+  id: string;
+  citationId: string;
+  type: AiAgentDataSourceType;
+  title: string;
+  path?: string;
+}
+
+/**
+ * Sources are emitted only after the complete buffered answer has passed
+ * citation validation, never for an unvalidated partial stream.
+ */
+export interface AiAgentSourcesEvent {
+  knowledge: AiAgentKnowledgeSource[];
+  data: AiAgentDataSource[];
+}
+
 export type AiAgentErrorCode =
   | 'AI_AGENT_DISABLED'
   | 'AI_AGENT_INVALID_INPUT'
@@ -68,13 +105,11 @@ export interface AiAgentErrorEvent {
   retryAfterSeconds?: number;
 }
 
-/**
- * Every event the writer is allowed to emit. `sources` is deliberately absent
- * until the grounding session; do not add it early.
- */
+/** Every event the writer is allowed to emit. */
 export interface AiAgentSseEventMap {
   meta: AiAgentMetaEvent;
   status: AiAgentStatusEvent;
+  sources: AiAgentSourcesEvent;
   token: AiAgentTokenEvent;
   done: AiAgentDoneEvent;
   error: AiAgentErrorEvent;

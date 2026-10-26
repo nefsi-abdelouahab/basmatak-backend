@@ -28,18 +28,20 @@ import {
   AiAgentUsage,
 } from './ai-agent.types';
 import { QuotaService } from './budget/quota.service';
-import {
-  isProviderQuotaError,
-  QuotaReservationDenied,
-} from './budget/quota.types';
-import {
-  estimateMessagesTokens,
-  estimateTokens,
-} from './budget/token-estimator';
+import { QuotaReservationDenied } from './budget/quota.types';
+import { estimateMessagesTokens } from './budget/token-estimator';
 import { AiAgentConfig } from './config/ai-agent.config';
 import { ChatDto } from './dto/chat.dto';
 import { KnowledgeService } from './knowledge/knowledge.service';
-import { MockProvider } from './llm/mock.provider';
+import {
+  AiAgentOrchestrationResult,
+  AiAgentOrchestrator,
+} from './orchestrator/ai-agent.orchestrator';
+import {
+  policyMessage,
+  resolveEffectiveMode,
+} from './orchestrator/answer-policy';
+import { detectPromptLanguage } from './router/intent-router';
 import { SseStream, SseWriter } from './sse/sse-writer';
 import { UsageMeterService } from './usage/usage-meter.service';
 
@@ -58,16 +60,28 @@ interface FinalizeInput {
   rateLimited?: boolean;
   refusal?: boolean;
   toolCalls?: number;
+  toolNames?: string[];
+  truncated?: boolean;
   errorCode?: AiAgentErrorCode;
 }
 
+/**
+ * Public chat transport.
+ *
+ * The controller owns validation, the kill switch, effective-mode selection,
+ * quota reservation/commit/release, the SSE lifecycle, and request logging.
+ * `AiAgentOrchestrator` owns routing, retrieval, provider/tool calls, citation
+ * validation, and the `status` / `sources` / `token` / in-stream `error`
+ * events. The controller always writes `meta` first and the final `done` (or no
+ * `done` after an abort/error).
+ */
 @ApiTags('ai-agent')
 @Controller('ai-agent')
 export class AiAgentController {
   constructor(
     @Inject(AI_AGENT_CONFIG) private readonly config: AiAgentConfig,
     private readonly sse: SseWriter,
-    private readonly mockProvider: MockProvider,
+    private readonly orchestrator: AiAgentOrchestrator,
     private readonly quota: QuotaService,
     private readonly usage: UsageMeterService,
     private readonly knowledge: KnowledgeService,
@@ -79,7 +93,7 @@ export class AiAgentController {
   getStatus(): AiAgentStatusResponse {
     return {
       enabled: this.config.enabled,
-      mode: this.quota.getMode(),
+      mode: this.effectiveMode(this.quota.getMode()),
       knowledge: this.knowledge.getCounts(),
       limits: {
         messageChars: MAX_MESSAGE_CHARS,
@@ -93,7 +107,7 @@ export class AiAgentController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiProduces('text/event-stream')
-  @ApiOperation({ summary: 'Stream a mock assistant answer over SSE' })
+  @ApiOperation({ summary: 'Stream a grounded assistant answer over SSE' })
   async chat(
     @Body() dto: ChatDto,
     @Req() request: Request,
@@ -145,7 +159,7 @@ export class AiAgentController {
         messageChars,
         historyMessages,
         historyChars,
-        toolNames: [],
+        toolNames: input.toolNames ?? [],
         inputTokens: usedInputTokens,
         outputTokens: usedOutputTokens,
         totalTokens,
@@ -154,7 +168,10 @@ export class AiAgentController {
           firstTokenAt === undefined ? undefined : firstTokenAt - startedAt,
         latencyMs,
         finishReason: input.finishReason,
-        errorCode: input.errorCode,
+        ...(input.truncated === true ? { truncated: true } : {}),
+        ...(input.errorCode !== undefined
+          ? { errorCode: input.errorCode }
+          : {}),
       });
 
       if (input.finishReason === 'stop') {
@@ -166,7 +183,7 @@ export class AiAgentController {
     // before any quota state or SSE headers are touched.
     if (!this.config.enabled) {
       finalize({
-        mode: this.quota.getMode(),
+        mode: this.effectiveMode(this.quota.getMode()),
         finishReason: 'error',
         errorCode: 'AI_AGENT_DISABLED',
       });
@@ -186,22 +203,44 @@ export class AiAgentController {
       startedAt,
     );
 
+    let reservationId: string | undefined;
+    let degraded = false;
+    let mode: AiAgentMode;
+
     if (!reservation.allowed) {
-      response.setHeader('Retry-After', String(reservation.retryAfterSeconds));
-      finalize({
-        mode: reservation.mode,
-        finishReason: 'error',
-        rateLimited: true,
-        errorCode: reservation.code,
-      });
-      throw this.quotaException(reservation);
+      // Hard transport denials and provider cooldowns stay pre-stream JSON.
+      const canDegrade =
+        reservation.reason === 'mode' || reservation.reason === 'token_budget';
+      if (!canDegrade) {
+        response.setHeader(
+          'Retry-After',
+          String(reservation.retryAfterSeconds),
+        );
+        finalize({
+          mode: this.effectiveMode(reservation.mode),
+          finishReason: 'error',
+          rateLimited: true,
+          errorCode: reservation.code,
+        });
+        throw this.quotaException(reservation);
+      }
+
+      // A mode/token denial may still be answered locally from the knowledge
+      // corpus. This path deliberately holds no reservation: retrieval-only
+      // answers cost no provider tokens, and exhausted answers are fixed text.
+      degraded = true;
+      mode = resolveEffectiveMode(
+        'exhausted',
+        this.config.limits.retrievalFallback,
+      );
+    } else {
+      reservationId = reservation.reservationId;
+      // Read the mode after reserving so `meta` reflects the current budget.
+      mode = this.effectiveMode(this.quota.getMode());
     }
 
-    const reservationId = reservation.reservationId;
     let stream: SseStream | undefined;
     let abortController: AbortController | undefined;
-    let mode = this.quota.getMode();
-    let outputText = '';
     let outcome: FinalizeInput = { mode, finishReason: 'aborted' };
     let removeListeners: (() => void) | undefined;
 
@@ -224,11 +263,6 @@ export class AiAgentController {
         request.off('aborted', onAbort);
       };
 
-      // Read the mode after the reservation so the meta event reflects the
-      // current budget state (the request itself may cross a threshold).
-      mode = this.quota.getMode();
-      outcome = { mode, finishReason: 'aborted' };
-
       const metaWritten = stream.event('meta', {
         conversationId,
         locale: dto.locale,
@@ -239,123 +273,131 @@ export class AiAgentController {
         return;
       }
 
-      for await (const delta of this.mockProvider.streamAnswer(
-        { locale: dto.locale },
+      const result = await this.orchestrator.run({
+        message: dto.message,
+        locale: dto.locale,
+        history,
+        mode,
+        stream,
         signal,
-      )) {
-        if (signal.aborted || stream.isClosed) break;
-        if (firstTokenAt === undefined) firstTokenAt = Date.now();
-        outputText += delta;
-        if (!stream.event('token', { delta })) {
-          abortController.abort();
-          break;
-        }
-      }
+      });
+      firstTokenAt = result.firstTokenAt;
+      outcome = this.outcomeFromResult(result);
 
-      if (signal.aborted || stream.isClosed) {
-        outcome = { mode, finishReason: 'aborted' };
+      if (
+        result.finishReason === 'aborted' ||
+        signal.aborted ||
+        stream.isClosed
+      ) {
+        outcome = {
+          ...outcome,
+          mode: result.mode,
+          finishReason: 'aborted',
+        };
         return;
       }
 
-      const outputTokens = estimateTokens(outputText).tokens;
       const actualUsage: AiAgentUsage = {
-        inputTokens,
-        outputTokens,
-        totalTokens: inputTokens + outputTokens,
-        estimated: true,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        totalTokens: result.totalTokens,
+        estimated: result.estimated,
       };
-      const commit = this.quota.commit(reservationId, actualUsage, Date.now());
 
-      if (!commit.committed) {
+      let committed = true;
+      if (!degraded && reservationId !== undefined) {
+        committed = this.quota.commit(
+          reservationId,
+          actualUsage,
+          Date.now(),
+        ).committed;
+      }
+
+      if (result.finishReason === 'error') {
+        // The orchestrator already emitted a localized in-stream `error`. Any
+        // real provider usage from earlier calls in the turn is still charged.
+        return;
+      }
+
+      if (!committed) {
         outcome = {
-          mode,
+          mode: result.mode,
           finishReason: 'error',
           errorCode: 'AI_AGENT_INTERNAL_ERROR',
         };
-        stream.event('error', {
-          code: 'AI_AGENT_INTERNAL_ERROR',
-          message: 'The assistant could not complete the response.',
-        });
-        return;
-      }
-
-      stream.event('done', {
-        finishReason: 'stop',
-        usage: actualUsage,
-      });
-      outcome = {
-        mode,
-        finishReason: 'stop',
-        inputTokens,
-        outputTokens,
-        estimated: true,
-      };
-    } catch (error) {
-      if (isProviderQuotaError(error)) {
-        const cooldown = this.quota.markProviderQuotaExhausted(
-          {
-            window: error.window,
-            retryAfterSeconds: error.retryAfterSeconds,
-          },
-          Date.now(),
-        );
-        mode = this.quota.getMode();
-        outcome = {
-          mode,
-          finishReason: 'error',
-          rateLimited: true,
-          errorCode: 'AI_AGENT_QUOTA_EXHAUSTED',
-        };
-
-        if (!stream) {
-          throw new BusinessException(
-            'AI_AGENT_QUOTA_EXHAUSTED',
-            QUOTA_EXHAUSTED_MESSAGE,
-            HttpStatus.TOO_MANY_REQUESTS,
-            { retryAfterSeconds: cooldown.retryAfterSeconds },
-          );
-        }
-
-        if (!abortController?.signal.aborted && !stream.isClosed) {
+        if (!stream.isClosed) {
           stream.event('error', {
-            code: 'AI_AGENT_QUOTA_EXHAUSTED',
-            message: QUOTA_EXHAUSTED_MESSAGE,
-            ...(cooldown.retryAfterSeconds !== undefined
-              ? { retryAfterSeconds: cooldown.retryAfterSeconds }
-              : {}),
+            code: 'AI_AGENT_INTERNAL_ERROR',
+            message: policyMessage(
+              'internalError',
+              detectPromptLanguage(dto.message, dto.locale),
+            ),
           });
         }
-      } else if (abortController?.signal.aborted || stream?.isClosed) {
+        return;
+      }
+
+      if (!stream.isClosed) {
+        stream.event('done', {
+          finishReason: result.finishReason,
+          ...(result.truncated ? { truncated: true } : {}),
+          usage: actualUsage,
+        });
+      }
+    } catch {
+      // The orchestrator converts known failures into results. This is the last
+      // line of defence for an unexpected controller-side failure.
+      mode = this.effectiveMode(this.quota.getMode());
+      if (abortController?.signal.aborted || stream?.isClosed) {
         outcome = { mode, finishReason: 'aborted' };
       } else {
-        mode = this.quota.getMode();
         outcome = {
           mode,
           finishReason: 'error',
           errorCode: 'AI_AGENT_INTERNAL_ERROR',
         };
-
-        if (!stream) {
-          throw new BusinessException(
-            'AI_AGENT_INTERNAL_ERROR',
-            'The assistant could not complete the response.',
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
+        if (stream) {
+          stream.event('error', {
+            code: 'AI_AGENT_INTERNAL_ERROR',
+            message: policyMessage(
+              'internalError',
+              detectPromptLanguage(dto.message, dto.locale),
+            ),
+          });
         }
-
-        stream.event('error', {
-          code: 'AI_AGENT_INTERNAL_ERROR',
-          message: 'The assistant could not complete the response.',
-        });
       }
     } finally {
       removeListeners?.();
       // Commit already released the slot on success; release is a no-op then.
       // On every other path this releases the slot exactly once.
-      this.quota.release(reservationId, Date.now());
+      if (reservationId !== undefined) {
+        this.quota.release(reservationId, Date.now());
+      }
       finalize(outcome);
       stream?.end();
     }
+  }
+
+  private effectiveMode(mode: AiAgentMode): AiAgentMode {
+    return resolveEffectiveMode(mode, this.config.limits.retrievalFallback);
+  }
+
+  private outcomeFromResult(result: AiAgentOrchestrationResult): FinalizeInput {
+    return {
+      mode: this.effectiveMode(result.mode),
+      finishReason: result.finishReason,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      estimated: result.estimated,
+      rateLimited: result.rateLimited,
+      refusal: result.refusal,
+      toolCalls: result.toolCalls,
+      toolNames: result.toolNames,
+      truncated: result.truncated,
+      ...(result.errorCode !== undefined
+        ? { errorCode: result.errorCode }
+        : {}),
+    };
   }
 
   private clientIp(request: Request): string {

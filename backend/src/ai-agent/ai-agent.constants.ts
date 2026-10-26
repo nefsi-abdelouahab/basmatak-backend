@@ -45,6 +45,7 @@ export const MOCK_ANSWER_DELTAS: Record<AiAgentLocale, readonly string[]> = {
 export const SSE_EVENT_NAMES = [
   'meta',
   'status',
+  'sources',
   'token',
   'done',
   'error',

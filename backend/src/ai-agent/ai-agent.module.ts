@@ -29,6 +29,7 @@ import { GeminiProvider } from './llm/gemini.provider';
 import { MockProvider } from './llm/mock.provider';
 import { LLM_PROVIDER } from './llm/provider.interface';
 import { selectLlmProvider } from './llm/provider.factory';
+import { AiAgentOrchestrator } from './orchestrator/ai-agent.orchestrator';
 import { PromptBuilder } from './prompt/prompt-builder';
 import { IntentRouter } from './router/intent-router';
 import { SseWriter } from './sse/sse-writer';
@@ -64,9 +65,12 @@ import { UsageMeterService } from './usage/usage-meter.service';
  * provider SDK, orchestration, or chat wiring.
  *
  * Session 8 registers the provider-neutral LLM contract and its adapters
- * (Gemini, mock, fake) behind LLM_PROVIDER. The controller/chat path still uses
- * MockProvider directly, so existing SSE behavior is unchanged; Session 9 will
- * consume LLM_PROVIDER from the orchestrator.
+ * (Gemini, mock, fake) behind LLM_PROVIDER.
+ *
+ * Session 9 registers the answer orchestrator. The controller now delegates
+ * routing, retrieval, prompt assembly, provider/tool rounds, citation
+ * validation, and degraded answers to it; the controller keeps transport,
+ * reservation, and logging ownership.
  */
 @Module({
   imports: [
@@ -181,6 +185,7 @@ import { UsageMeterService } from './usage/usage-meter.service';
         ] satisfies ReadOnlyTool[]),
     },
     ToolExecutor,
+    AiAgentOrchestrator,
   ],
   exports: [
     AI_AGENT_CONFIG,
@@ -205,6 +210,7 @@ import { UsageMeterService } from './usage/usage-meter.service';
     PlatformStatsTool,
     ToolRegistry,
     ToolExecutor,
+    AiAgentOrchestrator,
   ],
 })
 export class AiAgentModule {}

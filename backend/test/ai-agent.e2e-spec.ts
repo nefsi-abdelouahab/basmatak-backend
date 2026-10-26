@@ -4,24 +4,21 @@ import * as bcrypt from 'bcrypt';
 import * as http from 'http';
 import { Connection, Types } from 'mongoose';
 import * as request from 'supertest';
-import {
-  AI_AGENT_CONFIG,
-  MOCK_ANSWER_DELTAS,
-} from '../src/ai-agent/ai-agent.constants';
+import { AI_AGENT_CONFIG } from '../src/ai-agent/ai-agent.constants';
 import { QuotaService } from '../src/ai-agent/budget/quota.service';
-import {
-  ProviderQuotaError,
-  ProviderQuotaErrorOptions,
-} from '../src/ai-agent/budget/quota.types';
-import {
-  estimateMessagesTokens,
-  estimateTokens,
-} from '../src/ai-agent/budget/token-estimator';
+import { ProviderQuotaError } from '../src/ai-agent/budget/quota.types';
 import {
   AiAgentConfig,
   AiAgentLimits,
   defaultAiAgentConfig,
 } from '../src/ai-agent/config/ai-agent.config';
+import { LlmProviderUnavailableError } from '../src/ai-agent/llm/provider-errors';
+import { LLM_PROVIDER } from '../src/ai-agent/llm/provider.interface';
+import type {
+  LlmDeterministicScript,
+  LlmStreamEvent,
+  LlmTurnRequest,
+} from '../src/ai-agent/llm/provider.types';
 import { MockProvider } from '../src/ai-agent/llm/mock.provider';
 import { KnowledgeService } from '../src/ai-agent/knowledge/knowledge.service';
 import { SseWriter } from '../src/ai-agent/sse/sse-writer';
@@ -59,17 +56,40 @@ function baseLimits(overrides: Partial<AiAgentLimits> = {}): AiAgentLimits {
   };
 }
 
-/** Counts provider starts and can simulate a provider 429 on demand. */
-class ControllableProvider extends MockProvider {
-  calls = 0;
-  quotaError?: ProviderQuotaErrorOptions;
+/**
+ * Deterministic provider that returns one queued script per turn. It replaces
+ * the configured LLM_PROVIDER so every e2e turn is explicit about text, tool
+ * calls, usage, finish reason, and provider failures.
+ */
+class ScriptedProvider extends MockProvider {
+  readonly requests: LlmTurnRequest[] = [];
+  private readonly queue: LlmDeterministicScript[] = [];
 
-  override async *streamAnswer(
-    ...args: Parameters<MockProvider['streamAnswer']>
-  ): AsyncGenerator<string> {
-    this.calls += 1;
-    if (this.quotaError) throw new ProviderQuotaError(this.quotaError);
-    yield* super.streamAnswer(...args);
+  queueTurn(script: LlmDeterministicScript): this {
+    this.queue.push(script);
+    return this;
+  }
+
+  get calls(): number {
+    return this.requests.length;
+  }
+
+  reset(): void {
+    this.requests.length = 0;
+    this.queue.length = 0;
+  }
+
+  override async *streamTurn(
+    request: LlmTurnRequest,
+    signal: AbortSignal,
+  ): AsyncIterable<LlmStreamEvent> {
+    this.requests.push(request);
+    const script = this.queue.shift();
+    if (script === undefined) {
+      throw new LlmProviderUnavailableError();
+    }
+    this.setScript(script);
+    yield* super.streamTurn(request, signal);
   }
 }
 
@@ -122,7 +142,7 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
   let config: AiAgentConfig;
   let baseLimitSnapshot: AiAgentLimits;
   let writer: SseWriter;
-  let provider: ControllableProvider;
+  let provider: ScriptedProvider;
   let quota: QuotaService;
   let usage: UsageMeterService;
   let port: number;
@@ -145,18 +165,19 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     config = {
       ...base,
       enabled: true,
+      provider: 'mock',
       heartbeatIntervalMs: 15_000,
       mockDelayMs: 0,
       limits: baseLimits(),
     };
     baseLimitSnapshot = { ...config.limits };
-    provider = new ControllableProvider(config);
+    provider = new ScriptedProvider(config);
 
     handle = await createTestApp([], {
       env: { THROTTLE_LIMIT: '100000' },
       providers: [
         { token: AI_AGENT_CONFIG, useValue: config },
-        { token: MockProvider, useValue: provider },
+        { token: LLM_PROVIDER, useValue: provider },
       ],
     });
     app = handle.app;
@@ -203,8 +224,7 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     config.heartbeatIntervalMs = 15_000;
     config.mockDelayMs = 0;
     config.limits = { ...baseLimitSnapshot };
-    provider.calls = 0;
-    provider.quotaError = undefined;
+    provider.reset();
   });
 
   afterAll(async () => {
@@ -242,7 +262,13 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     }
   });
 
-  it('streams meta, deterministic token deltas, then done with the SSE headers', async () => {
+  it('streams meta, validated sources, tokens, then done with the SSE headers', async () => {
+    const answer = 'Basmatak connects volunteers with opportunities [K1].';
+    provider.queueTurn({
+      text: [answer],
+      usage: { inputTokens: 42, outputTokens: 9 },
+    });
+
     const response = await postChat({
       message: 'What is Basmatak?',
       locale: 'en',
@@ -265,12 +291,11 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
 
     expect(events.map((frame) => frame.event)).toEqual([
       'meta',
-      'token',
-      'token',
+      'status',
+      'sources',
       'token',
       'done',
     ]);
-    expect(events.some((frame) => frame.event === 'sources')).toBe(false);
     expect(raw).not.toContain('"statusCode"');
 
     const meta = events[0].data as {
@@ -283,27 +308,43 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     expect(meta.conversationId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
+    expect(events[1].data).toEqual({ state: 'searching' });
+
+    const sources = events[2].data as {
+      knowledge: Array<Record<string, unknown>>;
+      data: unknown[];
+    };
+    expect(sources.knowledge).toEqual([
+      {
+        id: 'K1',
+        title: 'Basmatak frequently asked questions',
+        source: 'faq/en.md',
+        heading: expect.stringContaining('What is Basmatak?'),
+      },
+    ]);
+    expect(sources.data).toEqual([]);
 
     const deltas = events
       .filter((frame) => frame.event === 'token')
       .map((frame) => (frame.data as { delta: string }).delta);
-    expect(deltas.join('')).toBe(MOCK_ANSWER_DELTAS.en.join(''));
+    expect(deltas.join('')).toBe(answer);
 
-    const inputTokens = estimateMessagesTokens([
-      'What is Basmatak?',
-      'Hello',
-      'Hi',
-    ]).tokens;
-    const outputTokens = estimateTokens(MOCK_ANSWER_DELTAS.en.join('')).tokens;
     expect(events[events.length - 1].data).toEqual({
       finishReason: 'stop',
       usage: {
-        inputTokens,
-        outputTokens,
-        totalTokens: inputTokens + outputTokens,
-        estimated: true,
+        inputTokens: 42,
+        outputTokens: 9,
+        totalTokens: 51,
+        estimated: false,
       },
     });
+    expect(provider.calls).toBe(1);
+    expect(provider.requests[0].systemInstruction).toContain(
+      'Basmatak public assistant',
+    );
+    expect(provider.requests[0].input as string).not.toContain(
+      '<system_rules>',
+    );
     expect(writer.activeSessionCount).toBe(0);
     expect(quota.activeConcurrencyCount).toBe(0);
   });
@@ -378,12 +419,15 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     }
   });
 
-  it('emits heartbeat comments during a deliberately delayed mock response', async () => {
+  it('emits heartbeat comments during a deliberately delayed provider response', async () => {
     config.heartbeatIntervalMs = 20;
-    config.mockDelayMs = 80;
+    provider.queueTurn({
+      text: ['Basmatak connects volunteers [K1].'],
+      delayMs: 80,
+    });
     try {
       const response = await postChat({
-        message: 'Hello',
+        message: 'What is Basmatak?',
         locale: 'en',
       }).expect(200);
 
@@ -397,7 +441,7 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
         frames
           .filter((frame) => frame.event !== 'heartbeat')
           .map((frame) => frame.event),
-      ).toEqual(['meta', 'token', 'token', 'token', 'done']);
+      ).toEqual(['meta', 'status', 'sources', 'token', 'done']);
 
       const metaIndex = frames.findIndex((frame) => frame.event === 'meta');
       const doneIndex = frames.findIndex((frame) => frame.event === 'done');
@@ -412,7 +456,10 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
 
   it('cleans up on client abort and remains responsive', async () => {
     config.heartbeatIntervalMs = 20;
-    config.mockDelayMs = 100;
+    provider.queueTurn({
+      text: ['Late answer [K1].'],
+      delayMs: 100,
+    });
     try {
       const aborted = await abortAfterMeta();
       expect(aborted.text).toContain('event: meta');
@@ -424,9 +471,9 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
 
       // A new request proves the handler and timers were released.
       config.heartbeatIntervalMs = 15_000;
-      config.mockDelayMs = 0;
+      provider.queueTurn({ text: ['Basmatak connects volunteers [K1].'] });
       const response = await postChat({
-        message: 'Hello again',
+        message: 'What is Basmatak?',
         locale: 'en',
       }).expect(200);
       expect(responseText(response)).toContain('event: done');
@@ -472,7 +519,14 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
   });
 
   it('reports aggregate usage and budget to admins after a chat', async () => {
-    const chat = await postChat({ message: 'Hello', locale: 'en' }).expect(200);
+    provider.queueTurn({
+      text: ['Basmatak connects volunteers with opportunities [K1].'],
+      usage: { inputTokens: 42, outputTokens: 9 },
+    });
+    const chat = await postChat({
+      message: 'What is Basmatak?',
+      locale: 'en',
+    }).expect(200);
     const frames = parseSse(responseText(chat));
     const done = frames.find((frame) => frame.event === 'done')?.data as {
       usage: {
@@ -482,12 +536,19 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
       };
     };
 
+    expect(done.usage).toEqual({
+      inputTokens: 42,
+      outputTokens: 9,
+      totalTokens: 51,
+      estimated: false,
+    });
+
     const response = await getUsage(adminToken).expect(200);
     expect(response.body.today).toEqual({
       requests: 1,
-      inputTokens: done.usage.inputTokens,
-      outputTokens: done.usage.outputTokens,
-      totalTokens: done.usage.totalTokens,
+      inputTokens: 42,
+      outputTokens: 9,
+      totalTokens: 51,
       toolCalls: 0,
       refusals: 0,
       rateLimited: 0,
@@ -496,8 +557,8 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     expect(response.body.last7Days).toEqual(response.body.today);
     expect(response.body.budget).toEqual({
       dailyLimit: config.limits.dailyTokenBudget,
-      usedToday: done.usage.totalTokens,
-      remaining: config.limits.dailyTokenBudget - done.usage.totalTokens,
+      usedToday: 51,
+      remaining: config.limits.dailyTokenBudget - 51,
       mode: 'normal',
     });
 
@@ -517,10 +578,12 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
 
   it('blocks the second request in the same minute for one IP with RATE_LIMITED', async () => {
     config.limits.ipRequestsPerMinute = 1;
+    provider.queueTurn({ text: ['Basmatak connects volunteers [K1].'] });
 
-    const first = await postChat({ message: 'Hello', locale: 'en' }).expect(
-      200,
-    );
+    const first = await postChat({
+      message: 'What is Basmatak?',
+      locale: 'en',
+    }).expect(200);
     expect(responseText(first)).toContain('event: done');
 
     const denied = await postChat({ message: 'Again', locale: 'en' }).expect(
@@ -572,7 +635,7 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     expect(quota.activeConcurrencyCount).toBe(0);
   });
 
-  it('returns AI_AGENT_QUOTA_EXHAUSTED without calling the provider when exhausted', async () => {
+  it('degrades an exhausted budget to retrieval-only snippets without a provider call', async () => {
     config.limits.dailyTokenBudget = 1000;
     const seed = quota.reserve({
       ip: 'e2e-budget-seed',
@@ -589,46 +652,152 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     ).toBe(true);
 
     const status = await getStatus().expect(200);
-    expect(status.body.mode).toBe('exhausted');
+    expect(status.body.mode).toBe('retrieval_only');
     expect(status.body).not.toHaveProperty('usage');
     expect(status.body).not.toHaveProperty('budget');
 
-    const denied = await postChat({
-      message: 'Hello',
+    const response = await postChat({
+      message: 'What is Basmatak?',
       locale: 'en',
-    }).expect(429);
-    expect(denied.headers['content-type']).toContain('application/json');
-    expect(denied.body).toMatchObject({
-      statusCode: 429,
-      code: 'AI_AGENT_QUOTA_EXHAUSTED',
-      details: { reason: 'mode' },
+    }).expect(200);
+    expect(response.headers['content-type']).toContain('text/event-stream');
+
+    const events = parseSse(responseText(response)).filter(
+      (frame) => frame.event !== 'heartbeat',
+    );
+    expect(events.slice(0, 4).map((frame) => frame.event)).toEqual([
+      'meta',
+      'status',
+      'sources',
+      'token',
+    ]);
+    expect(events[events.length - 1].event).toBe('done');
+    expect(events.some((frame) => frame.event === 'token')).toBe(true);
+    expect((events[0].data as { mode: string }).mode).toBe('retrieval_only');
+    const sources = events[2].data as {
+      knowledge: Array<{ id: string }>;
+      data: unknown[];
+    };
+    expect(sources.knowledge.length).toBeGreaterThan(0);
+    expect(sources.knowledge[0].id).toBe('K1');
+    expect(sources.data).toEqual([]);
+
+    const text = events
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(text).toContain(
+      "Here is what I found in Basmatak's public information:",
+    );
+    expect(text).toContain('[K1]');
+    expect(events[events.length - 1].data).toMatchObject({
+      finishReason: 'stop',
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+      },
     });
-    expect(denied.headers['retry-after']).toBeDefined();
-    expect(responseText(denied)).not.toContain('event:');
+    expect(provider.calls).toBe(0);
+  });
+
+  it('returns a fixed exhausted answer with browse links when retrieval fallback is off', async () => {
+    config.limits.retrievalFallback = false;
+    config.limits.dailyTokenBudget = 1000;
+    const seed = quota.reserve({
+      ip: 'e2e-budget-seed-no-fallback',
+      estimatedInputTokens: 1000,
+      maxOutputTokens: 0,
+    });
+    if (!seed.allowed) throw new Error('Expected the seed reservation');
+    quota.commit(seed.reservationId, {
+      inputTokens: 1000,
+      outputTokens: 0,
+      estimated: false,
+    });
+
+    const status = await getStatus().expect(200);
+    expect(status.body.mode).toBe('exhausted');
+
+    const response = await postChat({
+      message: 'What is Basmatak?',
+      locale: 'en',
+    }).expect(200);
+    const events = parseSse(responseText(response)).filter(
+      (frame) => frame.event !== 'heartbeat',
+    );
+    expect(events.map((frame) => frame.event)).toEqual([
+      'meta',
+      'sources',
+      'token',
+      'done',
+    ]);
+    expect((events[0].data as { mode: string }).mode).toBe('exhausted');
+    const sources = events[1].data as {
+      knowledge: unknown[];
+      data: Array<{ type: string; path: string }>;
+    };
+    expect(sources.knowledge).toEqual([]);
+    expect(sources.data).toEqual([
+      {
+        id: 'browse-opportunities',
+        citationId: 'browse',
+        type: 'opportunity',
+        title: 'Browse opportunities',
+        path: '/opportunities',
+      },
+      {
+        id: 'browse-organizations',
+        citationId: 'browse',
+        type: 'organization',
+        title: 'Browse organizations',
+        path: '/orgs',
+      },
+    ]);
+    const text = events
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(text).toContain('reached its free usage limit');
     expect(provider.calls).toBe(0);
   });
 
   it('applies a provider 429 cooldown and makes no further provider call', async () => {
-    provider.quotaError = { window: 'minute', retryAfterSeconds: 45 };
+    provider.queueTurn({
+      error: new ProviderQuotaError({
+        window: 'minute',
+        retryAfterSeconds: 45,
+      }),
+    });
 
-    const first = await postChat({ message: 'Hello', locale: 'en' }).expect(
-      200,
-    );
+    const first = await postChat({
+      message: 'What is Basmatak?',
+      locale: 'en',
+    }).expect(200);
     const events = parseSse(responseText(first)).filter(
       (frame) => frame.event !== 'heartbeat',
     );
-    expect(events.map((frame) => frame.event)).toEqual(['meta', 'error']);
-    expect(events[1].data).toMatchObject({
-      code: 'AI_AGENT_QUOTA_EXHAUSTED',
-      retryAfterSeconds: 45,
-    });
+    expect(events.map((frame) => frame.event)).toEqual([
+      'meta',
+      'status',
+      'error',
+    ]);
+    const error = events[2].data as {
+      code: string;
+      retryAfterSeconds: number;
+    };
+    expect(error.code).toBe('AI_AGENT_QUOTA_EXHAUSTED');
+    expect(error.retryAfterSeconds).toBeGreaterThanOrEqual(45);
+    expect(error.retryAfterSeconds).toBeLessThanOrEqual(60);
     expect(events.some((frame) => frame.event === 'done')).toBe(false);
     expect(provider.calls).toBe(1);
-    expect(quota.getCooldown()).toEqual({
+    const cooldown = quota.getCooldown();
+    expect(cooldown).toMatchObject({
       active: true,
       window: 'minute',
-      retryAfterSeconds: 45,
     });
+    expect(cooldown.retryAfterSeconds).toBeGreaterThanOrEqual(45);
+    expect(cooldown.retryAfterSeconds).toBeLessThanOrEqual(60);
 
     const denied = await postChat({
       message: 'Hello again',
@@ -653,13 +822,17 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
 
   it('logs structured request fields without message content or IP addresses', async () => {
     const marker = 'SECRET_LOG_MARKER_DO_NOT_LEAK';
+    provider.queueTurn({
+      text: ['Basmatak connects volunteers [K1].'],
+      usage: { inputTokens: 42, outputTokens: 9 },
+    });
     const spy = jest
       .spyOn(AppLogger.prototype, 'log')
       .mockImplementation(() => undefined);
 
     try {
       await postChat({
-        message: `Hello ${marker}`,
+        message: `What is Basmatak? ${marker}`,
         locale: 'en',
       }).expect(200);
 
@@ -687,10 +860,10 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
         historyMessages: 0,
         historyChars: 0,
         toolNames: [],
-        inputTokens: expect.any(Number),
-        outputTokens: expect.any(Number),
-        totalTokens: expect.any(Number),
-        estimated: true,
+        inputTokens: 42,
+        outputTokens: 9,
+        totalTokens: 51,
+        estimated: false,
         firstTokenMs: expect.any(Number),
         latencyMs: expect.any(Number),
         finishReason: 'stop',
@@ -698,7 +871,7 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
 
       const serialized = JSON.stringify(payload);
       expect(serialized).not.toContain(marker);
-      expect(serialized).not.toContain('Hello');
+      expect(serialized).not.toContain('What is Basmatak?');
       expect(serialized).not.toContain('127.0.0.1');
       expect(serialized).not.toContain('::1');
       expect(payload).not.toHaveProperty('ip');
@@ -714,7 +887,10 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
     activeAtMeta: number;
   }> {
     return new Promise((resolve, reject) => {
-      const body = JSON.stringify({ message: 'Hello', locale: 'en' });
+      const body = JSON.stringify({
+        message: 'What is Basmatak?',
+        locale: 'en',
+      });
       let text = '';
       let aborted = false;
       let activeAtMeta = 0;
