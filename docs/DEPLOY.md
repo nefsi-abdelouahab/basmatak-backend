@@ -95,6 +95,42 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 | `ADMIN_EMAIL` | admin email | Used by the seed (S17). |
 | `ADMIN_PASSWORD` | strong password | Used by the seed (S17). |
 | `PUBLISH_GATE_ENABLED` | `true` | |
+| `TRUST_PROXY` | `1` | Express proxy hops. Defaults to `1` in production and `false` locally; see §2.1. |
+| `AI_AGENT_ENABLED` | `true` | Kill switch. Only the literal `true` enables chat; anything else returns `AI_AGENT_DISABLED` (503). |
+| `AI_AGENT_PROVIDER` | `gemini` | `gemini`, `mock`, or `fake`. Unknown values fail closed on the first turn. |
+| `AI_AGENT_MODEL` | `gemini-3.8-flash` | Provider-specific model id. |
+| `GEMINI_API_KEY` | Gemini key | Server-side secret only. Never expose it to the frontend, SSE, logs, or errors. |
+| `AI_AGENT_KNOWLEDGE_DIR` | (unset) | Unset → `<backend cwd>/ai-agent`; the folder ships with the repo. |
+| `AI_AGENT_MAX_INPUT_TOKENS` | `3000` | Estimated input cap before each provider call. |
+| `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | Hard max 800. |
+| `AI_AGENT_MAX_HISTORY_MESSAGES` | `4` | Hard max 8. |
+| `AI_AGENT_MAX_HISTORY_CHARS` | `2400` | Hard max 6000. |
+| `AI_AGENT_MAX_KNOWLEDGE_CHUNKS` | `4` | Hard max 6. |
+| `AI_AGENT_MAX_KNOWLEDGE_CHARS` | `6000` | Hard max 8000. |
+| `AI_AGENT_MAX_TOOL_ROUNDS` | `1` | Hard max 2. |
+| `AI_AGENT_MAX_TOOL_ROWS` | `5` | Hard max 8. |
+| `AI_AGENT_MAX_TOOL_RESULT_CHARS` | `1200` | Shared tool context ≤3000. |
+| `AI_AGENT_IP_RPM` | `4` | Per-IP requests per UTC minute. |
+| `AI_AGENT_IP_RPD` | `15` | Per-IP requests per UTC day. |
+| `AI_AGENT_GLOBAL_RPM` | `8` | 80% of the published 10 RPM free-tier ceiling; verify in AI Studio. |
+| `AI_AGENT_GLOBAL_RPD` | `80` | Deliberately below the provider daily ceiling because traffic is unknown. |
+| `AI_AGENT_MAX_CONCURRENT` | `2` | Extra requests get `AI_AGENT_BUSY` (429) immediately. |
+| `AI_AGENT_DAILY_TOKEN_BUDGET` | `150000` | Estimated input + output tokens per UTC day. |
+| `AI_AGENT_RETRIEVAL_FALLBACK` | `true` | Extractive sources instead of an LLM at 100%. |
+| `AI_AGENT_FALLBACK_ENABLED` | `false` | Optional one-shot provider fallback; keep off unless a second provider is configured. |
+
+### 2.1 Proxy, AI switches, and restarts
+
+- `TRUST_PROXY` is what makes per-IP throttling see the real client behind
+  Render. `1` is correct for Render's single hop. Leave it `false`/unset for
+  local direct connections so `X-Forwarded-For` cannot be spoofed.
+- The AI kill switch (`AI_AGENT_ENABLED`) and provider/model are read at boot.
+  Render applies environment changes by restarting the service, so a switch is
+  a config change + restart, not a zero-downtime hot reload. The in-memory
+  quota/usage counters reset on restart (UTC windows and the daily budget).
+- Changing `AI_AGENT_PROVIDER` selects the adapter at boot; no orchestrator,
+  prompt, SSE, or frontend change is needed. Automatic fallback stays off by
+  default.
 
 ---
 

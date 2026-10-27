@@ -54,6 +54,7 @@ import type {
 } from '../tools/tool.types';
 import {
   browseSources,
+  containsSystemInstructionLeak,
   hasUsableToolData,
   isPrivateDataRequest,
   policyMessage,
@@ -695,10 +696,15 @@ export class AiAgentOrchestrator {
       .replace(CITATION_MARKER_PATTERN, '')
       .trim();
 
-    if (!resolved.hasValidCitations || plainAnswer === '') {
-      // A partial MAX_TOKENS answer without a single valid citation is
-      // replaced by a complete, citation-free refusal. No continuation call is
-      // made, and the local refusal is treated as a finished answer.
+    // A partial MAX_TOKENS answer without a single valid citation, or an answer
+    // that reproduces the private system rules (which themselves contain
+    // literal `[K1]` markers, so citations alone cannot catch a prompt echo),
+    // is replaced by a complete, citation-free refusal.
+    if (
+      !resolved.hasValidCitations ||
+      plainAnswer === '' ||
+      containsSystemInstructionLeak(plainAnswer)
+    ) {
       return this.emitPolicyAnswer(
         input,
         policyMessage('ungrounded', language),

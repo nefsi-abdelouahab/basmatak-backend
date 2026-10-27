@@ -20,9 +20,11 @@ export const MAX_ROUTER_MIN_SCORE = 5;
  * concurrency, and daily token caps in memory; the public status response only
  * exposes the fixed DTO limits.
  *
- * Defaults follow the approved proposal (§4.1). Hard maxima are intentionally
- * conservative so a typo in an environment variable cannot silently remove a
- * safety bound. Invalid values fall back to the documented default.
+ * Defaults follow the approved proposal (§4.1), with the Session 12 tuning of
+ * the global RPM to 80% of the published free-tier ceiling. Hard maxima are
+ * intentionally conservative so a typo in an environment variable cannot
+ * silently remove a safety bound. Invalid values fall back to the documented
+ * default.
  */
 export interface AiAgentLimits {
   maxInputTokens: number;
@@ -83,7 +85,13 @@ export function defaultAiAgentLimits(): AiAgentLimits {
     routerMinScore: DEFAULT_ROUTER_MIN_SCORE,
     ipRequestsPerMinute: 4,
     ipRequestsPerDay: 15,
-    globalRequestsPerMinute: 10,
+    // 8 RPM is 80% of the 10 RPM free-tier ceiling published for the default
+    // flash model. Leaving one fifth of the provider window unused absorbs
+    // retries/tool follow-ups and sharing with other apps on the same key.
+    // Verify the live AI Studio value at deploy; quotas change by model/account
+    // and must never be exceeded. Daily request/token caps stay deliberately
+    // lower than the provider ceiling because traffic is unknown.
+    globalRequestsPerMinute: 8,
     globalRequestsPerDay: 80,
     maxConcurrent: 2,
     dailyTokenBudget: 150_000,
@@ -240,7 +248,7 @@ export function loadAiAgentConfig(
     globalRequestsPerMinute: readInteger(
       read,
       'AI_AGENT_GLOBAL_RPM',
-      10,
+      8,
       1,
       10_000,
     ),

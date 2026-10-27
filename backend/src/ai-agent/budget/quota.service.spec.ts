@@ -154,10 +154,10 @@ describe('QuotaService', () => {
     );
   });
 
-  it('allows ten global requests per minute and blocks the eleventh', () => {
+  it('allows eight global requests per minute and blocks the ninth', () => {
     const service = makeService();
 
-    for (let index = 0; index < 10; index += 1) {
+    for (let index = 0; index < 8; index += 1) {
       reserveAndRelease(service, `198.51.100.${index + 1}`);
     }
 
@@ -177,14 +177,14 @@ describe('QuotaService', () => {
   it('allows eighty global requests per day, blocks the eighty-first, and cleans up old IPs', () => {
     const service = makeService();
 
-    for (let minute = 0; minute < 8; minute += 1) {
-      at(`2026-01-01T00:0${minute}:00.000Z`);
-      for (let index = 0; index < 10; index += 1) {
-        reserveAndRelease(service, `198.51.100.${minute * 10 + index + 1}`);
+    for (let minute = 0; minute < 10; minute += 1) {
+      at(`2026-01-01T00:${String(minute).padStart(2, '0')}:00.000Z`);
+      for (let index = 0; index < 8; index += 1) {
+        reserveAndRelease(service, `198.51.100.${minute * 8 + index + 1}`);
       }
     }
 
-    at('2026-01-01T00:08:00.000Z');
+    at('2026-01-01T00:10:00.000Z');
     const denied = expectDenied(
       service.reserve({
         ip: '198.51.100.250',
@@ -196,7 +196,7 @@ describe('QuotaService', () => {
     expect(denied.reason).toBe('global_day');
     expect(denied.retryAfterSeconds).toBeGreaterThan(80_000);
 
-    at('2026-01-02T00:08:00.000Z');
+    at('2026-01-02T00:11:00.000Z');
     expectAllowed(
       service.reserve({
         ip: '198.51.100.251',

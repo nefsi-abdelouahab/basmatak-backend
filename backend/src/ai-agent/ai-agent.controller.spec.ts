@@ -278,7 +278,7 @@ describe('AiAgent configuration', () => {
       routerMinScore: 1.5,
       ipRequestsPerMinute: 4,
       ipRequestsPerDay: 15,
-      globalRequestsPerMinute: 10,
+      globalRequestsPerMinute: 8,
       globalRequestsPerDay: 80,
       maxConcurrent: 2,
       dailyTokenBudget: 150_000,

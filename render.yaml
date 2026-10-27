@@ -29,6 +29,9 @@ services:
         sync: false
       - key: PUBLIC_BASE_URL
         sync: false
+      # Render puts exactly one proxy in front of the service.
+      - key: TRUST_PROXY
+        value: "1"
       - key: LOG_LEVEL
         sync: false
       - key: SWAGGER_ENABLED

@@ -1,6 +1,7 @@
 import type { AiAgentDataSource, AiAgentMode } from '../ai-agent.types';
 import type { AiAgentLimits } from '../config/ai-agent.config';
 import type { PromptLanguage } from '../prompt/prompt.types';
+import { AI_AGENT_SYSTEM_PROMPT } from '../prompt/system-prompt';
 
 /**
  * Deterministic answer policy for Session 9.
@@ -244,6 +245,63 @@ export function isPrivateDataRequest(message: string): boolean {
   if (text === '') return false;
   const normalized = text.replace(/\s+/g, ' ');
   return PRIVATE_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+/** Words per comparison window when checking for leaked system instructions. */
+const LEAK_WINDOW_WORDS = 6;
+/** Two distinct verbatim windows are treated as a leak, not a coincidence. */
+const LEAK_MIN_WINDOWS = 2;
+
+/**
+ * Normalize text for leak comparison: lowercase, collapse punctuation and
+ * whitespace. This makes case, punctuation, and Markdown formatting irrelevant
+ * while preserving the word sequence.
+ */
+function normalizedWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .split(' ')
+    .filter((word) => word !== '');
+}
+
+function buildWindowSet(words: readonly string[]): ReadonlySet<string> {
+  const windows = new Set<string>();
+  for (let index = 0; index + LEAK_WINDOW_WORDS <= words.length; index += 1) {
+    windows.add(words.slice(index, index + LEAK_WINDOW_WORDS).join(' '));
+  }
+  return windows;
+}
+
+const SYSTEM_PROMPT_WINDOWS = buildWindowSet(
+  normalizedWords(AI_AGENT_SYSTEM_PROMPT),
+);
+
+/**
+ * Deterministic system-instruction extraction guard.
+ *
+ * Model output is buffered before any token is streamed, so this can run on the
+ * complete answer. Two distinct verbatim six-word windows from the private
+ * system rules mark the answer as a leak; the caller replaces it with the
+ * regular ungrounded refusal. The system prompt is never user-visible, so an
+ * answer that reproduces multiple windows of it cannot be a grounded answer.
+ *
+ * Note the system prompt contains literal citation markers (`[K1]`), which is
+ * why citation validation alone cannot catch a full prompt echo.
+ */
+export function containsSystemInstructionLeak(text: string): boolean {
+  const words = normalizedWords(typeof text === 'string' ? text : '');
+  if (words.length < LEAK_WINDOW_WORDS) return false;
+
+  const matched = new Set<string>();
+  for (let index = 0; index + LEAK_WINDOW_WORDS <= words.length; index += 1) {
+    const window = words.slice(index, index + LEAK_WINDOW_WORDS).join(' ');
+    if (!SYSTEM_PROMPT_WINDOWS.has(window) || matched.has(window)) continue;
+    matched.add(window);
+    if (matched.size >= LEAK_MIN_WINDOWS) return true;
+  }
+  return false;
 }
 
 const BROWSE_TITLES: Readonly<
