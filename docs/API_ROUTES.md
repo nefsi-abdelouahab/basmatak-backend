@@ -1,7 +1,7 @@
 # API routes - full reference
 
 > Base URL: `/api/v1` (prefix each path below with it). Generated from the live OpenAPI spec
-> (144 paths, 163 operations - verified against every controller).
+> (147 paths, 166 operations - verified against every controller).
 > Auth: `[public]` needs no token; `[Bearer]` needs `Authorization: Bearer <accessToken>`.
 > Error envelope everywhere: `{ statusCode, code, message, details? }` with UPPER_SNAKE `code`.
 > Cursor pages: `{ items, nextCursor, limit, total, page?, pages? }`.
@@ -21,6 +21,7 @@
 - [admin (status-histories)](#admin-status-histories-)
 - [admin (users)](#admin-users-)
 - [admin (volunteers)](#admin-volunteers-)
+- [ai-agent](#ai-agent)
 - [applications](#applications)
 - [auth](#auth)
 - [core](#core)
@@ -788,9 +789,224 @@ List volunteer profiles joined with their users
 - `200` - 
 
 
+## ai-agent
+
+Public assistant status, streaming chat, and admin-only aggregate usage. The
+feature is optional and is disabled unless `AI_AGENT_ENABLED` is the literal
+trimmed `true`. The operator guide (knowledge updates, quota modes, deployment,
+rollback, and privacy) is [`AI_AGENT.md`](./AI_AGENT.md).
+
+### 31. `GET /api/v1/ai-agent/status`
+
+Public feature flag, effective degradation mode, aggregate knowledge counts, and
+the fixed browser-side limits. It never exposes the provider, model, API key,
+token counters, or usage.
+
+**Auth:** [public]
+
+**Responses**
+
+- `200` - status object
+
+```json
+{
+  "enabled": true,
+  "mode": "normal",
+  "knowledge": { "files": 8, "chunks": 96 },
+  "limits": { "messageChars": 2000, "historyMessages": 4, "historyChars": 2400 }
+}
+```
+
+`knowledge.files`/`knowledge.chunks` are aggregate boot-time index counts
+(illustrative above); `0` means the corpus could not be indexed. `mode` is the
+effective public mode: `normal`, `conservative`, `knowledge_only`,
+`retrieval_only`, or `exhausted`. The fixed limits do not change with
+environment variables; the environment may only lower the effective prompt
+caps. Status stays `200` while disabled, with `"enabled": false`.
+
+### 32. `POST /api/v1/ai-agent/chat`
+
+Stream one grounded answer as Server-Sent Events. The route is public but
+rate-limited and quota-limited; there is no account requirement and no
+server-side conversation storage.
+
+**Auth:** [public]
+
+**Request body**
+
+| Field | Required | Type | Rules |
+|---|---|---|---|
+| `message` | yes | string | 1-2,000 characters; must contain a non-whitespace character. |
+| `locale` | yes | enum(`en`, `ar`) | Response language and localized errors/refusals. |
+| `history` | no | array | Oldest first; at most 4 messages and 2,400 characters total. |
+| `history[].role` | yes | enum(`user`, `assistant`) | |
+| `history[].content` | yes | string | 1-2,400 characters per message. |
+
+Unknown fields are rejected (`forbidNonWhitelisted`). A request that violates
+these rules is a pre-stream `400`, never an SSE stream.
+
+**Responses**
+
+- `200` - `text/event-stream; charset=utf-8`
+
+SSE response headers are fixed:
+
+```text
+Content-Type: text/event-stream; charset=utf-8
+Cache-Control: no-cache, no-transform
+Connection: keep-alive
+X-Accel-Buffering: no
+```
+
+Every event is one `event:` line plus one `data:` JSON line and a blank line. A
+comment heartbeat (`: heartbeat`) is written every 15 seconds while the stream is
+open. Example frames:
+
+```text
+event: meta
+data: {"conversationId":"4bb2b8d3-6a2a-4a5f-9f6d-0e2e2f5f6c71","locale":"en","mode":"normal"}
+
+event: status
+data: {"state":"searching"}
+
+event: sources
+data: {"knowledge":[{"id":"K1","title":"Volunteering basics","source":"volunteering.md","heading":"Getting started"}],"data":[]}
+
+event: token
+data: {"delta":"You can browse "}
+
+event: token
+data: {"delta":"published opportunities."}
+
+event: done
+data: {"finishReason":"stop","usage":{"inputTokens":812,"outputTokens":57,"totalTokens":869,"estimated":true}}
+
+: heartbeat
+```
+
+| Event | When | Payload |
+|---|---|---|
+| `meta` | Always first | `{ conversationId, locale, mode }`. `conversationId` is a random per-request UUID; it is not persisted. |
+| `status` | Zero or more | `{ state, tool? }`. `state` is one of `searching`, `thinking`, `answering`, `tool`; `tool` is present for a tool round (for example `search_opportunities`). Clients must tolerate all four values. |
+| `sources` | Before answer tokens, only when non-empty and only after validation | `{ knowledge: [{ id, title, source, heading? }], data: [{ id, citationId, type, title, path? }] }`. `source` is corpus-relative; `path` is a public frontend route. |
+| `token` | Zero or more | `{ delta }` with plain text only. Clients must render it as text, not HTML. |
+| `error` | On a known failure after the stream started | `{ code, message, retryAfterSeconds? }` where `message` is already localized. No `done` follows. |
+| `done` | Successful end | `{ finishReason, truncated?, usage }`. `finishReason` is `stop` or `length`; `usage` is `{ inputTokens, outputTokens, totalTokens, estimated }`. |
+
+Normal order: `meta` -> optional `status` -> optional `sources` -> `token`* ->
+`done`. A tool round adds `status` events before the final `sources`/tokens. A
+client disconnect aborts the provider and ends the response with no further
+events and no `done`. There is no `id:`, `retry:`, or `Last-Event-ID` support.
+
+**Pre-stream errors** (ordinary JSON envelope, not SSE):
+
+| HTTP | `code` | Cause | Retry |
+|---|---|---|---|
+| `400` | `VALIDATION_ERROR` | Missing/unknown/invalid field, blank message, message over 2,000 characters, history over 4 messages or 2,400 characters, or invalid locale/role. | Fix the request. |
+| `400` | `INVALID_JSON` | Malformed JSON body. | Fix the request. |
+| `413` | `PAYLOAD_TOO_LARGE` | Body exceeds the global body limit. | Send a smaller body. |
+| `415` | `UNSUPPORTED_MEDIA_TYPE` | Unsupported request encoding. | Send UTF-8 JSON. |
+| `429` | `RATE_LIMITED` | Per-IP or global UTC minute/day request window exhausted. `details.reason` is `ip_minute`, `ip_day`, `global_minute`, or `global_day`. | Wait for the UTC window. |
+| `429` | `AI_AGENT_BUSY` | `AI_AGENT_MAX_CONCURRENT` provider turns are active. `details.reason` is `concurrency`. | Retry after 1 second. |
+| `429` | `AI_AGENT_QUOTA_EXHAUSTED` | The provider reported a quota cooldown that is still active; `details.reason` is `cooldown_minute` or `cooldown_day`. | Wait for the cooldown reset. |
+| `503` | `AI_AGENT_DISABLED` | `AI_AGENT_ENABLED` is not the literal trimmed `true`. No quota is touched and no provider is called. | Do not retry until the feature is re-enabled. |
+
+All pre-stream `429` responses set `Retry-After` to whole seconds and include
+the same value plus the machine-readable reason in
+`details: { retryAfterSeconds, reason }`. CORS exposes only
+`Content-Disposition`, so a browser client must read
+`details.retryAfterSeconds` rather than the header. Example:
+
+```json
+{
+  "statusCode": 429,
+  "code": "RATE_LIMITED",
+  "message": "Too many assistant requests. Please try again later.",
+  "details": { "retryAfterSeconds": 42, "reason": "ip_minute" }
+}
+```
+
+**In-stream errors** (HTTP is already `200`; the `error` event ends the answer):
+
+| `code` | Cause |
+|---|---|
+| `AI_AGENT_INVALID_INPUT` | The message plus required prompt content cannot fit the configured input-token budget. The localized message asks for a shorter question. |
+| `AI_AGENT_PROVIDER_UNAVAILABLE` | Missing/invalid `GEMINI_API_KEY`, unknown model, unavailable provider, or invalid provider response. |
+| `AI_AGENT_TIMEOUT` | The turn exceeded the 45-second deadline. |
+| `AI_AGENT_QUOTA_EXHAUSTED` | The provider returned 429/`RESOURCE_EXHAUSTED`; `retryAfterSeconds` may be present and a cooldown is now active. There is no automatic retry. |
+| `AI_AGENT_INTERNAL_ERROR` | Unexpected internal failure. |
+
+**Degraded and disabled behavior**
+
+- At 70% of the daily token/request budget the effective mode becomes
+  `conservative`; at 90% it becomes `knowledge_only`; at 100% it becomes
+  `retrieval_only` when `AI_AGENT_RETRIEVAL_FALLBACK=true`, otherwise
+  `exhausted`. `status.mode` reports the effective value.
+- A mode or token-budget denial does **not** return `429`: the stream still
+  starts with `200`, `meta.mode` shows the degraded mode, and the server answers
+  locally from up to two knowledge chunks or with the fixed free-limit message
+  plus public browse links. No provider call is made.
+- A day-scoped provider cooldown forces `exhausted` in `status.mode`; a
+  minute-scoped cooldown instead denies the next request pre-stream with
+  `429 AI_AGENT_QUOTA_EXHAUSTED`.
+- When disabled, `status` still returns `200` with `"enabled": false`, and chat
+  returns `503 AI_AGENT_DISABLED` before any SSE headers. The widget shows its
+  unavailable state; the rest of the site is unaffected.
+
+### 33. `GET /api/v1/ai-agent/usage`
+
+Admin-only aggregate usage for the current UTC day and the trailing seven days,
+plus the daily token budget snapshot. The report contains no message text,
+prompts, retrieved text, tool payloads, IP addresses, or per-user rows. All
+values are in memory and reset when the process restarts.
+
+**Auth:** [Bearer] with an `admin` role. Anonymous requests are `401
+UNAUTHORIZED`; authenticated non-admin requests are `403 FORBIDDEN`.
+
+**Responses**
+
+- `200` - usage report
+
+```json
+{
+  "today": {
+    "requests": 12,
+    "inputTokens": 8400,
+    "outputTokens": 640,
+    "totalTokens": 9040,
+    "toolCalls": 3,
+    "refusals": 1,
+    "rateLimited": 0,
+    "averageLatencyMs": 1840
+  },
+  "last7Days": {
+    "requests": 77,
+    "inputTokens": 51100,
+    "outputTokens": 3900,
+    "totalTokens": 55000,
+    "toolCalls": 18,
+    "refusals": 4,
+    "rateLimited": 6,
+    "averageLatencyMs": 1702
+  },
+  "budget": {
+    "dailyLimit": 150000,
+    "usedToday": 9040,
+    "remaining": 140960,
+    "mode": "normal"
+  }
+}
+```
+
+`rateLimited` counts pre-stream 429 denials and provider 429s;
+`averageLatencyMs` is `0` when there are no samples. `budget.remaining` subtracts
+both committed tokens and tokens currently reserved by in-flight requests.
+`budget.mode` is the effective public mode.
+
+
 ## applications
 
-### 31. `GET /api/v1/applications/me`
+### 34. `GET /api/v1/applications/me`
 
 List the caller's own applications
 
@@ -811,7 +1027,7 @@ List the caller's own applications
 - `200` - 
 
 
-### 32. `POST /api/v1/applications/{applicationId}/accept`
+### 35. `POST /api/v1/applications/{applicationId}/accept`
 
 Accept an application (transaction)
 
@@ -828,7 +1044,7 @@ Accept an application (transaction)
 - `200` - 
 
 
-### 33. `POST /api/v1/applications/{applicationId}/reject`
+### 36. `POST /api/v1/applications/{applicationId}/reject`
 
 Reject an application with a reason
 
@@ -859,7 +1075,7 @@ Reject an application with a reason
 - `200` - 
 
 
-### 34. `POST /api/v1/applications/{applicationId}/start-review`
+### 37. `POST /api/v1/applications/{applicationId}/start-review`
 
 Move a pending application under review (org-owner only)
 
@@ -876,7 +1092,7 @@ Move a pending application under review (org-owner only)
 - `200` - 
 
 
-### 35. `POST /api/v1/applications/{applicationId}/withdraw`
+### 38. `POST /api/v1/applications/{applicationId}/withdraw`
 
 Withdraw an application (accepted path is a transaction)
 
@@ -893,7 +1109,7 @@ Withdraw an application (accepted path is a transaction)
 - `200` - 
 
 
-### 36. `GET /api/v1/applications/{applicationId}`
+### 39. `GET /api/v1/applications/{applicationId}`
 
 Application detail (own volunteer or owning org)
 
@@ -910,7 +1126,7 @@ Application detail (own volunteer or owning org)
 - `200` - 
 
 
-### 37. `GET /api/v1/opportunities/{opportunityId}/applications`
+### 40. `GET /api/v1/opportunities/{opportunityId}/applications`
 
 List an owned opportunity applications
 
@@ -931,7 +1147,7 @@ List an owned opportunity applications
 - `200` - 
 
 
-### 38. `POST /api/v1/opportunities/{opportunityId}/positions/{positionId}/applications`
+### 41. `POST /api/v1/opportunities/{opportunityId}/positions/{positionId}/applications`
 
 Apply to an open position (cover message optional)
 
@@ -963,7 +1179,7 @@ Apply to an open position (cover message optional)
 - `201` - 
 
 
-### 39. `GET /api/v1/organizations/me/applications`
+### 42. `GET /api/v1/organizations/me/applications`
 
 Aggregate application inbox across the caller’s opportunities
 
@@ -987,7 +1203,7 @@ Aggregate application inbox across the caller’s opportunities
 
 ## auth
 
-### 40. `POST /api/v1/auth/change-password`
+### 43. `POST /api/v1/auth/change-password`
 
 Change the current password, revoking other sessions
 
@@ -1014,7 +1230,7 @@ Change the current password, revoking other sessions
 - `204` - 
 
 
-### 41. `POST /api/v1/auth/forgot-password`
+### 44. `POST /api/v1/auth/forgot-password`
 
 Initiate a password reset (always 204)
 
@@ -1039,7 +1255,7 @@ Initiate a password reset (always 204)
 - `204` - 
 
 
-### 42. `POST /api/v1/auth/login`
+### 45. `POST /api/v1/auth/login`
 
 Login with email and password
 
@@ -1066,7 +1282,7 @@ Login with email and password
 - `200` - 
 
 
-### 43. `POST /api/v1/auth/logout-all`
+### 46. `POST /api/v1/auth/logout-all`
 
 Revoke every session of the caller
 
@@ -1077,7 +1293,7 @@ Revoke every session of the caller
 - `204` - 
 
 
-### 44. `POST /api/v1/auth/logout-others`
+### 47. `POST /api/v1/auth/logout-others`
 
 Revoke every session of the caller except the current one
 
@@ -1088,7 +1304,7 @@ Revoke every session of the caller except the current one
 - `204` - 
 
 
-### 45. `POST /api/v1/auth/logout`
+### 48. `POST /api/v1/auth/logout`
 
 Revoke the current session
 
@@ -1099,7 +1315,7 @@ Revoke the current session
 - `204` - 
 
 
-### 46. `GET /api/v1/auth/me`
+### 49. `GET /api/v1/auth/me`
 
 Current account (user + role, org block in S5)
 
@@ -1110,7 +1326,7 @@ Current account (user + role, org block in S5)
 - `200` - 
 
 
-### 47. `POST /api/v1/auth/refresh`
+### 50. `POST /api/v1/auth/refresh`
 
 Rotate a refresh token into a new token pair
 
@@ -1135,7 +1351,7 @@ Rotate a refresh token into a new token pair
 - `200` - 
 
 
-### 48. `POST /api/v1/auth/register/organization`
+### 51. `POST /api/v1/auth/register/organization`
 
 Register an organization account
 
@@ -1164,7 +1380,7 @@ Register an organization account
 - `201` - 
 
 
-### 49. `POST /api/v1/auth/register/volunteer`
+### 52. `POST /api/v1/auth/register/volunteer`
 
 Register a volunteer account
 
@@ -1193,7 +1409,7 @@ Register a volunteer account
 - `201` - 
 
 
-### 50. `POST /api/v1/auth/resend-verification`
+### 53. `POST /api/v1/auth/resend-verification`
 
 Invalidate prior tokens and resend a verification email
 
@@ -1204,7 +1420,7 @@ Invalidate prior tokens and resend a verification email
 - `204` - 
 
 
-### 51. `POST /api/v1/auth/reset-password`
+### 54. `POST /api/v1/auth/reset-password`
 
 Consume a reset token and set a new password
 
@@ -1231,7 +1447,7 @@ Consume a reset token and set a new password
 - `204` - 
 
 
-### 52. `POST /api/v1/auth/verify-email`
+### 55. `POST /api/v1/auth/verify-email`
 
 Consume an email verification token
 
@@ -1258,7 +1474,7 @@ Consume an email verification token
 
 ## core
 
-### 53. `GET /api/v1/health`
+### 56. `GET /api/v1/health`
 
 Service liveness check
 
@@ -1269,7 +1485,7 @@ Service liveness check
 - `200` - 
 
 
-### 54. `GET /api/v1/system/status`
+### 57. `GET /api/v1/system/status`
 
 Public system status with maintenance flag
 
@@ -1280,7 +1496,7 @@ Public system status with maintenance flag
 - `200` - 
 
 
-### 55. `GET /api/v1`
+### 58. `GET /api/v1`
 
 Root liveness
 
@@ -1293,7 +1509,7 @@ Root liveness
 
 ## experiences
 
-### 56. `GET /api/v1/experiences/me`
+### 59. `GET /api/v1/experiences/me`
 
 List the caller's own experiences
 
@@ -1315,7 +1531,7 @@ List the caller's own experiences
 - `200` - 
 
 
-### 57. `GET /api/v1/experiences/{experienceId}/attestation`
+### 60. `GET /api/v1/experiences/{experienceId}/attestation`
 
 Download the verified-experience attestation PDF
 
@@ -1333,7 +1549,7 @@ Download the verified-experience attestation PDF
 - `200` - 
 
 
-### 58. `PATCH /api/v1/experiences/{experienceId}/visibility`
+### 61. `PATCH /api/v1/experiences/{experienceId}/visibility`
 
 Toggle public/private visibility (own row)
 
@@ -1364,7 +1580,7 @@ Toggle public/private visibility (own row)
 - `200` - 
 
 
-### 59. `GET /api/v1/experiences/{experienceId}`
+### 62. `GET /api/v1/experiences/{experienceId}`
 
 Experience detail (owning volunteer only)
 
@@ -1381,7 +1597,7 @@ Experience detail (owning volunteer only)
 - `200` - 
 
 
-### 60. `GET /api/v1/organizations/me/experiences`
+### 63. `GET /api/v1/organizations/me/experiences`
 
 List verified experiences minted from the caller's own opportunities
 
@@ -1406,7 +1622,7 @@ List verified experiences minted from the caller's own opportunities
 
 ## favorites
 
-### 61. `GET /api/v1/favorites/counts`
+### 64. `GET /api/v1/favorites/counts`
 
 The caller's per-type save totals
 
@@ -1417,7 +1633,7 @@ The caller's per-type save totals
 - `200` - 
 
 
-### 62. `GET /api/v1/favorites/lookup`
+### 65. `GET /api/v1/favorites/lookup`
 
 Batch card state ({ favorited, favoriteCount } per key)
 
@@ -1435,7 +1651,7 @@ Batch card state ({ favorited, favoriteCount } per key)
 - `200` - 
 
 
-### 63. `DELETE /api/v1/favorites/opportunities/{id}`
+### 66. `DELETE /api/v1/favorites/opportunities/{id}`
 
 Unsave an opportunity (idempotent)
 
@@ -1452,7 +1668,7 @@ Unsave an opportunity (idempotent)
 - `204` - 
 
 
-### 64. `POST /api/v1/favorites/opportunities/{id}`
+### 67. `POST /api/v1/favorites/opportunities/{id}`
 
 Save an opportunity (idempotent)
 
@@ -1469,7 +1685,7 @@ Save an opportunity (idempotent)
 - `201` - 
 
 
-### 65. `DELETE /api/v1/favorites/talents/{username}`
+### 68. `DELETE /api/v1/favorites/talents/{username}`
 
 Unsave a talent by username (idempotent)
 
@@ -1486,7 +1702,7 @@ Unsave a talent by username (idempotent)
 - `204` - 
 
 
-### 66. `POST /api/v1/favorites/talents/{username}`
+### 69. `POST /api/v1/favorites/talents/{username}`
 
 Save a talent by username (idempotent)
 
@@ -1503,7 +1719,7 @@ Save a talent by username (idempotent)
 - `201` - 
 
 
-### 67. `GET /api/v1/favorites`
+### 70. `GET /api/v1/favorites`
 
 List the caller's saves (both target types)
 
@@ -1524,7 +1740,7 @@ List the caller's saves (both target types)
 
 ## internal
 
-### 68. `POST /api/v1/internal/jobs/run`
+### 71. `POST /api/v1/internal/jobs/run`
 
 Run the registered job handlers (idempotent tick)
 
@@ -1537,7 +1753,7 @@ Run the registered job handlers (idempotent tick)
 
 ## locations
 
-### 69. `GET /api/v1/locations/wilayas/{wilayaId}/municipalities`
+### 72. `GET /api/v1/locations/wilayas/{wilayaId}/municipalities`
 
 List a wilaya's municipalities, ordered by code
 
@@ -1554,7 +1770,7 @@ List a wilaya's municipalities, ordered by code
 - `200` - 
 
 
-### 70. `GET /api/v1/locations/wilayas`
+### 73. `GET /api/v1/locations/wilayas`
 
 List all 58 wilayas, ordered by code
 
@@ -1567,7 +1783,7 @@ List all 58 wilayas, ordered by code
 
 ## locations (admin)
 
-### 71. `PATCH /api/v1/admin/locations/{id}`
+### 74. `PATCH /api/v1/admin/locations/{id}`
 
 Update a location's editable fields
 
@@ -1602,7 +1818,7 @@ Update a location's editable fields
 - `200` - 
 
 
-### 72. `POST /api/v1/admin/locations`
+### 75. `POST /api/v1/admin/locations`
 
 Create a wilaya or municipality
 
@@ -1639,7 +1855,7 @@ Create a wilaya or municipality
 
 ## media
 
-### 73. `POST /api/v1/media/links`
+### 76. `POST /api/v1/media/links`
 
 Register an external link as media
 
@@ -1668,7 +1884,7 @@ Register an external link as media
 - `201` - 
 
 
-### 74. `POST /api/v1/media/uploads`
+### 77. `POST /api/v1/media/uploads`
 
 Request a presigned upload URL (intent)
 
@@ -1701,7 +1917,7 @@ Request a presigned upload URL (intent)
 - `201` - 
 
 
-### 75. `POST /api/v1/media/{mediaId}/confirm`
+### 78. `POST /api/v1/media/{mediaId}/confirm`
 
 Confirm an upload by re-reading storage metadata
 
@@ -1718,7 +1934,7 @@ Confirm an upload by re-reading storage metadata
 - `200` - 
 
 
-### 76. `DELETE /api/v1/media/{mediaId}`
+### 79. `DELETE /api/v1/media/{mediaId}`
 
 Soft-delete owned media (F6 guard)
 
@@ -1735,7 +1951,7 @@ Soft-delete owned media (F6 guard)
 - `204` - 
 
 
-### 77. `GET /api/v1/media/{mediaId}`
+### 80. `GET /api/v1/media/{mediaId}`
 
 Read media metadata + signed URL (visibility-gated)
 
@@ -1754,7 +1970,7 @@ Read media metadata + signed URL (visibility-gated)
 
 ## notifications
 
-### 78. `GET /api/v1/notifications/preferences`
+### 81. `GET /api/v1/notifications/preferences`
 
 Get the caller's notification preferences (lazily seeded)
 
@@ -1765,7 +1981,7 @@ Get the caller's notification preferences (lazily seeded)
 - `200` - 
 
 
-### 79. `PATCH /api/v1/notifications/preferences`
+### 82. `PATCH /api/v1/notifications/preferences`
 
 Update the caller's notification preferences
 
@@ -1788,7 +2004,7 @@ Update the caller's notification preferences
 - `200` - 
 
 
-### 80. `POST /api/v1/notifications/read-all`
+### 83. `POST /api/v1/notifications/read-all`
 
 Mark all of the caller's notifications read
 
@@ -1799,7 +2015,7 @@ Mark all of the caller's notifications read
 - `200` - 
 
 
-### 81. `GET /api/v1/notifications/unread-count`
+### 84. `GET /api/v1/notifications/unread-count`
 
 Count the caller's unread notifications
 
@@ -1810,7 +2026,7 @@ Count the caller's unread notifications
 - `200` - 
 
 
-### 82. `PATCH /api/v1/notifications/{notificationId}/read`
+### 85. `PATCH /api/v1/notifications/{notificationId}/read`
 
 Mark one notification read
 
@@ -1827,7 +2043,7 @@ Mark one notification read
 - `200` - 
 
 
-### 83. `GET /api/v1/notifications`
+### 86. `GET /api/v1/notifications`
 
 List the caller's notifications (newest first)
 
@@ -1847,7 +2063,7 @@ List the caller's notifications (newest first)
 
 ## opportunities
 
-### 84. `GET /api/v1/opportunities/recommended`
+### 87. `GET /api/v1/opportunities/recommended`
 
 Recommended feed for the volunteer (rule-based scoring)
 
@@ -1865,7 +2081,7 @@ Recommended feed for the volunteer (rule-based scoring)
 - `200` - 
 
 
-### 85. `GET /api/v1/opportunities/{idOrSlug}`
+### 88. `GET /api/v1/opportunities/{idOrSlug}`
 
 Public opportunity detail by id or slug
 
@@ -1882,7 +2098,7 @@ Public opportunity detail by id or slug
 - `200` - 
 
 
-### 86. `POST /api/v1/opportunities/{opportunityId}/cancel`
+### 89. `POST /api/v1/opportunities/{opportunityId}/cancel`
 
 Cancel an opportunity
 
@@ -1899,7 +2115,7 @@ Cancel an opportunity
 - `200` - 
 
 
-### 87. `POST /api/v1/opportunities/{opportunityId}/close`
+### 90. `POST /api/v1/opportunities/{opportunityId}/close`
 
 Close an opportunity
 
@@ -1916,7 +2132,7 @@ Close an opportunity
 - `200` - 
 
 
-### 88. `POST /api/v1/opportunities/{opportunityId}/complete`
+### 91. `POST /api/v1/opportunities/{opportunityId}/complete`
 
 Complete an in_progress opportunity
 
@@ -1933,7 +2149,7 @@ Complete an in_progress opportunity
 - `200` - 
 
 
-### 89. `POST /api/v1/opportunities/{opportunityId}/publish`
+### 92. `POST /api/v1/opportunities/{opportunityId}/publish`
 
 Publish a draft (verified org + gate)
 
@@ -1950,7 +2166,7 @@ Publish a draft (verified org + gate)
 - `200` - 
 
 
-### 90. `DELETE /api/v1/opportunities/{opportunityId}`
+### 93. `DELETE /api/v1/opportunities/{opportunityId}`
 
 Delete a draft opportunity
 
@@ -1967,7 +2183,7 @@ Delete a draft opportunity
 - `204` - 
 
 
-### 91. `PATCH /api/v1/opportunities/{opportunityId}`
+### 94. `PATCH /api/v1/opportunities/{opportunityId}`
 
 Update an owned opportunity
 
@@ -2027,7 +2243,7 @@ Update an owned opportunity
 - `200` - 
 
 
-### 92. `GET /api/v1/opportunities`
+### 95. `GET /api/v1/opportunities`
 
 Public feed (published only, cursor paginated)
 
@@ -2055,7 +2271,7 @@ Public feed (published only, cursor paginated)
 - `200` - 
 
 
-### 93. `POST /api/v1/organizations/me/opportunities/{id}/duplicate`
+### 96. `POST /api/v1/organizations/me/opportunities/{id}/duplicate`
 
 Duplicate an owned opportunity as a new draft
 
@@ -2072,7 +2288,7 @@ Duplicate an owned opportunity as a new draft
 - `201` - 
 
 
-### 94. `GET /api/v1/organizations/me/opportunities/{id}`
+### 97. `GET /api/v1/organizations/me/opportunities/{id}`
 
 Read one own opportunity (any status, incl. drafts)
 
@@ -2089,7 +2305,7 @@ Read one own opportunity (any status, incl. drafts)
 - `200` - 
 
 
-### 95. `GET /api/v1/organizations/me/opportunities`
+### 98. `GET /api/v1/organizations/me/opportunities`
 
 List the caller's own opportunities (all statuses)
 
@@ -2110,7 +2326,7 @@ List the caller's own opportunities (all statuses)
 - `200` - 
 
 
-### 96. `POST /api/v1/organizations/me/opportunities`
+### 99. `POST /api/v1/organizations/me/opportunities`
 
 Create an opportunity draft with positions
 
@@ -2175,7 +2391,7 @@ Create an opportunity draft with positions
 - `201` - 
 
 
-### 97. `GET /api/v1/organizations/{slug}/opportunities`
+### 100. `GET /api/v1/organizations/{slug}/opportunities`
 
 Public opportunities of an organization (per-status archive)
 
@@ -2195,7 +2411,7 @@ Public opportunities of an organization (per-status archive)
 
 ## opportunity-positions
 
-### 98. `DELETE /api/v1/opportunities/{opportunityId}/positions/{positionId}`
+### 101. `DELETE /api/v1/opportunities/{opportunityId}/positions/{positionId}`
 
 Delete a position with no applications/seats
 
@@ -2213,7 +2429,7 @@ Delete a position with no applications/seats
 - `200` - 
 
 
-### 99. `PATCH /api/v1/opportunities/{opportunityId}/positions/{positionId}`
+### 102. `PATCH /api/v1/opportunities/{opportunityId}/positions/{positionId}`
 
 Edit a position (requiredCount >= filledCount)
 
@@ -2259,7 +2475,7 @@ Edit a position (requiredCount >= filledCount)
 - `200` - 
 
 
-### 100. `POST /api/v1/opportunities/{opportunityId}/positions`
+### 103. `POST /api/v1/opportunities/{opportunityId}/positions`
 
 Add a position to an owned opportunity
 
@@ -2306,7 +2522,7 @@ Add a position to an owned opportunity
 
 ## organizations
 
-### 101. `GET /api/v1/organizations/me/participants`
+### 104. `GET /api/v1/organizations/me/participants`
 
 Cross-opportunity participant roster of the caller's org
 
@@ -2327,7 +2543,7 @@ Cross-opportunity participant roster of the caller's org
 - `200` - 
 
 
-### 102. `GET /api/v1/organizations/me/profile-completion`
+### 105. `GET /api/v1/organizations/me/profile-completion`
 
 Profile-completion checklist of the caller's org
 
@@ -2338,7 +2554,7 @@ Profile-completion checklist of the caller's org
 - `200` - 
 
 
-### 103. `GET /api/v1/organizations/me/stats`
+### 106. `GET /api/v1/organizations/me/stats`
 
 Private dashboard aggregates of the caller's org
 
@@ -2349,7 +2565,7 @@ Private dashboard aggregates of the caller's org
 - `200` - 
 
 
-### 104. `GET /api/v1/organizations/me/verification`
+### 107. `GET /api/v1/organizations/me/verification`
 
 Latest verification status of the caller's organization
 
@@ -2360,7 +2576,7 @@ Latest verification status of the caller's organization
 - `200` - 
 
 
-### 105. `POST /api/v1/organizations/me/verification`
+### 108. `POST /api/v1/organizations/me/verification`
 
 Submit (or resubmit) verification documents
 
@@ -2387,7 +2603,7 @@ Submit (or resubmit) verification documents
 - `201` - 
 
 
-### 106. `DELETE /api/v1/organizations/me`
+### 109. `DELETE /api/v1/organizations/me`
 
 Delete the caller's own organization account
 
@@ -2398,7 +2614,7 @@ Delete the caller's own organization account
 - `200` - 
 
 
-### 107. `GET /api/v1/organizations/me`
+### 110. `GET /api/v1/organizations/me`
 
 Read the caller's own organization
 
@@ -2409,7 +2625,7 @@ Read the caller's own organization
 - `200` - 
 
 
-### 108. `PATCH /api/v1/organizations/me`
+### 111. `PATCH /api/v1/organizations/me`
 
 Update the caller's own organization
 
@@ -2473,7 +2689,7 @@ Update the caller's own organization
 - `200` - 
 
 
-### 109. `GET /api/v1/organizations/{slug}`
+### 112. `GET /api/v1/organizations/{slug}`
 
 Public organization profile by slug
 
@@ -2490,7 +2706,7 @@ Public organization profile by slug
 - `200` - 
 
 
-### 110. `GET /api/v1/organizations`
+### 113. `GET /api/v1/organizations`
 
 List verified, active organizations
 
@@ -2512,7 +2728,7 @@ List verified, active organizations
 
 ## participations
 
-### 111. `GET /api/v1/opportunities/{opportunityId}/participants`
+### 114. `GET /api/v1/opportunities/{opportunityId}/participants`
 
 List active participants of an owned opportunity
 
@@ -2531,7 +2747,7 @@ List active participants of an owned opportunity
 - `200` - 
 
 
-### 112. `GET /api/v1/participations/me`
+### 115. `GET /api/v1/participations/me`
 
 List the caller's own participations
 
@@ -2550,7 +2766,7 @@ List the caller's own participations
 - `200` - 
 
 
-### 113. `POST /api/v1/participations/{participationId}/remove`
+### 116. `POST /api/v1/participations/{participationId}/remove`
 
 Remove a participant with a reason (seat stays allocated)
 
@@ -2581,7 +2797,7 @@ Remove a participant with a reason (seat stays allocated)
 - `200` - 
 
 
-### 114. `POST /api/v1/participations/{participationId}/withdraw`
+### 117. `POST /api/v1/participations/{participationId}/withdraw`
 
 Withdraw from a task (frees the seat, transaction)
 
@@ -2598,7 +2814,7 @@ Withdraw from a task (frees the seat, transaction)
 - `200` - 
 
 
-### 115. `GET /api/v1/participations/{participationId}`
+### 118. `GET /api/v1/participations/{participationId}`
 
 Participation detail (own volunteer or owning org)
 
@@ -2617,7 +2833,7 @@ Participation detail (own volunteer or owning org)
 
 ## portfolio
 
-### 116. `PUT /api/v1/portfolio/me/order`
+### 119. `PUT /api/v1/portfolio/me/order`
 
 Atomically reorder the whole portfolio (Mongo batch)
 
@@ -2644,7 +2860,7 @@ Atomically reorder the whole portfolio (Mongo batch)
 - `200` - 
 
 
-### 117. `GET /api/v1/portfolio/me`
+### 120. `GET /api/v1/portfolio/me`
 
 List the caller's own curated portfolio items
 
@@ -2655,7 +2871,7 @@ List the caller's own curated portfolio items
 - `200` - 
 
 
-### 118. `POST /api/v1/portfolio/me`
+### 121. `POST /api/v1/portfolio/me`
 
 Create a portfolio item with media linkage
 
@@ -2694,7 +2910,7 @@ Create a portfolio item with media linkage
 - `201` - 
 
 
-### 119. `DELETE /api/v1/portfolio/{itemId}`
+### 122. `DELETE /api/v1/portfolio/{itemId}`
 
 Delete an owned item and clear its media linkage
 
@@ -2711,7 +2927,7 @@ Delete an owned item and clear its media linkage
 - `204` - 
 
 
-### 120. `PATCH /api/v1/portfolio/{itemId}`
+### 123. `PATCH /api/v1/portfolio/{itemId}`
 
 Update an owned portfolio item
 
@@ -2758,7 +2974,7 @@ Update an owned portfolio item
 
 ## reports
 
-### 121. `POST /api/v1/reports`
+### 124. `POST /api/v1/reports`
 
 Report an entity (any logged-in role)
 
@@ -2795,7 +3011,7 @@ Report an entity (any logged-in role)
 
 ## reviews
 
-### 122. `GET /api/v1/organizations/me/reviews`
+### 125. `GET /api/v1/organizations/me/reviews`
 
 Reviews the caller's organization has given
 
@@ -2813,7 +3029,7 @@ Reviews the caller's organization has given
 - `200` - 
 
 
-### 123. `POST /api/v1/submissions/{submissionId}/review`
+### 126. `POST /api/v1/submissions/{submissionId}/review`
 
 Review a verified submission (owning organization)
 
@@ -2846,7 +3062,7 @@ Review a verified submission (owning organization)
 - `201` - 
 
 
-### 124. `GET /api/v1/volunteers/me/reviews`
+### 127. `GET /api/v1/volunteers/me/reviews`
 
 Reviews the caller has received
 
@@ -2864,7 +3080,7 @@ Reviews the caller has received
 - `200` - 
 
 
-### 125. `GET /api/v1/volunteers/{username}/reviews`
+### 128. `GET /api/v1/volunteers/{username}/reviews`
 
 Public reviews of a volunteer (visible rows only)
 
@@ -2885,7 +3101,7 @@ Public reviews of a volunteer (visible rows only)
 
 ## skill-categories
 
-### 126. `GET /api/v1/skill-categories`
+### 129. `GET /api/v1/skill-categories`
 
 List active skill categories, ordered by order
 
@@ -2898,7 +3114,7 @@ List active skill categories, ordered by order
 
 ## skill-categories (admin)
 
-### 127. `PATCH /api/v1/admin/skill-categories/{id}`
+### 130. `PATCH /api/v1/admin/skill-categories/{id}`
 
 Update a skill category (active:false deactivates)
 
@@ -2935,7 +3151,7 @@ Update a skill category (active:false deactivates)
 - `200` - 
 
 
-### 128. `POST /api/v1/admin/skill-categories`
+### 131. `POST /api/v1/admin/skill-categories`
 
 Create a skill category (slug generated server-side)
 
@@ -2966,7 +3182,7 @@ Create a skill category (slug generated server-side)
 
 ## skills
 
-### 129. `GET /api/v1/skills`
+### 132. `GET /api/v1/skills`
 
 List active skills, filter by category or text
 
@@ -2986,7 +3202,7 @@ List active skills, filter by category or text
 
 ## skills (admin)
 
-### 130. `PATCH /api/v1/admin/skills/{id}`
+### 133. `PATCH /api/v1/admin/skills/{id}`
 
 Update a skill (active:false deactivates)
 
@@ -3025,7 +3241,7 @@ Update a skill (active:false deactivates)
 - `200` - 
 
 
-### 131. `POST /api/v1/admin/skills`
+### 134. `POST /api/v1/admin/skills`
 
 Create a skill (slug generated server-side)
 
@@ -3058,7 +3274,7 @@ Create a skill (slug generated server-side)
 
 ## submissions
 
-### 132. `GET /api/v1/organizations/me/submissions`
+### 135. `GET /api/v1/organizations/me/submissions`
 
 Verification inbox of the caller organization
 
@@ -3081,7 +3297,7 @@ Verification inbox of the caller organization
 - `200` - 
 
 
-### 133. `POST /api/v1/participations/{participationId}/submissions`
+### 136. `POST /api/v1/participations/{participationId}/submissions`
 
 Create a draft submission for an owned participation
 
@@ -3112,7 +3328,7 @@ Create a draft submission for an owned participation
 - `201` - 
 
 
-### 134. `GET /api/v1/submissions/me`
+### 137. `GET /api/v1/submissions/me`
 
 List the caller's own submissions
 
@@ -3135,7 +3351,7 @@ List the caller's own submissions
 - `200` - 
 
 
-### 135. `POST /api/v1/submissions/{submissionId}/start-review`
+### 138. `POST /api/v1/submissions/{submissionId}/start-review`
 
 Move a submitted submission to under_review (owning org)
 
@@ -3152,7 +3368,7 @@ Move a submitted submission to under_review (owning org)
 - `200` - 
 
 
-### 136. `POST /api/v1/submissions/{submissionId}/submit`
+### 139. `POST /api/v1/submissions/{submissionId}/submit`
 
 Submit a draft (description, evidence, consent rules)
 
@@ -3183,7 +3399,7 @@ Submit a draft (description, evidence, consent rules)
 - `200` - 
 
 
-### 137. `GET /api/v1/submissions/{submissionId}`
+### 140. `GET /api/v1/submissions/{submissionId}`
 
 Submission detail (own volunteer or owning organization)
 
@@ -3200,7 +3416,7 @@ Submission detail (own volunteer or owning organization)
 - `200` - 
 
 
-### 138. `PATCH /api/v1/submissions/{submissionId}`
+### 141. `PATCH /api/v1/submissions/{submissionId}`
 
 Edit a draft (rejected returns to draft)
 
@@ -3241,7 +3457,7 @@ Edit a draft (rejected returns to draft)
 
 ## trust
 
-### 139. `GET /api/v1/organizations/me/publish-gate`
+### 142. `GET /api/v1/organizations/me/publish-gate`
 
 Caller's organization publish-gate state
 
@@ -3252,7 +3468,7 @@ Caller's organization publish-gate state
 - `200` - 
 
 
-### 140. `GET /api/v1/organizations/{slug}/reliability`
+### 143. `GET /api/v1/organizations/{slug}/reliability`
 
 Public reliability metrics by organization slug
 
@@ -3271,7 +3487,7 @@ Public reliability metrics by organization slug
 
 ## users
 
-### 141. `DELETE /api/v1/users/me/sessions/{sessionId}`
+### 144. `DELETE /api/v1/users/me/sessions/{sessionId}`
 
 Revoke one of the caller's own sessions
 
@@ -3288,7 +3504,7 @@ Revoke one of the caller's own sessions
 - `204` - 
 
 
-### 142. `GET /api/v1/users/me/sessions`
+### 145. `GET /api/v1/users/me/sessions`
 
 List the caller's own active sessions
 
@@ -3299,7 +3515,7 @@ List the caller's own active sessions
 - `200` - 
 
 
-### 143. `DELETE /api/v1/users/me`
+### 146. `DELETE /api/v1/users/me`
 
 Soft delete own account and revoke all sessions
 
@@ -3310,7 +3526,7 @@ Soft delete own account and revoke all sessions
 - `204` - 
 
 
-### 144. `GET /api/v1/users/me`
+### 147. `GET /api/v1/users/me`
 
 Read own account
 
@@ -3321,7 +3537,7 @@ Read own account
 - `200` - 
 
 
-### 145. `PATCH /api/v1/users/me`
+### 148. `PATCH /api/v1/users/me`
 
 Update own contact fields (email/phone only)
 
@@ -3350,7 +3566,7 @@ Update own contact fields (email/phone only)
 
 ## verifications
 
-### 146. `POST /api/v1/submissions/{submissionId}/reject`
+### 149. `POST /api/v1/submissions/{submissionId}/reject`
 
 Reject an owned submission with a reason
 
@@ -3381,7 +3597,7 @@ Reject an owned submission with a reason
 - `200` - 
 
 
-### 147. `POST /api/v1/submissions/{submissionId}/verify`
+### 150. `POST /api/v1/submissions/{submissionId}/verify`
 
 Verify (approve) an owned submission
 
@@ -3417,7 +3633,7 @@ Verify (approve) an owned submission
 - `200` - 
 
 
-### 148. `GET /api/v1/verifications/{verificationId}`
+### 151. `GET /api/v1/verifications/{verificationId}`
 
 Verification decision detail (own volunteer or owning org)
 
@@ -3436,7 +3652,7 @@ Verification decision detail (own volunteer or owning org)
 
 ## verifications-public
 
-### 149. `GET /api/v1/verify/{verificationCode}`
+### 152. `GET /api/v1/verify/{verificationCode}`
 
 Public proof summary for a verification code
 
@@ -3455,7 +3671,7 @@ Public proof summary for a verification code
 
 ## volunteers
 
-### 150. `GET /api/v1/volunteers/me/availability`
+### 153. `GET /api/v1/volunteers/me/availability`
 
 Read own weekly availability
 
@@ -3466,7 +3682,7 @@ Read own weekly availability
 - `200` - 
 
 
-### 151. `PUT /api/v1/volunteers/me/availability`
+### 154. `PUT /api/v1/volunteers/me/availability`
 
 Replace own weekly availability
 
@@ -3517,7 +3733,7 @@ Replace own weekly availability
 - `200` - 
 
 
-### 152. `GET /api/v1/volunteers/me/dashboard`
+### 155. `GET /api/v1/volunteers/me/dashboard`
 
 Read own volunteer dashboard
 
@@ -3528,7 +3744,7 @@ Read own volunteer dashboard
 - `200` - 
 
 
-### 153. `PATCH /api/v1/volunteers/me/public-settings`
+### 156. `PATCH /api/v1/volunteers/me/public-settings`
 
 Update public-profile privacy flags
 
@@ -3563,7 +3779,7 @@ Update public-profile privacy flags
 - `200` - 
 
 
-### 154. `DELETE /api/v1/volunteers/me/skills/{skillId}`
+### 157. `DELETE /api/v1/volunteers/me/skills/{skillId}`
 
 Remove one of own skills
 
@@ -3580,7 +3796,7 @@ Remove one of own skills
 - `204` - 
 
 
-### 155. `PATCH /api/v1/volunteers/me/skills/{skillId}`
+### 158. `PATCH /api/v1/volunteers/me/skills/{skillId}`
 
 Update one of own skills
 
@@ -3615,7 +3831,7 @@ Update one of own skills
 - `200` - 
 
 
-### 156. `GET /api/v1/volunteers/me/skills`
+### 159. `GET /api/v1/volunteers/me/skills`
 
 List own skills
 
@@ -3626,7 +3842,7 @@ List own skills
 - `200` - 
 
 
-### 157. `POST /api/v1/volunteers/me/skills`
+### 160. `POST /api/v1/volunteers/me/skills`
 
 Add a skill to own profile
 
@@ -3657,7 +3873,7 @@ Add a skill to own profile
 - `201` - 
 
 
-### 158. `GET /api/v1/volunteers/me`
+### 161. `GET /api/v1/volunteers/me`
 
 Read own volunteer profile
 
@@ -3668,7 +3884,7 @@ Read own volunteer profile
 - `200` - 
 
 
-### 159. `PATCH /api/v1/volunteers/me`
+### 162. `PATCH /api/v1/volunteers/me`
 
 Update own volunteer profile
 
@@ -3721,7 +3937,7 @@ Update own volunteer profile
 
 ## volunteers-public
 
-### 160. `GET /api/v1/talents`
+### 163. `GET /api/v1/talents`
 
 Talents feed (enabled profiles, filters, cursor)
 
@@ -3749,7 +3965,7 @@ Talents feed (enabled profiles, filters, cursor)
 - `200` - 
 
 
-### 161. `GET /api/v1/volunteers/{username}/experiences`
+### 164. `GET /api/v1/volunteers/{username}/experiences`
 
 Public experiences of a volunteer (public rows only)
 
@@ -3768,7 +3984,7 @@ Public experiences of a volunteer (public rows only)
 - `200` - 
 
 
-### 162. `GET /api/v1/volunteers/{username}/portfolio`
+### 165. `GET /api/v1/volunteers/{username}/portfolio`
 
 Public portfolio of a volunteer (public rows only)
 
@@ -3785,7 +4001,7 @@ Public portfolio of a volunteer (public rows only)
 - `200` - 
 
 
-### 163. `GET /api/v1/volunteers/{username}`
+### 166. `GET /api/v1/volunteers/{username}`
 
 Public volunteer profile by username (A5 gating)
 
@@ -3803,4 +4019,4 @@ Public volunteer profile by username (A5 gating)
 
 ---
 
-*Total: 163 operations across 144 paths.*
+*Total: 166 operations across 147 paths.*

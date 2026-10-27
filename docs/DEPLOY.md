@@ -68,7 +68,7 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 | `NODE_ENV` | `production` | Set by the blueprint (dashboard: add it). |
 | `NODE_VERSION` | `20` | Pin Node ~20 (blueprint only). |
 | `MONGO_URI` | `mongodb+srv://basmatak:…@basmatak.<cluster>.mongodb.net/basmatak?retryWrites=true&w=majority` | §3.1. Include `/basmatak`. |
-| `CORS_ORIGIN` | `https://your-frontend.vercel.app` | Comma-separated list, or `*`. |
+| `CORS_ORIGIN` | `https://your-frontend.vercel.app` | Comma-separated **exact** origins (scheme, host, optional port). A bare `*` entry is dropped and there is no wildcard mode; trailing slashes are stripped. Restart after changing. |
 | `PUBLIC_BASE_URL` | `https://basmatak-backend.onrender.com` | **The Render URL** — used in `/verify/:code` links and emails. |
 | `LOG_LEVEL` | `log` | |
 | `SWAGGER_ENABLED` | `false` | Swagger is always off in production regardless. |
@@ -117,20 +117,76 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 | `AI_AGENT_MAX_CONCURRENT` | `2` | Extra requests get `AI_AGENT_BUSY` (429) immediately. |
 | `AI_AGENT_DAILY_TOKEN_BUDGET` | `150000` | Estimated input + output tokens per UTC day. |
 | `AI_AGENT_RETRIEVAL_FALLBACK` | `true` | Extractive sources instead of an LLM at 100%. |
-| `AI_AGENT_FALLBACK_ENABLED` | `false` | Optional one-shot provider fallback; keep off unless a second provider is configured. |
+| `AI_AGENT_FALLBACK_ENABLED` | `false` | Parsed for forward compatibility, but no second adapter is selected in this build. Keep `false`; automatic fallback is not active. |
 
-### 2.1 Proxy, AI switches, and restarts
+### 2.1 Proxy, AI switches, cold starts, and restarts
 
 - `TRUST_PROXY` is what makes per-IP throttling see the real client behind
-  Render. `1` is correct for Render's single hop. Leave it `false`/unset for
-  local direct connections so `X-Forwarded-For` cannot be spoofed.
+  Render. `1` is correct for Render's single reverse-proxy hop. Leave it
+  `false`/unset for local direct connections so `X-Forwarded-For` cannot be
+  spoofed; never set `1` on a directly reachable instance, because rotating the
+  header would bypass `AI_AGENT_IP_RPM`/`RPD`. The value is resolved once at
+  boot; an invalid value fails closed to `false`.
 - The AI kill switch (`AI_AGENT_ENABLED`) and provider/model are read at boot.
-  Render applies environment changes by restarting the service, so a switch is
-  a config change + restart, not a zero-downtime hot reload. The in-memory
-  quota/usage counters reset on restart (UTC windows and the daily budget).
+  Only the literal trimmed `true` enables chat. Render applies environment
+  changes by restarting the service, so a switch is a config change + restart,
+  not a zero-downtime hot reload.
+- The in-memory quota/usage counters (UTC minute/day windows, concurrency,
+  provider cooldowns, and the daily token budget) reset on every restart. That
+  is expected single-instance behavior, not a way to bypass provider limits;
+  do not use restarts to evade a quota.
+- **Cold start:** the free instance sleeps after about 15 minutes idle and the
+  first request can take about a minute. The widget's status probe times out
+  after 10 seconds and shows its waking/offline state; retry status after the
+  host wakes. The 15-minute keep-alive in §3 reduces (but does not eliminate)
+  cold starts. Do not retry chat in a tight loop while waking: every accepted
+  request counts against the per-IP and provider quotas.
 - Changing `AI_AGENT_PROVIDER` selects the adapter at boot; no orchestrator,
-  prompt, SSE, or frontend change is needed. Automatic fallback stays off by
-  default.
+  prompt, SSE, or frontend change is needed. Automatic fallback is **not active
+  in this build**: `AI_AGENT_FALLBACK_ENABLED` is parsed but no second adapter
+  is configured. Keep it `false`.
+
+### 2.2 AI secrets and deploy order
+
+`GEMINI_API_KEY` is the only AI secret. Set it in the Render **Environment** or
+**Secret File** with `sync: false`; never put it in `render.yaml`,
+`.env.example`, git, a shell history, a screenshot, a build log, an issue, the
+frontend bundle, an SSE frame, or an error body. It is read lazily, so boot,
+`/health`, and `/ai-agent/status` work without it; a chat turn without a valid
+key fails closed with `AI_AGENT_PROVIDER_UNAVAILABLE`.
+
+Never ask a user to paste the key into a chat, ticket, or commit. If a key is
+exposed:
+
+1. Set `AI_AGENT_ENABLED=false` and restart; verify `status.enabled=false` and
+   `503 AI_AGENT_DISABLED`.
+2. Revoke/replace the key in the Google AI Studio console.
+3. Update the Render secret (never print the value) and verify the disabled
+   state again.
+4. Re-enable only after a successful smoke turn.
+
+Do not create extra Google projects, rotate keys, or enable billing to get
+around a free-tier limit.
+
+**Deploy order** (do not enable chat on the first deploy):
+
+1. Pre-deploy: run the backend/frontend validation commands in §7 and
+   `AI_AGENT.md` §11, including `npm run ai:check` and
+   `test/deployment-config.e2e-spec.ts`.
+2. In Render, set `AI_AGENT_ENABLED=false`, `AI_AGENT_PROVIDER=gemini`,
+   `AI_AGENT_MODEL=gemini-3.8-flash`, the default caps, `TRUST_PROXY=1`, the
+   exact `CORS_ORIGIN` allowlist, and `GEMINI_API_KEY` as a `sync: false`
+   secret. Keep `AI_AGENT_FALLBACK_ENABLED=false`.
+3. Deploy the commit. Wait for the health check and the knowledge index to load.
+4. Verify the disabled state: `GET /api/v1/ai-agent/status` returns `200` with
+   `"enabled": false`, and `POST /api/v1/ai-agent/chat` returns
+   `503 AI_AGENT_DISABLED` without starting SSE. The widget shows unavailable.
+5. Set `AI_AGENT_ENABLED=true`, apply (Render restarts), and verify
+   `status.enabled=true`, `status.mode=normal` (or the expected degraded mode),
+   and non-zero `knowledge.files`/`knowledge.chunks`.
+6. Run the production smoke checklist in §9. If any check fails, set
+   `AI_AGENT_ENABLED=false` immediately, restart, verify the disabled state, and
+   stop. Do not keep testing a broken deployment.
 
 ---
 
@@ -199,6 +255,48 @@ Seeds are not part of the start/health path — the app boots and answers
 - **`PUBLIC_BASE_URL`** = the Render URL so `/verify/:code` links and emails
   are correct.
 
+### 6.1 AI free-tier quota and 429 procedure
+
+The assistant is intentionally capped below the provider's free tier:
+`AI_AGENT_GLOBAL_RPM=8` is 80% of the documented 10 RPM ceiling, and the daily
+request/token caps are lower than the provider limits because launch traffic is
+unknown. **Verify the live AI Studio limits for the chosen model at deploy
+time**; quotas change by model/account. Never exceed them and never rotate keys,
+create projects, or enable billing to work around a limit.
+
+Quota behavior is documented in detail in `AI_AGENT.md` §6; the operator rules
+are:
+
+1. Read `GET /api/v1/ai-agent/status` (`mode`) and the admin
+   `GET /api/v1/ai-agent/usage` report before changing anything.
+2. A pre-stream `429` carries `details.reason` and
+   `details.retryAfterSeconds` (also `Retry-After`, which CORS does not expose).
+   Honor the wait; do not retry immediately.
+3. `RATE_LIMITED` = local per-IP/global window; `AI_AGENT_BUSY` = concurrency;
+   `AI_AGENT_QUOTA_EXHAUSTED` = provider cooldown or exhausted day. A
+   `mode`/`token_budget` denial is **not** a 429: the user gets a local
+   `retrieval_only`/`exhausted` SSE answer with browse links and no provider
+   call.
+4. At 70% the mode is `conservative`, at 90% `knowledge_only`, at 100%
+   `retrieval_only` (when `AI_AGENT_RETRIEVAL_FALLBACK=true`) or `exhausted`.
+   These are safety degradations, not failures.
+5. Tune one cap at a time, restart, and watch usage/logs. Raising several caps
+   together makes a free-tier 429 likely and obscures the cause.
+6. If a provider 429 is recurrent, lower the relevant cap or keep the feature
+   disabled until the UTC day/cooldown resets. Do not add a second key or
+   project.
+7. A restart clears in-memory counters and cooldowns; use it only for a
+   deliberate config change, never to manufacture more free quota.
+
+For the production degraded-path smoke, the smallest safe temporary change is
+`AI_AGENT_DAILY_TOKEN_BUDGET=1` (the minimum accepted value), followed by a
+restart. The next chat must be `200` SSE with `meta.mode=retrieval_only`, a
+local answer/browse links, and zero provider tokens; restore `150000` and
+restart immediately afterward. An optional transport-gate check is
+`AI_AGENT_IP_RPD=1`, two requests (second `429 RATE_LIMITED`,
+`reason=ip_day`), then restore `15` and restart. Record every temporary value and
+its restoration in the smoke record.
+
 ---
 
 ## 7. Verify locally (prod smoke) before/while connecting
@@ -219,8 +317,150 @@ check shows green, and the scheduler log shows jobs runs.
 
 ## 8. Rollback / clean-up
 
+- **AI feature rollback (first action)**: set `AI_AGENT_ENABLED=false` in
+  Render, apply/restart, verify `GET /api/v1/ai-agent/status` is `200` with
+  `"enabled": false`, and verify chat returns `503 AI_AGENT_DISABLED`. This
+  stops provider calls and quota consumption without touching the rest of the
+  site or the database.
+- **AI code rollback**: deploy the previous commit (`3fa5de6` is the last
+  Session 12 code commit) after the kill switch is verified. There is no AI
+  collection, schema migration, or runtime upload; the knowledge corpus ships
+  with `backend/ai-agent/`.
+- **AI provider rollback**: switch `AI_AGENT_PROVIDER`/`AI_AGENT_MODEL` back to
+  the previous values, restart, and verify one turn. Keep the key server-side.
+  Automatic fallback is not active, so a provider outage is handled by the
+  explicit unavailable/timeout errors and the kill switch.
+- **Secret rollback**: disable first, revoke/replace the key in the provider
+  console, update the Render secret, verify the disabled state, then re-enable
+  after a successful smoke turn. Never print or commit the value.
 - **Revert the deploy**: Render dashboard → service → **Settings → Delete
   Service**, or pause — the data stays in Atlas untouched.
-- **Code rollback**: `git revert` the `chore(deploy)` commit. Removing the
-  keep-alive workflow leaves the scheduler stopped; the app keeps running.
+- **Code rollback (non-AI)**: `git revert` the `chore(deploy)` commit. Removing
+  the keep-alive workflow leaves the scheduler stopped; the app keeps running.
 - No data migration is involved — the host and the database are independent.
+
+---
+
+## 9. Production smoke checklist (AI assistant)
+
+Run this only with explicit Render access and the server-side Gemini secret
+available. Never ask for, paste, print, or commit the key. Fill in the record
+header and the result/evidence column for every check; a smoke without a record
+is not complete. If any check fails, perform the rollback in §8 first, then
+record the failure and stop.
+
+> **Session 13 status:** not executed in the documentation environment because
+> no Render access or `GEMINI_API_KEY` was available. The exact human handoff is
+> the record header plus §9.2 below. Do not mark a check PASS without running it.
+
+### 9.1 Record header
+
+| Field | Value |
+|---|---|
+| Date/time (UTC) | |
+| Operator | |
+| Commit SHA | |
+| Branch | |
+| Service URL | |
+| Deployment/build id | |
+| `AI_AGENT_ENABLED` before/after | `false` -> `true` |
+| `AI_AGENT_PROVIDER` / `AI_AGENT_MODEL` | `gemini` / `gemini-3.8-flash` |
+| `TRUST_PROXY` | `1` (Render) |
+| `CORS_ORIGIN` (origins only, no secrets) | |
+| Overall result | PASS / FAIL / PARTIAL |
+| Rollback performed? | No / Yes — time, action, final verification |
+
+### 9.2 Checks
+
+| # | Check | How | Expected | Result / evidence |
+|---|---|---|---|---|
+| 1 | Disabled status | Set `AI_AGENT_ENABLED=false`; restart; `GET /api/v1/ai-agent/status` | `200`, `enabled:false`; no provider/model/key/usage fields. | |
+| 2 | Disabled chat | Same state; `POST /api/v1/ai-agent/chat` with a valid body | `503 AI_AGENT_DISABLED` JSON, no `text/event-stream`, no `meta` frame. | |
+| 3 | Enable | Set `AI_AGENT_ENABLED=true`; restart; status | `200`, `enabled:true`, `mode` is `normal` (or documented degraded mode), `knowledge.files=8`, `knowledge.chunks>0`. | |
+| 4 | Incremental SSE through Render | `curl -N -sS -D -` to chat with `Origin: $ORIGIN` | `200 text/event-stream`, fixed headers, `meta` first, then `token` frames arriving over time (not one buffered blob), final `done`; heartbeat `: heartbeat` every ~15 s on a long turn. | |
+| 5 | CORS allow | Preflight `OPTIONS` and actual chat with an allowlisted `Origin` | `204` preflight / `200` chat with `Access-Control-Allow-Origin: $ORIGIN`; no credentials wildcard. | |
+| 6 | CORS reject | Preflight with an unlisted origin | No `Access-Control-Allow-Origin`; browser blocks it. Bare `*` is dropped, so a `*` config allows nothing. | |
+| 7 | Knowledge answer + citations | Ask a question covered by the reviewed corpus, in English and Arabic | Grounded answer with `[K#]` citations and `sources.knowledge` entries; Arabic answer is natural and RTL-safe. | |
+| 8 | Live public data | Ask “Which opportunities are open now?” (or equivalent) | Answer cites public rows with `[T#]` and `sources.data` paths; no private fields, emails, phones, or internal ids. | |
+| 9 | Grounded refusal | Ask for another person's contact/account data, and one out-of-scope question | Localized refusal; no private data; no speculative answer; no provider leak. | |
+| 10 | Degraded/quota path | Temp `AI_AGENT_DAILY_TOKEN_BUDGET=1`; restart; one chat; restore `150000`; restart | `200` SSE, `meta.mode=retrieval_only`, local text + browse links, zero provider tokens; after restore, `mode=normal`. Record both temp/restore. Optional 429 gate: `AI_AGENT_IP_RPD=1`, two requests, second `429 RATE_LIMITED`/`reason=ip_day` with `Retry-After`; restore `15`. | |
+| 11 | Usage auth | `GET /api/v1/ai-agent/usage` anonymous, volunteer, admin | `401 UNAUTHORIZED`, `403 FORBIDDEN`, `200` with aggregate `today`/`last7Days`/`budget`; no content, IPs, or per-user rows. | |
+| 12 | Cold start/widget | Let the host sleep (or simulate a cold start), then open the widget | Widget shows waking/unavailable and retries; status recovers; one user action does not create duplicate/looped chats. Record elapsed time. | |
+| 13 | Privacy/log spot check | Search Render logs for the exact test message, prompt, tool payload, key name, and client IP; inspect SSE/network for provider/model/key/private fields | No message/prompt/retrieved text/tool payload/IP/key in logs or frames; only allowlisted operational fields. Do not paste log lines into the record. | |
+| 14 | Rollback readiness | Confirm §8 kill switch and the previous commit are known | Disable path verified in checks 1–2; rollback owner/time recorded. | |
+
+Useful commands (run from a machine with network access; never put the key in a
+command line):
+
+```bash
+BASE_URL="https://<service>.onrender.com"
+ORIGIN="https://<frontend-origin>"
+
+curl -sS "$BASE_URL/api/v1/ai-agent/status"
+
+curl -N -sS -D - \
+  -H 'Content-Type: application/json' \
+  -H "Origin: $ORIGIN" \
+  -d '{"message":"How does volunteering work?","locale":"en"}' \
+  "$BASE_URL/api/v1/ai-agent/chat"
+
+curl -i -sS -X OPTIONS \
+  -H "Origin: $ORIGIN" \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type' \
+  "$BASE_URL/api/v1/ai-agent/chat"
+
+# Admin/volunteer tokens come from test accounts, not the Gemini key.
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "$BASE_URL/api/v1/ai-agent/usage"
+```
+
+For check 10, env changes restart the service and reset in-memory quota/usage
+counters. Change one value, record it, test, restore the documented value, and
+restart again. Never leave a temporary cap in place.
+
+### 9.3 Failure and rollback record
+
+| Field | Value |
+|---|---|
+| Failed check # | |
+| Time (UTC) | |
+| Observed symptom (no secrets/content) | |
+| Immediate action | `AI_AGENT_ENABLED=false` + restart |
+| Disabled verification | status `enabled:false`; chat `503 AI_AGENT_DISABLED` |
+| Code/provider rollback (if any) | |
+| Final state | disabled / previous commit / previous provider |
+| Follow-up owner/issue | |
+
+---
+
+## 10. Post-launch monitoring and review
+
+The assistant is a free-tier, single-instance feature. Monitor it before
+considering any cap increase:
+
+- **First 24 hours:** check `GET /api/v1/ai-agent/status` and the admin usage
+  report at deploy, +15 minutes, +1 hour, +4 hours, and +24 hours. Watch
+  `mode`, total tokens, request count, 429/rate-limited count, average latency,
+  refusals, and provider errors. Check the structured logs for the 70%/90%/100%
+  threshold warnings; they are emitted once per UTC day.
+- **First 7 days:** review usage daily. If provider 429s or `AI_AGENT_BUSY`
+  recur, lower one cap (usually `AI_AGENT_GLOBAL_RPM` or the token budget) and
+  restart; if latency is high, lower output/tool caps. Do not raise several caps
+  at once. Never exceed the live AI Studio free-tier limit.
+- **Content quality:** sample grounded answers in English and Arabic, verify
+  citations point to reviewed public content, and update the corpus through
+  `npm run ai:check` + deploy when facts change. Never weaken citation checks
+  to make an answer “work”.
+- **Privacy:** confirm logs still contain only the allowlisted operational
+  fields, the admin report has no content/IP/per-user rows, the widget still
+  clears `sessionStorage` on new chat/sign-out/session expiry/tab close, and the
+  privacy notice's provider-data-use wording still matches the provider terms.
+  Review the free-tier provider terms when they change.
+- **Capacity:** the quotas, usage meter, and cooldowns are per process. The
+  design is one Render instance; do not scale horizontally without redesigning
+  the global limits. Restarts reset counters, so a restart is not a quota
+  increase.
+- **Decision review:** after 7 days, record whether to keep the current caps,
+  lower them, or keep the feature disabled. Store the completed §9 record and
+  the decision with the deployment notes; do not include keys or user content.
