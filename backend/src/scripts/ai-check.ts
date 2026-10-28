@@ -27,7 +27,7 @@ export interface CheckResult {
 const ALLOWED_EXTENSIONS = new Set(['.md', '.txt', '.json', '.csv']);
 const ALLOWED_LOCALES = new Set(['en', 'ar', 'fr']);
 const IGNORED_DIRECTORIES = new Set(['node_modules', 'dist']);
-const MAX_INDEXED_FILES = 100;
+export const MAX_INDEXED_FILES = 300;
 const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_JSON_DEPTH = 10;
@@ -87,10 +87,24 @@ const SECRET_PATTERNS: ReadonlyArray<{ pattern: RegExp; message: string }> = [
   },
 ];
 
-const EMAIL_PATTERN = /[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}/i;
-const ALGERIAN_PHONE_PATTERN = /\b0[2-7](?:[\s.-]?\d{2}){3,4}\b/;
+const EMAIL_PATTERN = /[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}/gi;
+const ALGERIAN_PHONE_PATTERN = /\b0[2-7](?:[\s.-]?\d{2}){3,4}\b/g;
 const INTERNATIONAL_PHONE_CANDIDATE =
   /(?:^|[^\w])(\+\d[\d\s().-]{6,}\d)(?!\w)/g;
+
+/**
+ * Public Roeya Association contact details may appear only in these four
+ * files. Every other email or phone number is rejected everywhere, and these
+ * files may contain only the official email and phone values.
+ */
+const CONTACT_GUARD_ALLOWLIST = new Set([
+  '01-about/contact/ar.md',
+  '01-about/contact/en.md',
+  '08-faq/troubleshooting/ar.md',
+  '08-faq/troubleshooting/en.md',
+]);
+const OFFICIAL_CONTACT_EMAIL = 'roeyatimimoun@gmail.com';
+const OFFICIAL_CONTACT_PHONE_DIGITS = '213663847105';
 
 interface FrontMatterValues {
   title?: string;
@@ -212,7 +226,7 @@ export function checkKnowledge(rootDir?: string): CheckResult {
   };
 
   const inspectFile = (file: string, text: string, extension: string): void => {
-    const issues = checkCommonContent(text);
+    const issues = checkCommonContent(display(file), text);
     const metadata =
       extension === '.md' || extension === '.txt'
         ? readMarkdownMetadata(file, text)
@@ -326,7 +340,7 @@ export function checkKnowledge(rootDir?: string): CheckResult {
     addError(
       root,
       'TOO_MANY_FILES',
-      `The corpus has more than ${MAX_INDEXED_FILES} indexed files.`,
+      `The corpus has ${result.indexedFiles} indexed files, which exceeds the limit of ${MAX_INDEXED_FILES}.`,
     );
   }
 
@@ -356,7 +370,7 @@ export function checkKnowledge(rootDir?: string): CheckResult {
   return result;
 }
 
-function checkCommonContent(text: string): ContentIssue[] {
+function checkCommonContent(file: string, text: string): ContentIssue[] {
   const issues: ContentIssue[] = [];
 
   for (const rule of FORBIDDEN_PATTERNS) {
@@ -371,14 +385,29 @@ function checkCommonContent(text: string): ContentIssue[] {
     }
   }
 
-  if (text.includes('@') && EMAIL_PATTERN.test(text)) {
+  const contactAllowed = CONTACT_GUARD_ALLOWLIST.has(
+    file.split(path.sep).join('/'),
+  );
+  const emails: string[] = text.match(EMAIL_PATTERN) ?? [];
+  if (
+    emails.some(
+      (email) =>
+        !contactAllowed || email.toLowerCase() !== OFFICIAL_CONTACT_EMAIL,
+    )
+  ) {
     issues.push({
       code: 'EMAIL_PATTERN',
       message: 'Content contains an email address.',
     });
   }
 
-  if (hasPhoneNumber(text)) {
+  const phones = findPhoneNumbers(text);
+  if (
+    phones.some(
+      (phone) =>
+        !contactAllowed || digitsOnly(phone) !== OFFICIAL_CONTACT_PHONE_DIGITS,
+    )
+  ) {
     issues.push({
       code: 'PHONE_PATTERN',
       message: 'Content contains a phone number.',
@@ -388,12 +417,21 @@ function checkCommonContent(text: string): ContentIssue[] {
   return issues;
 }
 
-function hasPhoneNumber(text: string): boolean {
-  if (ALGERIAN_PHONE_PATTERN.test(text)) return true;
-  const candidates: string[] = text.match(INTERNATIONAL_PHONE_CANDIDATE) ?? [];
-  return candidates.some(
-    (candidate) => (candidate.match(/\d/g) ?? []).length >= 8,
-  );
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function findPhoneNumbers(text: string): string[] {
+  const phones = new Set<string>();
+  for (const match of text.match(ALGERIAN_PHONE_PATTERN) ?? []) {
+    phones.add(match);
+  }
+  for (const candidate of text.match(INTERNATIONAL_PHONE_CANDIDATE) ?? []) {
+    if ((candidate.match(/\d/g) ?? []).length >= 8) {
+      phones.add(candidate);
+    }
+  }
+  return [...phones];
 }
 
 function titleFromStem(file: string): string {

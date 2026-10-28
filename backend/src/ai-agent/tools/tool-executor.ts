@@ -1,4 +1,6 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
+import { AppLogger } from '../../common/logger/app.logger';
+import { redactLogText } from '../../common/logger/log-redaction';
 import { ToolRegistry } from './tool-registry';
 import {
   TOOL_MAX_RESULT_CHARS,
@@ -193,16 +195,19 @@ export class ToolExecutor {
   private readonly timeoutMs: number;
   private readonly perResultMaxChars: number;
   private readonly totalMaxChars: number;
+  private readonly logger: AppLogger;
 
   constructor(
     private readonly registry: ToolRegistry,
     @Optional()
     @Inject(TOOL_EXECUTOR_OPTIONS)
     options: ToolExecutorOptions = {},
+    @Optional() logger?: AppLogger,
   ) {
     this.timeoutMs = options.timeoutMs ?? TOOL_TIMEOUT_MS;
     this.perResultMaxChars = options.perResultMaxChars ?? TOOL_MAX_RESULT_CHARS;
     this.totalMaxChars = options.totalMaxChars ?? TOOL_TOTAL_RESULT_CHARS;
+    this.logger = logger ?? new AppLogger('ToolExecutor');
   }
 
   async execute(name: string, args?: unknown): Promise<ToolExecutionResult> {
@@ -272,8 +277,10 @@ export class ToolExecutor {
         return failure(definition.name, 'INVALID_ARGUMENT', error.message);
       }
       if (error instanceof ToolTimeoutError) {
+        this.logToolFailure(definition.name, 'TIMEOUT', error);
         return failure(definition.name, 'TIMEOUT', 'Tool execution timed out.');
       }
+      this.logToolFailure(definition.name, 'UNAVAILABLE', error);
       return failure(
         definition.name,
         'UNAVAILABLE',
@@ -317,6 +324,31 @@ export class ToolExecutor {
         truncated: fitted.truncated,
       },
     };
+  }
+
+  private logToolFailure(
+    tool: string,
+    code: ToolErrorCode,
+    error: unknown,
+  ): void {
+    try {
+      const message =
+        error instanceof Error ? redactLogText(error.message) : undefined;
+      const stack =
+        error instanceof Error ? redactLogText(error.stack, 2000) : undefined;
+      this.logger.error(
+        JSON.stringify({
+          event: 'ai_agent_tool_failure',
+          tool,
+          errorCode: code,
+          errorName: error instanceof Error ? error.name : typeof error,
+          ...(message !== undefined ? { message } : {}),
+          ...(stack !== undefined ? { stack } : {}),
+        }),
+      );
+    } catch {
+      // Logging must never break the tool path.
+    }
   }
 
   private async runHandler(

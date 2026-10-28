@@ -227,10 +227,14 @@ describe('KnowledgeLoader', () => {
     }
 
     const result = loadKnowledge(root);
+    const limitIssue = result.issues.find(
+      (issue) => issue.code === 'TOO_MANY_FILES',
+    );
 
     expect(result.documents).toEqual([]);
     expect(result.filesScanned).toBe(MAX_INDEXED_FILES + 1);
-    expect(codes(result)).toContain('TOO_MANY_FILES');
+    expect(limitIssue?.message).toContain(String(MAX_INDEXED_FILES + 1));
+    expect(limitIssue?.message).toContain(String(MAX_INDEXED_FILES));
   });
 
   it('excludes one bad file without failing the whole scan', () => {
@@ -273,6 +277,72 @@ describe('KnowledgeLoader', () => {
       expect(issue.message).not.toContain('person@example.com');
       expect(issue.message).not.toContain('finish this section');
     }
+  });
+
+  it('accepts the official contact details in the four allowlisted files', () => {
+    const root = makeTempRoot();
+    const allowlisted = [
+      '01-about/contact/en.md',
+      '01-about/contact/ar.md',
+      '08-faq/troubleshooting/en.md',
+      '08-faq/troubleshooting/ar.md',
+    ];
+
+    allowlisted.forEach((file, index) => {
+      writeFixture(
+        root,
+        file,
+        `# Official contact ${index}\n\nEmail roeyatimimoun@gmail.com or call +213 663847105 or +213 663 847 105.`,
+      );
+    });
+
+    const result = loadKnowledge(root);
+
+    expect(result.issues).toEqual([]);
+    expect(result.documents).toHaveLength(4);
+  });
+
+  it('rejects a different email or phone in an allowlisted file', () => {
+    const root = makeTempRoot();
+    const allowlisted = [
+      '01-about/contact/en.md',
+      '01-about/contact/ar.md',
+      '08-faq/troubleshooting/en.md',
+      '08-faq/troubleshooting/ar.md',
+    ];
+
+    allowlisted.forEach((file, index) => {
+      writeFixture(
+        root,
+        file,
+        `# Different contact ${index}\n\nEmail person@example.test or call +213 555 555 555.`,
+      );
+    });
+
+    const result = loadKnowledge(root);
+
+    expect(result.documents).toEqual([]);
+    expect(
+      result.issues.filter((issue) => issue.code === 'EMAIL_PATTERN'),
+    ).toHaveLength(4);
+    expect(
+      result.issues.filter((issue) => issue.code === 'PHONE_PATTERN'),
+    ).toHaveLength(4);
+  });
+
+  it('rejects official contact details outside the allowlist', () => {
+    const root = makeTempRoot();
+    writeFixture(
+      root,
+      '08-faq/contact-elsewhere/en.md',
+      '# Contact elsewhere\n\nEmail roeyatimimoun@gmail.com or call +213 663847105.',
+    );
+
+    const result = loadKnowledge(root);
+
+    expect(result.documents).toEqual([]);
+    expect(codes(result)).toContain('EMAIL_PATTERN');
+    expect(codes(result)).toContain('PHONE_PATTERN');
   });
 
   it('returns a clear issue for a missing root or a non-directory root', () => {
@@ -342,9 +412,13 @@ describe('KnowledgeLoader', () => {
     const result = loadKnowledge(corpus);
 
     expect(result.issues).toEqual([]);
-    expect(result.documents).toHaveLength(8);
+    expect(result.documents).toHaveLength(124);
     expect(result.documents.map((document) => document.source)).toEqual(
       expect.arrayContaining([
+        '01-about/contact/en.md',
+        '01-about/contact/ar.md',
+        '08-faq/troubleshooting/en.md',
+        '08-faq/troubleshooting/ar.md',
         'faq/en.md',
         'faq/ar.md',
         'guides/en.md',

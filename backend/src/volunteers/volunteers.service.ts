@@ -535,38 +535,46 @@ export class VolunteersService {
     const flags = profile.publicProfile;
     const userId = profile.userId.toString();
 
-    const [skills, experiences, availability, avatar, banner, portfolio, areas, publicVerified] =
-      await Promise.all([
-        flags.showSkills ? this.loadPublicSkills(userId) : Promise.resolve([]),
-        flags.showExperiences
-          ? this.loadPublicExperiences(userId, MAX_LIMIT).then(
-              (page) => page.items,
-            )
-          : Promise.resolve([]),
-        flags.showAvailability
-          ? this.loadAvailability(userId)
-          : Promise.resolve(emptySchedule()),
-        flags.showAvatar && profile.avatar
-          ? this.resolvePublicAvatar(profile.avatar)
-          : Promise.resolve(null),
-        flags.showAvatar && profile.banner
-          ? this.resolvePublicAvatar(profile.banner)
-          : Promise.resolve(null),
-        flags.showPortfolio
-          ? this.portfolioQuery.getPublicPortfolio(username)
-          : Promise.resolve(null),
-        flags.showExperiences
-          ? this.deriveAreasOfContribution(userId)
-          : Promise.resolve([]),
-        flags.showStats
-          ? this.experienceModel
-              .countDocuments({
-                volunteerId: new Types.ObjectId(userId),
-                publicVisibility: 'public',
-              })
-              .exec()
-          : Promise.resolve(null),
-      ]);
+    const [
+      skills,
+      experiences,
+      availability,
+      avatar,
+      banner,
+      portfolio,
+      areas,
+      publicVerified,
+    ] = await Promise.all([
+      flags.showSkills ? this.loadPublicSkills(userId) : Promise.resolve([]),
+      flags.showExperiences
+        ? this.loadPublicExperiences(userId, MAX_LIMIT).then(
+            (page) => page.items,
+          )
+        : Promise.resolve([]),
+      flags.showAvailability
+        ? this.loadAvailability(userId)
+        : Promise.resolve(emptySchedule()),
+      flags.showAvatar && profile.avatar
+        ? this.resolvePublicAvatar(profile.avatar)
+        : Promise.resolve(null),
+      flags.showAvatar && profile.banner
+        ? this.resolvePublicAvatar(profile.banner)
+        : Promise.resolve(null),
+      flags.showPortfolio
+        ? this.portfolioQuery.getPublicPortfolio(username)
+        : Promise.resolve(null),
+      flags.showExperiences
+        ? this.deriveAreasOfContribution(userId)
+        : Promise.resolve([]),
+      flags.showStats
+        ? this.experienceModel
+            .countDocuments({
+              volunteerId: new Types.ObjectId(userId),
+              publicVisibility: 'public',
+            })
+            .exec()
+        : Promise.resolve(null),
+    ]);
 
     const fullName = [profile.firstName, profile.lastName]
       .map((part) => part?.trim())

@@ -28,9 +28,23 @@ const ALLOWED_EXTENSIONS = new Map<string, KnowledgeFormat>([
 
 const IGNORED_DIRECTORIES = new Set(['node_modules', 'dist']);
 
-export const MAX_INDEXED_FILES = 100;
+export const MAX_INDEXED_FILES = 300;
 export const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
 export const MAX_FILE_BYTES = 1024 * 1024;
+
+/**
+ * Public Roeya Association contact details may appear only in these four
+ * files. Every other email or phone number is rejected everywhere, and these
+ * files may contain only the official email and phone values.
+ */
+const CONTACT_GUARD_ALLOWLIST = new Set([
+  '01-about/contact/ar.md',
+  '01-about/contact/en.md',
+  '08-faq/troubleshooting/ar.md',
+  '08-faq/troubleshooting/en.md',
+]);
+const OFFICIAL_CONTACT_EMAIL = 'roeyatimimoun@gmail.com';
+const OFFICIAL_CONTACT_PHONE_DIGITS = '213663847105';
 
 const FORBIDDEN_PATTERNS: ReadonlyArray<{
   pattern: RegExp;
@@ -89,8 +103,8 @@ const SECRET_PATTERNS: ReadonlyArray<{ pattern: RegExp; message: string }> = [
   },
 ];
 
-const EMAIL_PATTERN = /[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}/i;
-const ALGERIAN_PHONE_PATTERN = /\b0[2-7](?:[\s.-]?\d{2}){3,4}\b/;
+const EMAIL_PATTERN = /[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}/gi;
+const ALGERIAN_PHONE_PATTERN = /\b0[2-7](?:[\s.-]?\d{2}){3,4}\b/g;
 const INTERNATIONAL_PHONE_CANDIDATE =
   /(?:^|[^\w])(\+\d[\d\s().-]{6,}\d)(?!\w)/g;
 
@@ -165,12 +179,21 @@ function emptyResult(issue?: KnowledgeIssue): KnowledgeLoadResult {
   };
 }
 
-function hasPhoneNumber(text: string): boolean {
-  if (ALGERIAN_PHONE_PATTERN.test(text)) return true;
-  const candidates: string[] = text.match(INTERNATIONAL_PHONE_CANDIDATE) ?? [];
-  return candidates.some(
-    (candidate) => (candidate.match(/\d/g) ?? []).length >= 8,
-  );
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function findPhoneNumbers(text: string): string[] {
+  const phones = new Set<string>();
+  for (const match of text.match(ALGERIAN_PHONE_PATTERN) ?? []) {
+    phones.add(match);
+  }
+  for (const candidate of text.match(INTERNATIONAL_PHONE_CANDIDATE) ?? []) {
+    if ((candidate.match(/\d/g) ?? []).length >= 8) {
+      phones.add(candidate);
+    }
+  }
+  return [...phones];
 }
 
 function checkContentSafety(
@@ -191,7 +214,16 @@ function checkContentSafety(
     }
   }
 
-  if (text.includes('@') && EMAIL_PATTERN.test(text)) {
+  const contactAllowed = CONTACT_GUARD_ALLOWLIST.has(
+    relativePath.split(path.sep).join('/'),
+  );
+  const emails: string[] = text.match(EMAIL_PATTERN) ?? [];
+  if (
+    emails.some(
+      (email) =>
+        !contactAllowed || email.toLowerCase() !== OFFICIAL_CONTACT_EMAIL,
+    )
+  ) {
     issues.push(
       makeIssue(
         relativePath,
@@ -201,7 +233,13 @@ function checkContentSafety(
     );
   }
 
-  if (hasPhoneNumber(text)) {
+  const phones = findPhoneNumbers(text);
+  if (
+    phones.some(
+      (phone) =>
+        !contactAllowed || digitsOnly(phone) !== OFFICIAL_CONTACT_PHONE_DIGITS,
+    )
+  ) {
     issues.push(
       makeIssue(
         relativePath,
@@ -379,7 +417,7 @@ function loadKnowledgeUnsafe(rootDir?: string): KnowledgeLoadResult {
       makeIssue(
         '.',
         'TOO_MANY_FILES',
-        `The corpus has more than ${MAX_INDEXED_FILES} indexed files.`,
+        `The corpus has ${collected.candidates.length} indexed files, which exceeds the limit of ${MAX_INDEXED_FILES}.`,
       ),
     );
     return result;

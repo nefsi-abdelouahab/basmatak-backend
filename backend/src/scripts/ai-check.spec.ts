@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { dirname, join } from 'path';
-import { CheckResult, checkKnowledge } from './ai-check';
+import { CheckResult, MAX_INDEXED_FILES, checkKnowledge } from './ai-check';
 
 describe('ai-check knowledge corpus validation', () => {
   let root: string;
@@ -198,6 +198,76 @@ describe('ai-check knowledge corpus validation', () => {
     expect(codes(result)).toContain('PHONE_PATTERN');
   });
 
+  it('accepts the official contact details in the four allowlisted files', () => {
+    const allowlisted = [
+      ['01-about/contact/en.md', 'en'],
+      ['01-about/contact/ar.md', 'ar'],
+      ['08-faq/troubleshooting/en.md', 'en'],
+      ['08-faq/troubleshooting/ar.md', 'ar'],
+    ] as const;
+
+    allowlisted.forEach(([file, locale], index) => {
+      writeFile(
+        file,
+        markdown(
+          `Official contact ${index}`,
+          locale,
+          'Email roeyatimimoun@gmail.com or call +213 663847105 or +213 663 847 105.',
+        ),
+      );
+    });
+
+    const result = checkKnowledge(root);
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('rejects a different email or phone in an allowlisted file', () => {
+    const allowlisted = [
+      '01-about/contact/en.md',
+      '01-about/contact/ar.md',
+      '08-faq/troubleshooting/en.md',
+      '08-faq/troubleshooting/ar.md',
+    ];
+
+    allowlisted.forEach((file, index) => {
+      writeFile(
+        file,
+        markdown(
+          `Different contact ${index}`,
+          'en',
+          'Email person@example.test or call +213 555 555 555.',
+        ),
+      );
+    });
+
+    const result = checkKnowledge(root);
+
+    expect(
+      result.errors.filter((error) => error.code === 'EMAIL_PATTERN'),
+    ).toHaveLength(4);
+    expect(
+      result.errors.filter((error) => error.code === 'PHONE_PATTERN'),
+    ).toHaveLength(4);
+  });
+
+  it('rejects official contact details outside the allowlist', () => {
+    writeFile(
+      '08-faq/contact-elsewhere/en.md',
+      markdown(
+        'Contact elsewhere',
+        'en',
+        'Email roeyatimimoun@gmail.com or call +213 663847105.',
+      ),
+    );
+
+    const result = checkKnowledge(root);
+
+    expect(codes(result)).toContain('EMAIL_PATTERN');
+    expect(codes(result)).toContain('PHONE_PATTERN');
+  });
+
   it('rejects placeholder markers and script-like content', () => {
     writeFile(
       'placeholder/all.en.md',
@@ -305,15 +375,20 @@ describe('ai-check knowledge corpus validation', () => {
     expect(codes(result)).toContain('SYMLINK_NOT_ALLOWED');
   });
 
-  it('enforces the 100-file limit', () => {
-    for (let index = 0; index < 101; index += 1) {
+  it('enforces the indexed-file limit', () => {
+    for (let index = 0; index < MAX_INDEXED_FILES + 1; index += 1) {
       writeFile(`bulk/file-${index}.en.md`, `Content ${index}.\n`);
     }
 
     const result = checkKnowledge(root);
+    const limitError = result.errors.find(
+      (error) => error.code === 'TOO_MANY_FILES',
+    );
 
-    expect(codes(result)).toContain('TOO_MANY_FILES');
-    expect(result.indexedFiles).toBe(101);
+    expect(limitError).toBeDefined();
+    expect(limitError?.message).toContain(String(MAX_INDEXED_FILES + 1));
+    expect(limitError?.message).toContain(String(MAX_INDEXED_FILES));
+    expect(result.indexedFiles).toBe(MAX_INDEXED_FILES + 1);
   });
 
   it('enforces the 5 MB corpus limit', () => {

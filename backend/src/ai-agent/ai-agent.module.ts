@@ -26,6 +26,7 @@ import { KnowledgeNormalizer } from './knowledge/normalizer';
 import { KnowledgeParser } from './knowledge/parser';
 import { FakeProvider } from './llm/fake.provider';
 import { GeminiProvider } from './llm/gemini.provider';
+import { GroqProvider } from './llm/groq.provider';
 import { MockProvider } from './llm/mock.provider';
 import { LLM_PROVIDER } from './llm/provider.interface';
 import { selectLlmProvider } from './llm/provider.factory';
@@ -96,6 +97,11 @@ import { UsageMeterService } from './usage/usage-meter.service';
       useFactory: (config: AiAgentConfig) => new GeminiProvider(config),
     },
     {
+      provide: GroqProvider,
+      inject: [AI_AGENT_CONFIG],
+      useFactory: (config: AiAgentConfig) => new GroqProvider(config),
+    },
+    {
       provide: MockProvider,
       inject: [AI_AGENT_CONFIG],
       useFactory: (config: AiAgentConfig) => new MockProvider(config),
@@ -106,15 +112,23 @@ import { UsageMeterService } from './usage/usage-meter.service';
     },
     {
       provide: LLM_PROVIDER,
-      inject: [AI_AGENT_CONFIG, GeminiProvider, MockProvider, FakeProvider],
+      inject: [
+        AI_AGENT_CONFIG,
+        GeminiProvider,
+        GroqProvider,
+        MockProvider,
+        FakeProvider,
+      ],
       useFactory: (
         config: AiAgentConfig,
         gemini: GeminiProvider,
+        groq: GroqProvider,
         mock: MockProvider,
         fake: FakeProvider,
       ) =>
         selectLlmProvider(config.provider, {
           gemini,
+          groq,
           mock,
           fake,
         }),
@@ -192,6 +206,7 @@ import { UsageMeterService } from './usage/usage-meter.service';
     SseWriter,
     LLM_PROVIDER,
     GeminiProvider,
+    GroqProvider,
     MockProvider,
     FakeProvider,
     QuotaService,

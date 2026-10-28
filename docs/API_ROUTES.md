@@ -931,7 +931,7 @@ the same value plus the machine-readable reason in
 | `code` | Cause |
 |---|---|
 | `AI_AGENT_INVALID_INPUT` | The message plus required prompt content cannot fit the configured input-token budget. The localized message asks for a shorter question. |
-| `AI_AGENT_PROVIDER_UNAVAILABLE` | Missing/invalid `GEMINI_API_KEY`, unknown model, unavailable provider, or invalid provider response. |
+| `AI_AGENT_PROVIDER_UNAVAILABLE` | Missing/invalid provider key (`GROQ_API_KEY` or `GEMINI_API_KEY`), unknown model, unavailable provider, or invalid provider response. |
 | `AI_AGENT_TIMEOUT` | The turn exceeded the 45-second deadline. |
 | `AI_AGENT_QUOTA_EXHAUSTED` | The provider returned 429/`RESOURCE_EXHAUSTED`; `retryAfterSeconds` may be present and a cooldown is now active. There is no automatic retry. |
 | `AI_AGENT_INTERNAL_ERROR` | Unexpected internal failure. |

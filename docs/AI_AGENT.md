@@ -155,7 +155,7 @@ outside the deployed service root.
 
 `README.md`, `_config/`, hidden files/directories, underscore directories,
 `node_modules`, `dist`, `.git`, and symlinks are ignored or rejected. The
-checker enforces at most 100 indexed files, 5 MB total, 1 MB per file, strict
+checker enforces at most 300 indexed files, 5 MB total, 1 MB per file, strict
 UTF-8, valid front matter, unique titles, and the secret/PII/formula/content
 rules. A corpus that fails the checker cannot produce a backend build.
 
@@ -165,9 +165,11 @@ rules. A corpus that fails the checker cannot produce a backend build.
    and section order parallel; use a native-speaker review for Arabic.
 2. From `backend/`, run `npm run ai:check`. Fix every error; read every warning,
    especially a missing English/Arabic pair.
-3. Review the diff for public-only content: no secrets, env names, emails,
-   phone numbers, private addresses, application data, internal ids, or draft
-   notes.
+3. Review the diff for public-only content: no secrets, env names, private
+   addresses, application data, internal ids, or draft notes. Email addresses
+   and phone numbers are rejected everywhere except the official Roeya
+   Association contact details in `01-about/contact/{en,ar}.md` and
+   `08-faq/troubleshooting/{en,ar}.md`.
 4. Commit the content with the code or documentation change that caused it.
 5. Deploy. The folder ships with the backend; there is no runtime upload step.
 6. Restart the service (Render restarts on deploy or env change). The index is
@@ -194,9 +196,10 @@ the feature.
 | Variable | Default | Hard maximum | Notes |
 |---|---|---|---|
 | `AI_AGENT_ENABLED` | `false` | — | Kill switch. Only literal `true` enables chat. |
-| `AI_AGENT_PROVIDER` | `gemini` | — | Case-insensitive `gemini`, `mock`, or `fake`. Unknown values fail closed on the first turn. |
-| `AI_AGENT_MODEL` | `gemini-3.8-flash` | — | Provider-specific model id. Changing it is a config-only change after restart. |
-| `GEMINI_API_KEY` | unset | — | **Secret.** Server-side only, read lazily; never commit, log, expose to the frontend, or put in SSE/errors. |
+| `AI_AGENT_PROVIDER` | `gemini` | — | Case-insensitive `gemini`, `groq`, `mock`, or `fake`. Unknown values fail closed on the first turn. |
+| `AI_AGENT_MODEL` | `gemini-3.8-flash` | — | Provider-specific model id. Groq ids must be returned by `GET https://api.groq.com/openai/v1/models`. |
+| `GROQ_API_KEY` | unset | — | **Secret.** Required when `AI_AGENT_PROVIDER=groq`. Server-side only, read lazily; never commit, log, expose to the frontend, or put in SSE/errors. |
+| `GEMINI_API_KEY` | unset | — | **Secret.** Required when `AI_AGENT_PROVIDER=gemini`. Server-side only, read lazily; never commit, log, expose to the frontend, or put in SSE/errors. |
 | `AI_AGENT_KNOWLEDGE_DIR` | unset → `<cwd>/ai-agent` | — | Override for local testing only; keep unset in production. |
 | `AI_AGENT_MAX_INPUT_TOKENS` | `3000` | `100000` | Estimated input cap; the prompt builder trims optional content to fit and fails closed if reserved content cannot fit. |
 | `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | `800` | Per-turn output cap; conservative mode lowers it to 300. |
@@ -222,14 +225,15 @@ no retry for 429/timeout/abort/invalid responses, and a 15-second SSE heartbeat.
 
 ### 5.2 Secrets and provider access
 
-- `GEMINI_API_KEY` belongs in the Render dashboard or Secret Files with
-  `sync: false`. It must never appear in `render.yaml`, `.env.example`, a
-  screenshot, a build artifact, an error body, an SSE frame, or a log line.
-- The provider SDK client is constructed lazily on the first turn. Boot,
-  `/health`, and `/ai-agent/status` work without a key; a turn without a key
-  fails closed with `AI_AGENT_PROVIDER_UNAVAILABLE`.
+- Set the matching provider secret in the Render dashboard or Secret Files with
+  `sync: false` (`GROQ_API_KEY` for `groq`, `GEMINI_API_KEY` for `gemini`). It
+  must never appear in `render.yaml`, `.env.example`, a screenshot, a build
+  artifact, an error body, an SSE frame, or a log line.
+- Provider clients are constructed lazily on the first turn. Boot, `/health`,
+  and `/ai-agent/status` work without a key; a turn without a key fails closed
+  with `AI_AGENT_PROVIDER_UNAVAILABLE`.
 - Do not put keys in the knowledge corpus. The checker rejects Google-style
-  keys and provider env names.
+  keys, Groq-style keys, and provider env names.
 - If a key is exposed: disable the feature first (`AI_AGENT_ENABLED=false`,
   restart), revoke/replace the key in the provider console, update the Render
   secret, verify the disabled state, then re-enable after a successful smoke.
@@ -323,6 +327,7 @@ the process restarts); there is no key rotation or billing workaround.
 | Value | Adapter | Intended use |
 |---|---|---|
 | `gemini` | Real Gemini Interactions API adapter | Production/default. Requires `GEMINI_API_KEY`. |
+| `groq` | Groq OpenAI-compatible adapter | Alternative production provider. Requires `GROQ_API_KEY` and a Groq model id. |
 | `mock` | Deterministic mock answer | Local tests and deterministic smoke only; not a production answer source. |
 | `fake` | Scripted provider double | Unit/e2e tests only. |
 | anything else | Unavailable adapter | Fails closed on the first turn with `AI_AGENT_PROVIDER_UNAVAILABLE`; the process still boots. |
@@ -457,7 +462,7 @@ the client chooses to include in a request.
 | Symptom | Likely cause | Action |
 |---|---|---|
 | `status.enabled=false`; chat `503 AI_AGENT_DISABLED` | Kill switch missing/not literal `true` | Set `AI_AGENT_ENABLED=true`, restart, verify status and one turn. |
-| Chat starts SSE then `error AI_AGENT_PROVIDER_UNAVAILABLE` | Missing/invalid `GEMINI_API_KEY`, unavailable model, or provider outage | Verify the Render secret exists without printing it; check provider status/model; fix the secret or switch provider deliberately. |
+| Chat starts SSE then `error AI_AGENT_PROVIDER_UNAVAILABLE` | Missing/invalid provider key (`GROQ_API_KEY` or `GEMINI_API_KEY`), unavailable model, or provider outage | Verify the Render secret exists without printing it; check provider status/model; fix the secret or switch provider deliberately. |
 | `error AI_AGENT_TIMEOUT` | Provider/tool exceeded the 45-second turn deadline | Retry once; if persistent, lower caps, check provider latency, or disable. |
 | Pre-stream `429 RATE_LIMITED` with `details.reason` `ip_*`/`global_*` | Per-IP or global UTC window exhausted | Honor `Retry-After`; wait for the UTC reset; do not rotate keys or create projects. |
 | `429 AI_AGENT_BUSY` | `AI_AGENT_MAX_CONCURRENT` reached | Retry shortly; raise the cap only if the provider and instance can handle it. |

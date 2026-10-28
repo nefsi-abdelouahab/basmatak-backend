@@ -66,7 +66,7 @@ is a candidate knowledge document.
 
 Hard limits enforced before deployment:
 
-- at most 100 indexed files;
+- at most 300 indexed files;
 - at most 5 MB of indexed content in total;
 - at most 1 MB per indexed file;
 - strict UTF-8, no binary content and no legacy encodings.
@@ -218,8 +218,12 @@ Do not include:
 - secrets, API keys, tokens, passwords, private-key headers, or connection
   strings with credentials;
 - environment variable names or values;
-- email addresses, phone numbers, exact private addresses, birth dates, account
-  data, application data, submission evidence, or internal identifiers;
+- email addresses or phone numbers, except the official Roeya Association
+  contact details in `01-about/contact/en.md`, `01-about/contact/ar.md`,
+  `08-faq/troubleshooting/en.md`, and `08-faq/troubleshooting/ar.md`
+  (`roeyatimimoun@gmail.com`, `+213 663847105`, or `+213 663 847 105`);
+- exact private addresses, birth dates, account data, application data,
+  submission evidence, or internal identifiers;
 - another person's personal information without permission;
 - invented policies, fees, legal terms, deadlines, statistics, or contact
   details;
@@ -269,7 +273,7 @@ The checker fails on:
 
 - a missing or non-directory root;
 - unsupported extensions;
-- more than 100 indexed files, more than 5 MB total, or a file over 1 MB;
+- more than 300 indexed files, more than 5 MB total, or a file over 1 MB;
 - invalid UTF-8;
 - symlinks;
 - malformed front matter, a missing or empty title, an invalid locale, tags
@@ -278,7 +282,9 @@ The checker fails on:
 - secret-like values, including Google-style keys, API-key prefixes,
   private-key headers, MongoDB connection strings with credentials, and secret
   or provider environment variable names;
-- email addresses and Algerian or international phone-number patterns;
+- email addresses and Algerian or international phone-number patterns outside
+  the four contact allowlist files; inside those files, any value other than
+  the official association email and phone above;
 - `TODO`, `TBD`, `FIXME`, `lorem ipsum`, `<script`, and `javascript:`;
 - CSV cells that begin with `=`, `+`, `-`, or `@` after trimming;
 - JSON nesting deeper than 10 levels;

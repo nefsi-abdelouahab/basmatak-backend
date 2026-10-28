@@ -97,9 +97,10 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 | `PUBLISH_GATE_ENABLED` | `true` | |
 | `TRUST_PROXY` | `1` | Express proxy hops. Defaults to `1` in production and `false` locally; see §2.1. |
 | `AI_AGENT_ENABLED` | `true` | Kill switch. Only the literal `true` enables chat; anything else returns `AI_AGENT_DISABLED` (503). |
-| `AI_AGENT_PROVIDER` | `gemini` | `gemini`, `mock`, or `fake`. Unknown values fail closed on the first turn. |
-| `AI_AGENT_MODEL` | `gemini-3.8-flash` | Provider-specific model id. |
-| `GEMINI_API_KEY` | Gemini key | Server-side secret only. Never expose it to the frontend, SSE, logs, or errors. |
+| `AI_AGENT_PROVIDER` | `gemini` | `gemini`, `groq`, `mock`, or `fake`. Unknown values fail closed on the first turn. |
+| `AI_AGENT_MODEL` | `gemini-3.8-flash` | Provider-specific model id. For Groq, use an id returned by `GET https://api.groq.com/openai/v1/models`. |
+| `GROQ_API_KEY` | Groq key | Server-side secret only, required when `AI_AGENT_PROVIDER=groq`. Never expose it to the frontend, SSE, logs, or errors. |
+| `GEMINI_API_KEY` | Gemini key | Server-side secret only, required when `AI_AGENT_PROVIDER=gemini`. Never expose it to the frontend, SSE, logs, or errors. |
 | `AI_AGENT_KNOWLEDGE_DIR` | (unset) | Unset → `<backend cwd>/ai-agent`; the folder ships with the repo. |
 | `AI_AGENT_MAX_INPUT_TOKENS` | `3000` | Estimated input cap before each provider call. |
 | `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | Hard max 800. |
@@ -148,12 +149,13 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 
 ### 2.2 AI secrets and deploy order
 
-`GEMINI_API_KEY` is the only AI secret. Set it in the Render **Environment** or
-**Secret File** with `sync: false`; never put it in `render.yaml`,
-`.env.example`, git, a shell history, a screenshot, a build log, an issue, the
-frontend bundle, an SSE frame, or an error body. It is read lazily, so boot,
-`/health`, and `/ai-agent/status` work without it; a chat turn without a valid
-key fails closed with `AI_AGENT_PROVIDER_UNAVAILABLE`.
+Set the key for the selected provider (`GROQ_API_KEY` for `groq`,
+`GEMINI_API_KEY` for `gemini`) in the Render **Environment** or **Secret File**
+with `sync: false`; never put it in `render.yaml`, `.env.example`, git, a shell
+history, a screenshot, a build log, an issue, the frontend bundle, an SSE frame,
+or an error body. It is read lazily, so boot, `/health`, and `/ai-agent/status`
+work without it; a chat turn without a valid key fails closed with
+`AI_AGENT_PROVIDER_UNAVAILABLE`.
 
 Never ask a user to paste the key into a chat, ticket, or commit. If a key is
 exposed:
@@ -176,7 +178,8 @@ around a free-tier limit.
 2. In Render, set `AI_AGENT_ENABLED=false`, `AI_AGENT_PROVIDER=gemini`,
    `AI_AGENT_MODEL=gemini-3.8-flash`, the default caps, `TRUST_PROXY=1`, the
    exact `CORS_ORIGIN` allowlist, and `GEMINI_API_KEY` as a `sync: false`
-   secret. Keep `AI_AGENT_FALLBACK_ENABLED=false`.
+   secret (or use `groq` with `GROQ_API_KEY` and a Groq model id). Keep
+   `AI_AGENT_FALLBACK_ENABLED=false`.
 3. Deploy the commit. Wait for the health check and the knowledge index to load.
 4. Verify the disabled state: `GET /api/v1/ai-agent/status` returns `200` with
    `"enabled": false`, and `POST /api/v1/ai-agent/chat` returns

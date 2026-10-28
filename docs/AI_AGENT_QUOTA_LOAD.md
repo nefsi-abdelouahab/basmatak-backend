@@ -220,9 +220,9 @@ production latency measurements.
 - **Fast failure.** Per-IP and global denials return `429` with `Retry-After`;
   concurrency denials return `AI_AGENT_BUSY` immediately. The composer is
   disabled only for exhaustion, not for a short per-IP throttle.
-- **Provider switch.** `AI_AGENT_PROVIDER` selects `gemini`, `mock`, or `fake` at
-  boot; unknown values fail closed to an unavailable provider. No orchestrator,
-  prompt, SSE, or frontend change is required.
+- **Provider switch.** `AI_AGENT_PROVIDER` selects `gemini`, `groq`, `mock`, or
+  `fake` at boot; unknown values fail closed to an unavailable provider. No
+  orchestrator, prompt, SSE, or frontend change is required.
 - **Kill switch.** `AI_AGENT_ENABLED` is read at boot. In local tests the
   in-process switch disables chat and returns `503 AI_AGENT_DISABLED` without a
   restart; on Render, changing the env var restarts the service, so the effective

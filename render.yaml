@@ -89,7 +89,9 @@ services:
         sync: false
       - key: AI_AGENT_MODEL
         sync: false
-      # Gemini key is server-side only; never expose it to the frontend.
+      # Provider keys are server-side only; never expose them to the frontend.
+      - key: GROQ_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: AI_AGENT_KNOWLEDGE_DIR

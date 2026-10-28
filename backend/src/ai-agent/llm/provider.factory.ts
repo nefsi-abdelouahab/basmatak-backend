@@ -1,6 +1,7 @@
 import { AiAgentConfig } from '../config/ai-agent.config';
 import { FakeProvider } from './fake.provider';
 import { GeminiProvider } from './gemini.provider';
+import { GroqProvider } from './groq.provider';
 import { MockProvider } from './mock.provider';
 import { LlmProvider } from './provider.interface';
 import { LlmProviderUnavailableError } from './provider-errors';
@@ -12,6 +13,7 @@ import {
 
 export interface LlmProviderAdapters {
   gemini: LlmProvider;
+  groq: LlmProvider;
   mock: LlmProvider;
   fake: LlmProvider;
 }
@@ -54,6 +56,8 @@ export function selectLlmProvider(
   switch (normalizeLlmProviderName(provider)) {
     case 'gemini':
       return adapters.gemini;
+    case 'groq':
+      return adapters.groq;
     case 'mock':
       return adapters.mock;
     case 'fake':
@@ -68,6 +72,8 @@ export function createLlmProvider(config: AiAgentConfig): LlmProvider {
   switch (normalizeLlmProviderName(config.provider)) {
     case 'gemini':
       return new GeminiProvider(config);
+    case 'groq':
+      return new GroqProvider(config);
     case 'mock':
       return new MockProvider(config);
     case 'fake':

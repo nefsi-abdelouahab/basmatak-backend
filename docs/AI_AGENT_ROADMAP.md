@@ -115,7 +115,7 @@ Lock the knowledge-folder contract, create the first reviewed bilingual content,
 6. Add `_config/synonyms.json` with Arabic/English/French synonym groups for retrieval.
 7. Implement `backend/src/scripts/ai-check.ts`:
    - allowed extensions: `.md`, `.txt`, `.json`, `.csv`;
-   - maximum 100 files, 5 MB total, 1 MB per file;
+   - maximum 300 files, 5 MB total, 1 MB per file;
    - strict UTF-8;
    - valid front matter and unique titles;
    - reject symlinks, hidden directories, `.env*`, `node_modules`, `dist`, `.git`, and paths outside the content root;

@@ -1,4 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { AppLogger } from '../../common/logger/app.logger';
+import { redactLogText } from '../../common/logger/log-redaction';
 import { AI_AGENT_CONFIG } from '../ai-agent.constants';
 import type {
   AiAgentChatMessage,
@@ -327,6 +329,8 @@ function extractSnippet(text: string, maxChars: number): string {
 
 @Injectable()
 export class AiAgentOrchestrator {
+  private readonly logger: AppLogger;
+
   constructor(
     @Inject(AI_AGENT_CONFIG) private readonly config: AiAgentConfig,
     private readonly router: IntentRouter,
@@ -335,7 +339,10 @@ export class AiAgentOrchestrator {
     private readonly toolExecutor: ToolExecutor,
     private readonly quota: QuotaService,
     @Inject(LLM_PROVIDER) private readonly provider: LlmProvider,
-  ) {}
+    @Optional() logger?: AppLogger,
+  ) {
+    this.logger = logger ?? new AppLogger('AiAgentOrchestrator');
+  }
 
   async run(
     input: AiAgentOrchestratorInput,
@@ -831,8 +838,10 @@ export class AiAgentOrchestrator {
       return this.knowledge.search(decision.knowledgeQuery, decision.language, {
         topK,
       });
-    } catch {
-      // Retrieval failure means no grounding; it must not crash the turn.
+    } catch (error) {
+      // Retrieval failure means no grounding; it must not crash the turn, but
+      // the real cause must still be visible in the operational log.
+      this.logFailure('ai_agent_retrieval_failure', error);
       return emptyRetrieval();
     }
   }
@@ -881,7 +890,8 @@ export class AiAgentOrchestrator {
           })),
         );
         batchResults = batch.results;
-      } catch {
+      } catch (error) {
+        this.logFailure('ai_agent_tool_failure', error);
         batchResults = valid.map((call) =>
           failureResult(
             call.descriptor.name,
@@ -1236,6 +1246,8 @@ export class AiAgentOrchestrator {
       );
     }
 
+    this.logFailure('ai_agent_provider_failure', error);
+
     // A provider abort caused by the orchestrator's total deadline is a
     // timeout, not a user cancellation.
     if (isLlmAbortError(error)) {
@@ -1346,11 +1358,13 @@ export class AiAgentOrchestrator {
     input: AiAgentOrchestratorInput,
     language: ReturnType<typeof detectPromptLanguage>,
     deadline: ProviderDeadline,
-    _error: unknown,
+    error: unknown,
   ): AiAgentOrchestrationResult {
     if (input.signal.aborted || input.stream.isClosed) {
       return this.abortedResult(input.mode, [], 0);
     }
+
+    this.logFailure('ai_agent_unexpected_failure', error);
 
     if (deadline.isTimedOut()) {
       this.emitError(
@@ -1505,6 +1519,53 @@ export class AiAgentOrchestrator {
       return this.quota.getMode();
     } catch {
       return fallback;
+    }
+  }
+
+  /**
+   * Write the real failure to the operational log while the user-facing
+   * answer stays a fixed, safe policy message. Error messages and stacks are
+   * redacted because database/HTTP errors can echo connection strings or
+   * credentials. Message text, prompts, tool payloads, and completions are
+   * never included here.
+   */
+  private logFailure(event: string, error: unknown): void {
+    try {
+      const record: Record<string, unknown> = {
+        event,
+        provider: this.config.provider,
+        model: this.config.model,
+        errorName: error instanceof Error ? error.name : typeof error,
+      };
+
+      if (isProviderQuotaError(error)) {
+        record.status = 429;
+        record.quotaWindow = error.window;
+        if (error.retryAfterSeconds !== undefined) {
+          record.retryAfterSeconds = error.retryAfterSeconds;
+        }
+      } else {
+        const status = (error as { status?: unknown } | null)?.status;
+        if (typeof status === 'number' && Number.isInteger(status)) {
+          record.status = status;
+        }
+      }
+
+      const code = (error as { code?: unknown } | null)?.code;
+      if (typeof code === 'string' && code.trim() !== '') {
+        record.errorCode = code.trim();
+      }
+
+      if (error instanceof Error) {
+        const message = redactLogText(error.message);
+        if (message !== undefined) record.message = message;
+        const stack = redactLogText(error.stack, 2000);
+        if (stack !== undefined) record.stack = stack;
+      }
+
+      this.logger.error(JSON.stringify(record));
+    } catch {
+      // Logging must never break the request path.
     }
   }
 

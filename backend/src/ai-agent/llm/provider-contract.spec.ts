@@ -2,6 +2,7 @@ import { defaultAiAgentConfig } from '../config/ai-agent.config';
 import { ProviderQuotaError } from '../budget/quota.types';
 import { FakeProvider } from './fake.provider';
 import { GeminiProvider } from './gemini.provider';
+import { GroqProvider } from './groq.provider';
 import { MockProvider } from './mock.provider';
 import {
   createLlmProvider,
@@ -264,6 +265,9 @@ describe('LLM provider selection', () => {
       createLlmProvider({ ...baseConfig, provider: 'gemini' }),
     ).toBeInstanceOf(GeminiProvider);
     expect(
+      createLlmProvider({ ...baseConfig, provider: 'groq' }),
+    ).toBeInstanceOf(GroqProvider);
+    expect(
       createLlmProvider({ ...baseConfig, provider: 'mock' }),
     ).toBeInstanceOf(MockProvider);
     expect(
@@ -272,10 +276,12 @@ describe('LLM provider selection', () => {
 
     const adapters = {
       gemini: new GeminiProvider(baseConfig),
+      groq: new GroqProvider(baseConfig, { readApiKey: () => 'test-key' }),
       mock: new MockProvider(baseConfig),
       fake: new FakeProvider(),
     };
     expect(selectLlmProvider(' Gemini ', adapters)).toBe(adapters.gemini);
+    expect(selectLlmProvider('GROQ', adapters)).toBe(adapters.groq);
     expect(selectLlmProvider('MOCK', adapters)).toBe(adapters.mock);
     expect(selectLlmProvider('fake', adapters)).toBe(adapters.fake);
   });

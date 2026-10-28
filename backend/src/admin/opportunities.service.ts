@@ -358,13 +358,12 @@ export class AdminOpportunitiesService {
           submissionByParticipant.get(item._id.toString()) ?? null;
         const experience =
           submission != null
-            ? (experienceBySubmission.get(
-                submission._id.toString(),
-              ) ?? null)
+            ? (experienceBySubmission.get(submission._id.toString()) ?? null)
             : null;
         return {
           participantId: item._id.toString(),
-          volunteerName: fullName !== '' ? fullName : (profile?.username ?? null),
+          volunteerName:
+            fullName !== '' ? fullName : (profile?.username ?? null),
           username: profile?.username ?? null,
           volunteerRegistryId: profile?.registryId ?? null,
           positionTitle:
