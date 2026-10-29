@@ -1,24 +1,59 @@
 # Dashboard
 
 ## What It Is
-The Dashboard is the main entry point for a user after signing in. The information it shows depends on the user's account type.
 
-## What Each Account Type Needs From It
-- Volunteer: follow opportunities, applications, tasks, and contributions.
-- Organization: follow opportunities, applications, and contributions waiting for review.
+The dashboard is the main page a user sees after signing in. Its content depends on the account type.
+
+## Volunteer Dashboard
+
+The volunteer area uses these labels:
+
+- Home (الرئيسية)
+- Dashboard (لوحة التحكم)
+- My Applications (طلباتي)
+- My Tasks (مهامي)
+- My Experiences (تجاربي)
+- My Portfolio (ملف أعمالي)
+- Opportunities (الفرص)
+- Discover Talents (اكتشاف المواهب)
+- Settings (الإعدادات)
+- Notifications (الإشعارات)
+
+The dashboard gives the volunteer a starting point for opportunities, applications, tasks, contributions, and Verified Experiences.
+
+## Organization Workspace
+
+The organization area uses these labels:
+
+- Organization Workspace (مساحة المنظمة)
+- Overview (نظرة عامة)
+- My Opportunities (فرصي)
+- Applications (الطلبات)
+- Participants (المشاركون)
+- Contributions (المساهمات)
+- Verified Experiences (التجارب الموثقة)
+- Settings (الإعدادات)
+- Notifications (الإشعارات)
+
+The workspace gives the organization a starting point for publishing opportunities, reviewing applications, managing participants, and reviewing contributions.
 
 ## Visitors
-Visitors (people not signed in) do not have a dashboard. They explore public content.
 
-## Note
-The exact widgets and statistics shown on the Dashboard are not confirmed in this knowledge base. If asked for details, say that the content depends on the account type and suggest opening the Dashboard.
+Visitors are not signed in and do not have a dashboard. They explore public content.
 
 ## Common Questions
-**What is the Dashboard?**
-The main page you see after signing in, showing what matters for your account type.
 
-**Do I need an account to see the Dashboard?**
-Yes. It is shown after signing in.
+**What is the dashboard?**
+The main page you see after signing in. It shows what matters for your account type.
 
-**What statistics does the Dashboard show?**
-I do not have confirmed details about the exact statistics.
+**Do I need an account to see the dashboard?**
+Yes. It appears after signing in.
+
+**What statistics does the dashboard show?**
+The dashboard shows the counts and summaries relevant to the account type. I do not have confirmed information about every widget on every screen.
+
+**Where do I find my applications?**
+In the volunteer area under My Applications (طلباتي).
+
+**Where do I find the organization's opportunities?**
+In the organization workspace under My Opportunities (فرصي).

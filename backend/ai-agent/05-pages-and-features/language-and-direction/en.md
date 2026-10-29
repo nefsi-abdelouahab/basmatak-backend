@@ -1,26 +1,36 @@
 # Language and Direction
 
 ## Supported Languages
-The platform interface was designed with Arabic and English in mind, with:
-- Arabic displayed right-to-left (RTL).
-- English displayed left-to-right (LTR).
-- The interface direction switching correctly with the language.
 
-## Note
-Full translation of every page, and availability of French in the interface, are not confirmed in this knowledge base.
+The platform interface is designed for Arabic and English only:
+
+- Arabic is displayed right to left (RTL).
+- English is displayed left to right (LTR).
+- The interface direction switches correctly with the language.
+
+The assistant also answers in Arabic and English only.
 
 ## The AI Assistant
-The assistant is designed to understand and answer in Arabic, English, and French, replying in the language the user writes in.
+
+The assistant understands and answers in Arabic and English, and replies in the language the user writes in.
 
 ## Design
-The platform is designed desktop-first, while keeping it usable on smaller screens.
+
+The platform is designed desktop-first, while remaining usable on small screens.
 
 ## Common Questions
-**What languages does the platform support?**
-Arabic and English. I do not have confirmed information that French is available across the interface.
 
-**Can I use the assistant in French?**
-The assistant is designed to support Arabic, English, and French.
+**What languages does the platform support?**
+Arabic and English only.
+
+**Are other languages available?**
+No. The platform interface and the assistant support Arabic and English only.
+
+**Can I use the assistant in Arabic?**
+Yes. The assistant answers in Arabic.
+
+**Can I use the assistant in English?**
+Yes. The assistant answers in English.
 
 **Does the platform work on mobile?**
-It is designed desktop-first while keeping usability on smaller screens.
+It is designed desktop-first while remaining usable on small screens.

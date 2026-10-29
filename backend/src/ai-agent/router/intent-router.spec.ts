@@ -128,7 +128,7 @@ describe('IntentRouter', () => {
   it.each([
     ['English', 'What is Basmatak?', 'en', 'en'],
     ['Arabic', 'ما هو بصمتك؟', 'ar', 'ar'],
-    ['French', "Qu'est-ce que Basmatak ?", 'en', 'fr'],
+    ['French (answered in English)', "Qu'est-ce que Basmatak ?", 'en', 'en'],
   ] as const)(
     'routes %s knowledge-only questions without tools',
     (_label, message, transportLocale, expectedLanguage) => {
@@ -174,9 +174,9 @@ describe('IntentRouter', () => {
       'opportunity_search',
     ],
     [
-      'French opportunities',
+      'French opportunities (answered in English)',
       'Affichez les opportunités disponibles',
-      'fr',
+      'en',
       'search_opportunities',
       'opportunity_search',
     ],
@@ -238,7 +238,7 @@ describe('IntentRouter', () => {
     expect(decision.reason).toBe('MIXED');
   });
 
-  it('routes a French mixed question while the transport locale stays en', () => {
+  it('routes a French mixed question while answering in English', () => {
     const search = new StubKnowledgeSearch();
     search.result = retrieval([
       makeChunk(
@@ -252,28 +252,54 @@ describe('IntentRouter', () => {
     const decision = router.route(message, 'en');
 
     expect(decision.intent).toBe('mixed');
-    expect(decision.language).toBe('fr');
+    expect(decision.language).toBe('en');
     expect(decision.tools.map((tool) => tool.name)).toEqual([
       'search_opportunities',
     ]);
     expect(decision.toolIntents).toEqual(['opportunity_search']);
+    expect(search.calls[0].locale).toBe('en');
   });
 
   it.each([
-    ['English greeting', 'Hello', 'en', 'Hello!'],
-    ['Arabic greeting', 'مرحبا', 'ar', 'مرحبًا'],
-    ['French greeting', 'Bonjour', 'fr', 'Bonjour'],
-    ['English thanks', 'Thanks!', 'en', "You're welcome"],
-    ['Arabic thanks', 'شكرا', 'ar', 'على الرحب'],
-    ['French thanks', 'Merci beaucoup', 'fr', 'Avec plaisir'],
-    ['English capability', 'What can you do?', 'en', 'public information'],
     [
-      'French capability',
-      'Que peux-tu faire ?',
-      'fr',
-      'informations publiques',
+      'English greeting',
+      'Hello',
+      'en',
+      'Hi! How can I help you with Basmatak?',
     ],
-    ['Arabic capability', 'ما الذي يمكنك فعله؟', 'ar', 'معلومات بصمتك'],
+    ['Arabic greeting', 'مرحبا', 'ar', 'مرحباً! كيف أقدر أساعدك في بصمتك؟'],
+    [
+      'French greeting (answered in English)',
+      'Bonjour',
+      'en',
+      'Hi! How can I help you with Basmatak?',
+    ],
+    ['English thanks', 'Thanks!', 'en', "You're welcome!"],
+    ['Arabic thanks', 'شكرا', 'ar', 'على الرحب والسعة!'],
+    [
+      'French thanks (answered in English)',
+      'Merci beaucoup',
+      'en',
+      "You're welcome!",
+    ],
+    [
+      'English capability',
+      'What can you do?',
+      'en',
+      "I'm Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
+    ],
+    [
+      'French capability (answered in English)',
+      'Que peux-tu faire ?',
+      'en',
+      "I'm Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
+    ],
+    [
+      'Arabic capability',
+      'ما الذي يمكنك فعله؟',
+      'ar',
+      'أنا مساعد بصمتك. أشرح لك كيف تعمل المنصة، وأساعدك في العثور على الفرص والمنظمات.',
+    ],
   ] as const)(
     'returns a short localized direct reply for %s without retrieval or tools',
     (_label, message, expectedLanguage, replySnippet) => {
@@ -298,14 +324,19 @@ describe('IntentRouter', () => {
       'English off-topic',
       'Who won the football match?',
       'en',
-      'outside Basmatak',
+      'outside what I can help with',
     ],
-    ['Arabic off-topic', 'ما هو الطقس في الجزائر؟', 'ar', 'خارج نطاق'],
     [
-      'French off-topic',
+      'Arabic off-topic',
+      'ما هو الطقس في الجزائر؟',
+      'ar',
+      'خارج ما أستطيع مساعدتك فيه',
+    ],
+    [
+      'French off-topic (answered in English)',
       'Quelle est la météo à Paris ?',
-      'fr',
-      'sort du cadre',
+      'en',
+      'outside what I can help with',
     ],
   ] as const)(
     'refuses %s before retrieval',
@@ -337,7 +368,9 @@ describe('IntentRouter', () => {
     expect(decision.intent).toBe('clarify');
     expect(decision.action).toBe('direct_reply');
     expect(decision.language).toBe('en');
-    expect(decision.directReply).toContain('public Basmatak information');
+    expect(decision.directReply).toBe(
+      'Could you tell me a bit more about what you need?',
+    );
     expect(decision.tools).toEqual([]);
     expect(decision.toolIntents).toEqual([]);
     expect(decision.topScore).toBe(0.5);
@@ -355,6 +388,51 @@ describe('IntentRouter', () => {
     expect(decision.tools).toEqual([]);
     expect(decision.reason).toBe('LOW_KNOWLEDGE_SCORE');
   });
+
+  it.each([
+    ['كيف أقدم مساهمة؟', 'ar'],
+    ['ما حالات الطلب؟', 'ar'],
+    ['هل أستطيع رفع فيديو؟', 'ar'],
+    ['كيف تعمل عملية التحقق؟', 'ar'],
+    ['كيف أتابع حالة الطلب؟', 'ar'],
+    ['ما سياسة الخصوصية؟', 'ar'],
+    ['ما أنواع الملفات المسموح رفعها؟', 'ar'],
+    ['كيف أرسل مساهمة؟', 'ar'],
+    ['How does verification work?', 'en'],
+    ['Can I withdraw my application?', 'en'],
+    ['How do I submit a contribution?', 'en'],
+    ['What are the application statuses?', 'en'],
+    ['Can I upload a video?', 'en'],
+    ['How is my privacy protected?', 'en'],
+    ['What files can I upload?', 'en'],
+  ] as const)(
+    'routes "%s" to retrieval and the LLM instead of a canned reply',
+    (message, language) => {
+      const search = new StubKnowledgeSearch();
+      search.result = retrieval([
+        makeChunk('Relevant public guidance for this platform question.', 3.1, {
+          locale: language,
+        }),
+      ]);
+      const router = makeRouter(search);
+
+      const decision = router.route(message, language);
+
+      expect(decision.action).toBe('answer');
+      expect(decision.intent).toBe('knowledge_only');
+      expect(decision.directReply).toBeUndefined();
+      expect(decision.reason).toBe('KNOWLEDGE_MATCH');
+      expect(decision.tools).toEqual([]);
+      expect(decision.toolIntents).toEqual([]);
+      expect(search.calls).toEqual([
+        {
+          query: message,
+          locale: language,
+          options: { topK: ROUTER_TOP_K },
+        },
+      ]);
+    },
+  );
 
   it('honors the configured absolute minimum score', () => {
     const search = new StubKnowledgeSearch();
@@ -400,7 +478,7 @@ describe('IntentRouter', () => {
       "Combien d'organisations sont vérifiées ?",
       'en',
     );
-    expect(french.language).toBe('fr');
+    expect(french.language).toBe('en');
     expect(french.tools.map((tool) => tool.name)).toEqual(['platform_stats']);
   });
 
@@ -447,15 +525,16 @@ describe('IntentRouter', () => {
     expect(Object.keys(decision.tools[0])).not.toContain('handler');
   });
 
-  it('detects French while the transport locale remains en or ar', () => {
+  it('recognizes French input but always answers in English', () => {
     const search = new StubKnowledgeSearch();
     const router = makeRouter(search);
 
-    expect(router.route('Bonjour', 'ar').language).toBe('fr');
+    expect(router.route('Bonjour', 'ar').language).toBe('en');
     expect(
       router.route('Affichez les opportunités disponibles', 'en').language,
-    ).toBe('fr');
+    ).toBe('en');
     expect(router.route('Hello', 'ar').language).toBe('en');
+    expect(router.route("Qu'est-ce que Basmatak ?", 'ar').language).toBe('en');
   });
 
   it('is repeatable for identical calls', () => {

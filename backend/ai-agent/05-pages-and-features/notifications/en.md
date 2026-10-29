@@ -1,17 +1,52 @@
 # Notifications
 
-## What We Know
-The platform has a Notifications module in its backend.
+## In-App Notifications
 
-## What We Do Not Know
-The notification types, the channels used, and which features are complete are not confirmed in this knowledge base. The platform's first design does not rely on push notifications or SMS.
+The platform has an in-app notification center, reached from the bell in the interface. It shows the user's own notifications, newest first, with an unread count. Each notification shows a short readable title, such as "Application accepted" in English or "تم قبول الطلب" in Arabic. A user can mark one notification as read or mark all as read.
 
-## How the Agent Should Answer
-If asked about notifications, say that a notifications feature exists, that exact details are not confirmed, and suggest checking the Applications page and My Tasks page for the latest status of applications and tasks.
+## What Notifications Cover
+
+Notifications are created for events such as:
+
+- A new application received by an organization.
+- An application accepted, rejected, or withdrawn.
+- A participant withdrawal, which notifies the organization.
+- A participant removed.
+- An opportunity cancelled or started.
+- A submission submitted, verified, or rejected.
+- An organization verification result.
+- A publishing gate lock.
+
+## Email
+
+Email is used only for account verification and password reset. The platform does not send general activity notifications by email.
+
+## Preferences
+
+Notification preferences include application updates, reviews, verification, system, digest, and record issued. All are on by default. A user can turn a preference off to suppress the notifications that depend on it.
 
 ## Common Questions
+
 **Will I receive a notification when I am accepted?**
-I do not have confirmed details about notification types. Check the Applications and My Tasks pages for your latest status.
+Yes. The platform sends an in-app notification when an application is accepted or rejected.
+
+**What text do notifications show?**
+A short readable title, such as "Application accepted" or "تم قبول الطلب", with the date.
+
+**Will the organization be notified if I withdraw?**
+Yes. When a participant withdraws, the organization that owns the opportunity receives an in-app notification.
 
 **Does the platform send SMS or push notifications?**
-The platform's first design does not rely on SMS or push notifications.
+I do not have confirmed information about SMS or push notifications. The confirmed channel is in-app notifications.
+
+**Does the platform send activity emails?**
+No. Email is used only for account verification and password reset.
+
+**Can I turn notifications off?**
+Yes, from notification preferences. Each preference is on by default.
+
+**Where can I see my notifications?**
+From the bell in the interface, which opens the notification center.
+
+**Can I mark all notifications as read?**
+Yes.

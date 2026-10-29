@@ -1,36 +1,55 @@
 # Trust and Verification Rules
 
 ## The Trust Model
+
 Trust in Basmatak Tatatoua comes from verification, not from popularity.
 
 ## Rules
+
 1. A volunteer's contribution is a claim until an organization confirms it.
 2. Only the responsible organization can verify a contribution.
 3. A volunteer cannot verify their own contribution.
 4. A submission does not equal a Verified Experience.
 5. Skills listed on a profile are claims. Proof comes from verified contributions.
-6. The organization can add an evaluation when reviewing a contribution.
-7. Evidence (photos, videos, description) supports the review but does not replace the organization's confirmation.
+6. The organization can add notes when verifying and a reason when rejecting.
+7. The organization can write a review: a rating from 1 to 5 and an optional comment of up to 2000 characters.
+8. Evidence supports the review but does not replace the organization's confirmation.
 
 ## What Makes a Verified Experience Trustworthy
+
 - The contribution was linked to a real opportunity published by an organization.
 - The volunteer was selected to participate.
 - The organization reviewed the evidence and confirmed the work.
+- The experience has a verification code that can be checked on the public verification page.
+
+## Proof and Attestation
+
+A Verified Experience has a verification code. Anyone can check it at /verify/<code>. A PDF attestation can be generated.
 
 ## Security Principles
-- The server decides the user's identity and permissions from the signed-in session.
-- The platform never trusts a user's claim about their role.
-- The AI assistant never grants permissions to itself and its output is never trusted as proof of identity or authorization.
 
-## Note
-Details about verification by other parties (for example a beneficiary), how each verification type is approved, and the full behavior of the Trust module are not confirmed in this knowledge base.
+- The platform decides the user's identity and permissions from the signed-in session.
+- The platform never trusts a user's claim about their role.
+- The assistant does not grant itself permissions, and its output is never accepted as proof of identity or role.
+- Uploaded evidence files are private by default.
+- Actions that change data are validated by the platform.
 
 ## Common Questions
-**How do I know a verified experience is real?**
-Because the responsible organization reviewed the contribution and confirmed it was actually completed.
 
-**Can someone fake a verified experience?**
-A verified experience requires confirmation from an organization, so a volunteer cannot create one alone.
+**Who can verify a contribution?**
+Only the organization responsible for the activity.
 
-**Is there a trust score or rating system?**
-I do not have confirmed information about a trust score. The platform does not use popularity rankings.
+**Can a volunteer verify their own work?**
+No.
+
+**Does evidence alone prove a contribution?**
+No. Evidence supports the organization's review, but the organization's confirmation is what makes the experience verified.
+
+**What does the verification code prove?**
+It lets anyone check the public summary of a Verified Experience on the verification page.
+
+**Can a review replace verification?**
+No. A review says how well the work was done; verification says the work was done.
+
+**Can the assistant confirm that a contribution is true?**
+No. The assistant cannot verify contributions or act on the platform.

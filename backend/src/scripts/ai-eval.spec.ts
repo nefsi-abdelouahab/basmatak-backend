@@ -146,13 +146,11 @@ describe('ai-eval recall logic', () => {
     expect(EVAL_QUERIES.length).toBeGreaterThanOrEqual(25);
     expect(EVAL_QUERIES.some((entry) => entry.coreFaq === true)).toBe(true);
     expect(
-      EVAL_QUERIES.filter((entry) => entry.coreFaq === true).every(
-        (entry) =>
-          entry.expectedSource === 'faq/en.md' ||
-          entry.expectedSource === 'faq/ar.md',
+      EVAL_QUERIES.filter((entry) => entry.coreFaq === true).every((entry) =>
+        /^0[1-9]-[a-z-]+\/.+\/(en|ar)\.md$/.test(entry.expectedSource),
       ),
     ).toBe(true);
-    expect(EVAL_QUERIES.some((entry) => entry.locale === 'fr')).toBe(true);
+    expect(EVAL_QUERIES.some((entry) => entry.locale === 'ar')).toBe(true);
     expect(
       EVAL_QUERIES.some((entry) => entry.expectedSource.endsWith('.csv')),
     ).toBe(true);

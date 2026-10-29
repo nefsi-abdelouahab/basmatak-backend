@@ -1,16 +1,18 @@
 {
   "groups": [
-    ["opportunity", "opportunities", "فرصة", "فرص", "opportunité", "opportunités"],
-    ["organization", "organizations", "منظمة", "منظمات", "جمعية", "جمعيات", "organisation", "organisations"],
-    ["volunteer", "volunteering", "متطوع", "متطوعون", "تطوع", "bénévole", "bénévolat"],
-    ["verification", "verified", "verify", "تحقق", "توثيق", "موثق", "vérification", "vérifié"],
-    ["application", "applications", "apply", "ترشح", "ترشيح", "candidature", "postuler"],
-    ["participation", "participate", "مشاركة", "مشارك", "participer"],
-    ["skill", "skills", "مهارة", "مهارات", "compétence", "compétences"],
+    ["opportunity", "opportunities", "فرصة", "فرص"],
+    ["organization", "organizations", "منظمة", "منظمات", "جمعية", "جمعيات"],
+    ["volunteer", "volunteering", "متطوع", "متطوعون", "تطوع"],
+    ["verification", "verified", "verify", "تحقق", "توثيق", "موثق"],
+    ["application", "applications", "apply", "ترشح", "ترشيح", "طلب", "طلبات"],
+    ["participation", "participate", "مشاركة", "مشارك"],
+    ["submission", "submissions", "contribution", "contributions", "مساهمة", "مساهمات"],
+    ["skill", "skills", "مهارة", "مهارات"],
     ["wilaya", "wilayas", "ولاية", "ولايات"],
-    ["privacy", "private", "خصوصية", "خاص", "confidentialité", "privé"],
-    ["report", "reporting", "إبلاغ", "بلاغ", "signalement", "signaler"],
-    ["profile", "profiles", "ملف", "ملفات", "profil", "profils"],
-    ["account", "accounts", "حساب", "حسابات", "compte", "comptes"]
+    ["privacy", "private", "خصوصية", "خاص"],
+    ["profile", "profiles", "ملف", "ملفات"],
+    ["account", "accounts", "حساب", "حسابات"],
+    ["programming", "program", "code", "coding", "software", "programmation", "développement", "developpement", "برمجة", "برمجه", "تطوير"],
+    ["technology", "technologies", "technologie", "تقنية", "تقنيات", "تقني"]
   ]
 }

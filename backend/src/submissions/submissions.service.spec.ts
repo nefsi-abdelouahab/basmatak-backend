@@ -34,6 +34,11 @@ import {
 import { MediaOwnership } from '../common/seams/media-ownership';
 import { MediaService } from '../media/media.service';
 import {
+  VerificationModel,
+  VerificationSchema,
+  VerificationsCollection,
+} from '../verifications/schemas/verification.schema';
+import {
   VolunteerProfileModel,
   VolunteerProfilesCollection,
   VolunteerProfileSchema,
@@ -118,6 +123,7 @@ describe('SubmissionsService (S10 Part A)', () => {
       OrganizationSchema,
     );
     await organizationModel.create({
+      _id: organization,
       userId: new Types.ObjectId(),
       slug: 'submissions-unit-org',
       name: 'Unit Org',
@@ -234,6 +240,11 @@ describe('SubmissionsService (S10 Part A)', () => {
         VolunteerProfilesCollection,
         VolunteerProfileSchema,
       ),
+      // Rejection-reason read model.
+      handle.connection.model<VerificationModel>(
+        VerificationsCollection,
+        VerificationSchema,
+      ),
     );
 
     await seedOrganization();
@@ -253,6 +264,7 @@ describe('SubmissionsService (S10 Part A)', () => {
       handle.connection.collection(OpportunitiesCollection).deleteMany({}),
       handle.connection.collection(MediaCollection).deleteMany({}),
       handle.connection.collection(StatusHistoryCollection).deleteMany({}),
+      handle.connection.collection(VerificationsCollection).deleteMany({}),
     ]);
   });
 
@@ -503,6 +515,124 @@ describe('SubmissionsService (S10 Part A)', () => {
       );
       expect(updated.status).toBe('submitted');
       expect(emitted).toHaveLength(1);
+    });
+  });
+
+  describe('5.5 rejection reason (owner-scoped)', () => {
+    function submissionModel() {
+      return handle.connection.model<SubmissionModel>(
+        SubmissionsCollection,
+        SubmissionSchema,
+      );
+    }
+
+    function verificationModel() {
+      return handle.connection.model<VerificationModel>(
+        VerificationsCollection,
+        VerificationSchema,
+      );
+    }
+
+    async function seedSubmission(
+      status: SubmissionModel['status'],
+      reason?: string,
+      owner: string = volunteer,
+    ): Promise<SubmissionModel> {
+      const submission = await submissionModel().create({
+        participantId: new Types.ObjectId(),
+        opportunityId,
+        positionId: new Types.ObjectId(),
+        organizationId: organization,
+        volunteerId: new Types.ObjectId(owner),
+        deliverables: [{ title: 'Bag wrangler' }],
+        description: 'Done',
+        evidence: [],
+        status,
+      });
+      if (reason !== undefined) {
+        await verificationModel().create({
+          submissionId: submission._id,
+          organizationId: organization,
+          volunteerId: new Types.ObjectId(owner),
+          status: 'rejected',
+          reason,
+          decidedAt: new Date(),
+          decidedBy: organization,
+        });
+      }
+      return submission;
+    }
+
+    it('lists the reason for rejected and draft-after-rejection, hides after resubmit', async () => {
+      const rejected = await seedSubmission('rejected', 'Evidence was blurry');
+      const draft = await seedSubmission('draft', 'Add a completion photo');
+      const untouched = await seedSubmission('submitted');
+
+      const page = await service.listMine(account(), {});
+      const byId = new Map(page.items.map((item) => [String(item._id), item]));
+      expect(byId.get(rejected._id.toString())?.rejectionReason).toBe(
+        'Evidence was blurry',
+      );
+      expect(byId.get(draft._id.toString())?.rejectionReason).toBe(
+        'Add a completion photo',
+      );
+      expect(byId.get(untouched._id.toString())?.rejectionReason).toBeNull();
+
+      // Once the corrected draft is resubmitted the reason is no longer shown.
+      await submissionModel().updateOne(
+        { _id: draft._id },
+        { $set: { status: 'submitted' } },
+      );
+      const after = await service.listMine(account(), {});
+      expect(
+        after.items.find((item) => String(item._id) === draft._id.toString())
+          ?.rejectionReason,
+      ).toBeNull();
+    });
+
+    it('scopes the list to the owning volunteer', async () => {
+      await seedSubmission(
+        'rejected',
+        'Private reason',
+        new Types.ObjectId().toString(),
+      );
+      const page = await service.listMine(account(), {});
+      expect(page.items).toHaveLength(0);
+    });
+
+    it('exposes the reason on detail to the owning volunteer and organization only', async () => {
+      const rejected = await seedSubmission('rejected', 'Reason for owner');
+
+      const volunteerDetail = await service.getDetail(
+        account(),
+        rejected._id.toString(),
+      );
+      expect(volunteerDetail.rejectionReason).toBe('Reason for owner');
+
+      const orgRow = await handle.connection
+        .model<OrganizationModel>(OrganizationsCollection, OrganizationSchema)
+        .findOne({ slug: 'submissions-unit-org' })
+        .exec();
+      const orgDetail = await service.getDetail(
+        {
+          sub: orgRow!.userId.toString(),
+          role: 'organization',
+          sessionId: 'sid',
+        },
+        rejected._id.toString(),
+      );
+      expect(orgDetail.rejectionReason).toBe('Reason for owner');
+
+      await expect(
+        service.getDetail(
+          {
+            sub: new Types.ObjectId().toString(),
+            role: 'volunteer',
+            sessionId: 'sid',
+          },
+          rejected._id.toString(),
+        ),
+      ).rejects.toMatchObject({ status: 404, code: 'SUBMISSION_NOT_FOUND' });
     });
   });
 

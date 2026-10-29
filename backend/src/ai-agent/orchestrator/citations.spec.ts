@@ -136,7 +136,7 @@ describe('data citation projection', () => {
       skills: [{ nameFr: 'First aid', slug: 'first-aid' }],
       locations: [{ nameAr: 'الجزائر', code: '16' }],
     });
-    expect(dataSourcesForToolResult(reference, 'T1', 'fr')).toEqual([
+    expect(dataSourcesForToolResult(reference, 'T1', 'en')).toEqual([
       {
         id: 'T1-1',
         citationId: 'T1',
@@ -154,12 +154,12 @@ describe('data citation projection', () => {
     const stats = success('platform_stats', {
       publishedOpportunities: 3,
     });
-    expect(dataSourcesForToolResult(stats, 'T3', 'fr')).toEqual([
+    expect(dataSourcesForToolResult(stats, 'T3', 'en')).toEqual([
       {
         id: 'T3-1',
         citationId: 'T3',
         type: 'stats',
-        title: 'Statistiques de la plateforme',
+        title: 'Platform statistics',
       },
     ]);
   });

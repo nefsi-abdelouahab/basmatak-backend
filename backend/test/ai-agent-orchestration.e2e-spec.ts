@@ -456,7 +456,7 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
       'browse-organizations',
     ]);
     expect(tokenText(frames)).toBe(
-      "I couldn't find that in Basmatak's public information. You can browse opportunities and organizations.",
+      "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
     );
     expect(frames[5].data).toMatchObject({
       finishReason: 'stop',
@@ -500,7 +500,7 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
 
     const text = tokenText(frames);
     expect(text).toBe(
-      "I can only answer from Basmatak's public information, and I couldn't verify that answer against a source. Please try rephrasing your question.",
+      "I couldn't confirm that answer. Could you rephrase your question?",
     );
     expect(text).not.toContain('[K9]');
     expect(text).not.toContain('[D1]');
@@ -540,10 +540,9 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(sources.knowledge.length).toBeGreaterThan(0);
     expect(sources.knowledge[0].id).toBe('K1');
     const text = tokenText(frames);
-    expect(text).toContain(
-      "Here is what I found in Basmatak's public information:",
-    );
-    expect(text).toContain('[K1]');
+    expect(text.trim().length).toBeGreaterThan(0);
+    expect(text).not.toContain('Here is what I found');
+    expect(text).not.toContain('[K1]');
     expect(frames[frames.length - 1].data).toMatchObject({
       finishReason: 'stop',
       usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },

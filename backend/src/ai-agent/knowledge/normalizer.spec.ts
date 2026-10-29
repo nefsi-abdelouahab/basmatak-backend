@@ -163,8 +163,10 @@ describe('KnowledgeNormalizer', () => {
       if (!fs.existsSync(synonyms)) return;
 
       const groups = loadSynonymGroups(synonyms);
-      expect(groups).toHaveLength(12);
+      expect(groups).toHaveLength(14);
       expect(groups.flat()).toContain('فرصه');
+      expect(groups.flat()).toContain('برمجه');
+      expect(groups.flat()).toContain('تقنيه');
     });
   });
 });

@@ -24,6 +24,12 @@ import {
   SkillSchema,
   SkillsCollection,
 } from '../../skills/schemas/skill.schema';
+import {
+  SkillCategoriesCollection,
+  SkillCategoryModel,
+  SkillCategorySchema,
+} from '../../skills/schemas/skill-category.schema';
+import { KnowledgeNormalizer } from '../knowledge/normalizer';
 import { PlatformStatsPayload, PlatformStatsTool } from './platform-stats.tool';
 import {
   REFERENCE_CACHE_TTL_MS,
@@ -54,10 +60,12 @@ const REJECTED_ORG_ID = new Types.ObjectId('64c000000000000000000005');
 
 const CATEGORY_ID = new Types.ObjectId('64a000000000000000000001');
 const CATEGORY_TWO_ID = new Types.ObjectId('64a000000000000000000002');
+const TECH_CATEGORY_ID = new Types.ObjectId('64a000000000000000000003');
 const SKILL_ID = new Types.ObjectId('64b000000000000000000001');
 const SKILL_TWO_ID = new Types.ObjectId('64b000000000000000000002');
 const INACTIVE_SKILL_ID = new Types.ObjectId('64b000000000000000000003');
 const NEW_SKILL_ID = new Types.ObjectId('64b000000000000000000004');
+const PROGRAMMING_SKILL_ID = new Types.ObjectId('64b000000000000000000005');
 
 const OPP_A_ID = new Types.ObjectId('64d000000000000000000001');
 const OPP_B_ID = new Types.ObjectId('64d000000000000000000002');
@@ -66,6 +74,7 @@ const OPP_DRAFT_ID = new Types.ObjectId('64d000000000000000000004');
 const OPP_CLOSED_ID = new Types.ObjectId('64d000000000000000000005');
 const OPP_CANCELLED_ID = new Types.ObjectId('64d000000000000000000006');
 const OPP_IN_PROGRESS_ID = new Types.ObjectId('64d000000000000000000007');
+const OPP_PROGRAMMING_ID = new Types.ObjectId('64d000000000000000000008');
 
 async function run<T>(tool: ReadOnlyTool, input?: unknown): Promise<T> {
   return (await tool.definition.handler(input)) as T;
@@ -112,6 +121,7 @@ describe('Session 6 public tools', () => {
   let opportunityModel: Model<OpportunityModel>;
   let organizationModel: Model<OrganizationModel>;
   let skillModel: Model<SkillModel>;
+  let skillCategoryModel: Model<SkillCategoryModel>;
   let locationModel: Model<LocationModel>;
 
   let opportunitiesTool: SearchOpportunitiesTool;
@@ -136,6 +146,10 @@ describe('Session 6 public tools', () => {
       SkillsCollection,
       SkillSchema,
     );
+    skillCategoryModel = handle.connection.model<SkillCategoryModel>(
+      SkillCategoriesCollection,
+      SkillCategorySchema,
+    );
     locationModel = handle.connection.model<LocationModel>(
       LocationsCollection,
       LocationSchema,
@@ -153,6 +167,7 @@ describe('Session 6 public tools', () => {
       handle.connection.collection(OpportunitiesCollection).deleteMany({}),
       handle.connection.collection(OrganizationsCollection).deleteMany({}),
       handle.connection.collection(SkillsCollection).deleteMany({}),
+      handle.connection.collection(SkillCategoriesCollection).deleteMany({}),
       handle.connection.collection(LocationsCollection).deleteMany({}),
     ]);
     await seedReferenceData();
@@ -164,6 +179,12 @@ describe('Session 6 public tools', () => {
       opportunityModel,
       organizationModel,
       skillModel,
+      skillCategoryModel,
+      new KnowledgeNormalizer({
+        synonyms: [
+          ['programming', 'programmation', 'code', 'coding', 'برمجة', 'برمجه'],
+        ],
+      }),
     );
     organizationsTool = new SearchOrganizationsTool(organizationModel);
     referenceTool = new SearchReferenceDataTool(
@@ -181,6 +202,32 @@ describe('Session 6 public tools', () => {
 
   async function seedReferenceData(): Promise<void> {
     await Promise.all([
+      handle.connection.collection(SkillCategoriesCollection).insertMany([
+        {
+          _id: CATEGORY_ID,
+          slug: 'environment',
+          nameAr: 'البيئة',
+          nameFr: 'Environment',
+          order: 1,
+          active: true,
+        },
+        {
+          _id: CATEGORY_TWO_ID,
+          slug: 'education',
+          nameAr: 'التعليم',
+          nameFr: 'Education',
+          order: 2,
+          active: true,
+        },
+        {
+          _id: TECH_CATEGORY_ID,
+          slug: 'technology',
+          nameAr: 'التقنية',
+          nameFr: 'Technology',
+          order: 3,
+          active: true,
+        },
+      ]),
       handle.connection.collection(SkillsCollection).insertMany([
         {
           _id: SKILL_ID,
@@ -401,6 +448,29 @@ describe('Session 6 public tools', () => {
         title: 'In progress opportunity',
         status: 'in_progress',
       }),
+      opportunityDoc({
+        _id: OPP_PROGRAMMING_ID,
+        slug: 'mentorat-bootcamp-code-pour-jeunes-oran',
+        title: 'Mentorat bootcamp code pour jeunes — Oran',
+        description: 'Accompagner les jeunes dans un bootcamp de code à Oran.',
+        status: 'draft',
+        categoryId: TECH_CATEGORY_ID,
+        location: {
+          wilayaId: '31',
+          municipalityId: '3101',
+          coordinates: [0.64, 35.7],
+        },
+        positions: [
+          {
+            title: 'Mentor',
+            description: 'Encadrer les jeunes',
+            requiredCount: 2,
+            filledCount: 0,
+            requiredSkills: [PROGRAMMING_SKILL_ID],
+            deliverables: ['Secret deliverable'],
+          },
+        ],
+      }),
     ]);
   }
 
@@ -510,6 +580,38 @@ describe('Session 6 public tools', () => {
       expect(
         await opportunitySlugs({ wilaya: '16', municipality: '1601' }),
       ).toEqual(['beach-cleanup']);
+    });
+
+    it('matches skill and category names in Arabic, French, and English', async () => {
+      await Promise.all([
+        handle.connection.collection(SkillsCollection).insertOne({
+          _id: PROGRAMMING_SKILL_ID,
+          slug: 'programming',
+          categoryId: TECH_CATEGORY_ID,
+          nameAr: 'برمجة',
+          nameFr: 'Programmation',
+          order: 4,
+          active: true,
+        }),
+        handle.connection
+          .collection(OpportunitiesCollection)
+          .updateOne(
+            { _id: OPP_PROGRAMMING_ID },
+            { $set: { status: 'published' } },
+          ),
+      ]);
+
+      for (const term of [
+        'برمجة',
+        'programming',
+        'programmation',
+        'التقنية',
+        'technology',
+      ]) {
+        expect(await opportunitySlugs({ text: term })).toContain(
+          'mentorat-bootcamp-code-pour-jeunes-oran',
+        );
+      }
     });
 
     it('supports the documented sort orders', async () => {
@@ -1010,6 +1112,7 @@ describe('Session 6 public tools', () => {
         slowModel,
         organizationModel,
         skillModel,
+        skillCategoryModel,
       );
       const executor = new ToolExecutor(new ToolRegistry([slowTool]), {
         timeoutMs: 20,

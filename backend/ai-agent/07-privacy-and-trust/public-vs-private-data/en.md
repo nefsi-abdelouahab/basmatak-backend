@@ -1,34 +1,53 @@
 # Public vs Private Data
 
-## Public Content (visible to visitors and users)
+## Public Content
+
+Public content is visible to visitors and users:
+
 - Published volunteering opportunities and their details.
-- Public volunteer profiles and talents.
-- Public verified experiences.
-- Public information about organizations.
+- Public organization profiles of verified, active organizations.
+- Public volunteer profiles, according to the volunteer's visibility settings.
+- Public Verified Experiences.
+- Visible reviews on a public volunteer profile.
 
-## Private Content (not shown publicly)
-- Users' private personal data.
+## Private Content
+
+Private content is not shown publicly:
+
+- Applications and their cover messages.
 - Private profile data that the user did not make public.
+- Email and phone numbers.
+- Uploaded evidence files, which are private by default.
 - Session and account security data.
+- Organization review data that is not shown publicly.
 
-## Visibility Settings
-The platform has public settings for volunteer profiles. The exact options (what can be shown or hidden) are not confirmed in this knowledge base.
+## Volunteer Visibility Settings
+
+The volunteer public profile is on by default. Biography, skills, experiences, portfolio, and statistics are shown by default. Avatar, location, and availability are hidden by default. The full name is always shown. Email and phone are never shown.
 
 ## The AI Assistant and Data
-- It uses public information and platform knowledge only.
+
+- It uses public information about the platform only.
 - It never reveals private user data.
-- It has no direct database access. It uses only specific, predefined read tools when available.
-- Volunteer profile data is excluded from the assistant's general data sources, so the assistant cannot be used to expose individuals' information.
+- It is public and has no sign-in session, so it cannot see a user's account, applications, or private profile.
+- Volunteer profile data is not part of what the assistant uses, so the assistant cannot be used to expose individuals' information.
 
 ## Common Questions
+
 **What can visitors see?**
-Public opportunities, public profiles and talents, and public verified experiences.
+Public opportunities, public organization profiles, public volunteer profiles, and public Verified Experiences.
 
-**Can I choose what appears on my public profile?**
-The platform has public settings, but I do not have confirmed details about the exact options.
+**Can visitors see applications or cover messages?**
+No. Applications and cover messages are private.
 
-**Can the assistant tell me someone's private details?**
-No. It never reveals private user data.
+**Can visitors see uploaded evidence?**
+No. Uploaded files are private by default. Only public media may appear on a public profile or verification page.
 
-**Can the assistant look up a specific volunteer for me?**
-The assistant does not expose individuals' profile data. Use the Discover Talents page to explore public profiles.
+**Can the assistant see my account data?**
+No. The assistant is public and has no sign-in session.
+
+**Can I hide my location?**
+Yes. Location is hidden by default and can be controlled from the public profile settings.
+
+**Is my full name always public?**
+Yes. The full name is always shown on the public profile.

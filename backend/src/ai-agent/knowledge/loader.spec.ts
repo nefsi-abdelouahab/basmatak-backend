@@ -412,19 +412,23 @@ describe('KnowledgeLoader', () => {
     const result = loadKnowledge(corpus);
 
     expect(result.issues).toEqual([]);
-    expect(result.documents).toHaveLength(124);
+    expect(result.documents).toHaveLength(138);
     expect(result.documents.map((document) => document.source)).toEqual(
       expect.arrayContaining([
         '01-about/contact/en.md',
         '01-about/contact/ar.md',
         '08-faq/troubleshooting/en.md',
         '08-faq/troubleshooting/ar.md',
-        'faq/en.md',
-        'faq/ar.md',
-        'guides/en.md',
-        'guides/ar.md',
-        'policies/en.md',
-        'policies/ar.md',
+        '02-concepts/organization-reliability/en.md',
+        '02-concepts/reviews-and-ratings/ar.md',
+        '03-user-roles/account-and-sessions/en.md',
+        '04-workflow/opportunity-statuses/en.md',
+        '04-workflow/status-reference/ar.md',
+        '04-workflow/media-and-evidence-limits/en.md',
+        '05-pages-and-features/notification-types/en.md',
+        '05-pages-and-features/portfolio/ar.md',
+        '07-privacy-and-trust/volunteer-public-settings/en.md',
+        '07-privacy-and-trust/account-deletion/ar.md',
         'data/glossary.csv',
         'data/topics.json',
       ]),
@@ -434,6 +438,15 @@ describe('KnowledgeLoader', () => {
     );
     expect(result.documents.map((document) => document.source)).not.toContain(
       '_config/synonyms.json',
+    );
+    expect(result.documents.map((document) => document.source)).not.toContain(
+      'faq/en.md',
+    );
+    expect(result.documents.map((document) => document.source)).not.toContain(
+      'guides/en.md',
+    );
+    expect(result.documents.map((document) => document.source)).not.toContain(
+      'policies/en.md',
     );
   });
 });

@@ -1420,7 +1420,7 @@ export class VolunteersService {
         .exec(),
       this.verificationModel
         .find({ submissionId: { $in: submissionIds } })
-        .select('submissionId decidedAt')
+        .select('_id submissionId decidedAt')
         .lean()
         .exec(),
       this.reviewModel

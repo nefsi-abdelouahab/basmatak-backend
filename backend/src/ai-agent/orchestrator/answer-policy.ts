@@ -13,82 +13,78 @@ import { AI_AGENT_SYSTEM_PROMPT } from '../prompt/system-prompt';
 
 export type PolicyLanguage = PromptLanguage;
 
-export type PolicyMessageKey =
-  | 'privateData'
-  | 'quotaExhausted'
-  | 'retrievalOnlyLive'
-  | 'knowledgeOnlyLive'
-  | 'retrievalIntro'
-  | 'notFound'
-  | 'toolUnavailable'
-  | 'ungrounded'
-  | 'timeout'
-  | 'providerUnavailable'
-  | 'internalError'
-  | 'messageTooLong';
+export const POLICY_MESSAGE_KEYS = [
+  'privateData',
+  'rateLimited',
+  'busy',
+  'quotaExhausted',
+  'retrievalOnlyLive',
+  'knowledgeOnlyLive',
+  'notFound',
+  'toolUnavailable',
+  'ungrounded',
+  'timeout',
+  'providerUnavailable',
+  'internalError',
+  'messageTooLong',
+] as const;
+
+export type PolicyMessageKey = (typeof POLICY_MESSAGE_KEYS)[number];
 
 const MESSAGES: Readonly<
   Record<PolicyMessageKey, Readonly<Record<PolicyLanguage, string>>>
 > = Object.freeze({
   privateData: Object.freeze({
-    en: "I can't access private accounts, contact details, application data, or personal information. I can help with public Basmatak information.",
-    ar: 'لا أستطيع الوصول إلى الحسابات الخاصة أو بيانات الاتصال أو بيانات الطلبات أو المعلومات الشخصية. يمكنني المساعدة بمعلومات بصمتك العامة.',
-    fr: "Je n'accède pas aux comptes privés, aux coordonnées, aux données de candidature ni aux informations personnelles. Je peux aider avec les informations publiques de Basmatak.",
+    en: "I can't share any user's private details.",
+    ar: 'لا أستطيع مشاركة بيانات خاصة بأي مستخدم.',
+  }),
+  rateLimited: Object.freeze({
+    en: 'Too many assistant requests. Please try again later.',
+    ar: 'طلبات كثيرة جداً، حاول مرة أخرى بعد قليل.',
+  }),
+  busy: Object.freeze({
+    en: 'The assistant is busy. Please retry shortly.',
+    ar: 'المساعد مشغول الآن، حاول بعد لحظات.',
   }),
   quotaExhausted: Object.freeze({
-    en: 'The assistant has reached its free usage limit. You can still browse opportunities and organizations.',
-    ar: 'وصل المساعد إلى حد الاستخدام المجاني. لا يزال بإمكانك تصفح الفرص والمنظمات.',
-    fr: "L'assistant a atteint sa limite d'utilisation gratuite. Vous pouvez toujours parcourir les opportunités et les organisations.",
+    en: 'The assistant has reached its free usage limit, but you can still browse opportunities and organizations.',
+    ar: 'وصل المساعد إلى حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
   }),
   retrievalOnlyLive: Object.freeze({
-    en: 'Live results are temporarily limited to conserve usage. You can browse opportunities and organizations.',
-    ar: 'النتائج المباشرة محدودة مؤقتًا للحفاظ على حصة الاستخدام. يمكنك تصفح الفرص والمنظمات.',
-    fr: 'Les résultats en direct sont temporairement limités pour préserver le quota. Vous pouvez parcourir les opportunités et les organisations.',
+    en: 'Live results are temporarily limited, but you can browse opportunities and organizations.',
+    ar: 'النتائج المباشرة محدودة مؤقتًا، لكن يمكنك تصفح الفرص والمنظمات.',
   }),
   knowledgeOnlyLive: Object.freeze({
-    en: 'Live results are temporarily limited. You can browse opportunities and organizations.',
-    ar: 'النتائج المباشرة محدودة مؤقتًا. يمكنك تصفح الفرص والمنظمات.',
-    fr: 'Les résultats en direct sont temporairement limités. Vous pouvez parcourir les opportunités et les organisations.',
-  }),
-  retrievalIntro: Object.freeze({
-    en: "Here is what I found in Basmatak's public information:",
-    ar: 'إليك ما وجدته في معلومات بصمتك العامة:',
-    fr: 'Voici ce que j’ai trouvé dans les informations publiques de Basmatak :',
+    en: "Live results aren't available right now, but you can browse opportunities and organizations.",
+    ar: 'النتائج المباشرة غير متاحة الآن، لكن يمكنك تصفح الفرص والمنظمات.',
   }),
   notFound: Object.freeze({
-    en: "I couldn't find that in Basmatak's public information. You can browse opportunities and organizations.",
-    ar: 'لم أجد ذلك في معلومات بصمتك العامة. يمكنك تصفح الفرص والمنظمات.',
-    fr: "Je n'ai pas trouvé cela dans les informations publiques de Basmatak. Vous pouvez parcourir les opportunités et les organisations.",
+    en: "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
+    ar: 'لا أملك معلومات مؤكدة عن هذا. يمكنك تصفح الفرص والمنظمات في المنصة.',
   }),
   toolUnavailable: Object.freeze({
-    en: "I couldn't retrieve that information right now. You can browse opportunities and organizations.",
-    ar: 'تعذر عليّ جلب هذه المعلومات الآن. يمكنك تصفح الفرص والمنظمات.',
-    fr: "Je n'ai pas pu récupérer ces informations pour le moment. Vous pouvez parcourir les opportunités et les organisations.",
+    en: "I couldn't retrieve that right now, but you can browse opportunities and organizations.",
+    ar: 'تعذر عليّ جلب ذلك الآن، لكن يمكنك تصفح الفرص والمنظمات.',
   }),
   ungrounded: Object.freeze({
-    en: "I can only answer from Basmatak's public information, and I couldn't verify that answer against a source. Please try rephrasing your question.",
-    ar: 'يمكنني الإجابة فقط من معلومات بصمتك العامة، ولم أتمكن من التحقق من الإجابة مقابل مصدر. يرجى إعادة صياغة سؤالك.',
-    fr: "Je réponds uniquement à partir des informations publiques de Basmatak et je n'ai pas pu vérifier cette réponse auprès d'une source. Essayez de reformuler votre question.",
+    en: "I couldn't confirm that answer. Could you rephrase your question?",
+    ar: 'لم أتمكن من تأكيد هذه الإجابة، ممكن تعيد صياغة سؤالك؟',
   }),
   timeout: Object.freeze({
-    en: 'The assistant took too long to answer. Please try again.',
-    ar: 'استغرق المساعد وقتًا طويلًا للإجابة. يرجى المحاولة مرة أخرى.',
-    fr: "L'assistant a mis trop de temps à répondre. Veuillez réessayer.",
+    en: 'The assistant took too long to answer, so please try again.',
+    ar: 'استغرق المساعد وقتًا طويلًا، يرجى المحاولة مرة أخرى.',
   }),
   providerUnavailable: Object.freeze({
-    en: 'The assistant is temporarily unavailable. Please try again shortly.',
-    ar: 'المساعد غير متاح مؤقتًا. يرجى المحاولة مرة أخرى بعد قليل.',
-    fr: "L'assistant est temporairement indisponible. Veuillez réessayer bientôt.",
+    en: 'The assistant is temporarily unavailable, so please try again shortly.',
+    ar: 'المساعد غير متاح مؤقتًا، يرجى المحاولة مرة أخرى بعد قليل.',
   }),
   internalError: Object.freeze({
-    en: 'The assistant could not complete the response. Please try again.',
-    ar: 'لم يتمكن المساعد من إكمال الرد. يرجى المحاولة مرة أخرى.',
-    fr: "L'assistant n'a pas pu terminer la réponse. Veuillez réessayer.",
+    en: 'The assistant could not complete the response, so please try again.',
+    ar: 'لم يتمكن المساعد من إكمال الرد، يرجى المحاولة مرة أخرى.',
   }),
   messageTooLong: Object.freeze({
-    en: 'That request is too large to process. Please shorten your message or start a new conversation.',
-    ar: 'هذا الطلب كبير جدًا لمعالجته. يرجى تقصير رسالتك أو بدء محادثة جديدة.',
-    fr: 'Cette demande est trop volumineuse. Raccourcissez votre message ou démarrez une nouvelle conversation.',
+    en: 'That request is too large, so please shorten your message or start a new conversation.',
+    ar: 'هذا الطلب كبير جدًا، يرجى تقصير رسالتك أو بدء محادثة جديدة.',
   }),
 });
 
@@ -229,6 +225,14 @@ const PRIVATE_PATTERNS: readonly RegExp[] = [
   /(?:^|\s)(?:بياناتي|حسابي|بريدي(?:\s+الإلكتروني)?|رقم\s+هاتفي|رقم\s+جوالي|عنواني|تاريخ\s+ميلادي|رقم\s+سجلي|إحداثياتي|معلوماتي\s+الشخصية|بياناتي\s+الشخصية|طلباتي|مستنداتي)(?:\s|$|[؟?.!,;:])/u,
   // Arabic: explicit data-of/for requests.
   /(?:البريد\s+الإلكتروني|رقم\s+الهاتف|رقم\s+الجوال|بيانات\s+الاتصال|تاريخ\s+الميلاد|رقم\s+السجل|العنوان|الإحداثيات|الموقع\s+الدقيق)\s+(?:لـ|ل|of|for)/u,
+  // Arabic: imperative requests for a named or role-based person's contact data.
+  /(?:^|\s)(?:أعطني|اعطني|أعطوني|اعطوني|أرني|ارني|أرسل\s+لي|ارسل\s+لي|زودني|قدم\s+لي|أخبرني|اخبرني|أظهر|اظهر|شارك|شاركني)\s+(?:لي\s+)?(?:ال)?(?:بريد(?:\s+الإلكتروني)?|إيميل|ايميل|هاتف|رقم(?:\s+(?:الهاتف|الجوال))?|بيانات(?:\s+الاتصال)?|معلومات(?:\s+شخصية)?|عنوان)\s+(?:ال)?(?:متطوع|متطوعة|مستخدم|مستخدمة|شخص|عضو|مدير|مديرة|صاحب|صاحبة|أي|اي)/u,
+  // Arabic: contact data explicitly tied to a volunteer/user/person.
+  /(?:^|\s)(?:ال)?(?:بريد(?:\s+الإلكتروني)?|إيميل|ايميل|هاتف|رقم(?:\s+(?:الهاتف|الجوال))?|بيانات(?:\s+الاتصال)?|معلومات(?:\s+شخصية)?|عنوان)\s+(?:ال)?(?:متطوع|متطوعة|مستخدم|مستخدمة|شخص|عضو|مدير|مديرة|صاحب|صاحبة|أي|اي)(?:\s|$|[؟?.!,;:])/u,
+  // Arabic: a role claim followed by a request for contact or personal data.
+  /(?:^|\s)(?:أنا|انا)\s+(?:ال)?(?:مدير|مديرة|مسؤول|مسؤولة|مالك|صاحبة?)\s+(?:ال)?(?:جمعية|منظمة|مؤسسة)[\s\S]*?(?:بريد|إيميل|ايميل|هاتف|رقم|بيانات|معلومات|عنوان)/u,
+  // English: a role claim followed by a request for contact or personal data.
+  /\b(?:i(?:'m| am)|as)\s+(?:the\s+)?(?:association|organization|org)\s+(?:manager|owner|admin)\b[\s\S]*?\b(?:e-?mail|phone|contact|data|details)\b/iu,
   // French: first-person data/account requests.
   /\b(?:mon|notre)\s+(?:e-?mail|courriel|téléphone|numéro\s+de\s+téléphone|compte|adresse|mot\s+de\s+passe|date\s+de\s+naissance|numéro\s+d'enregistrement|coordonnées|données\s+(?:personnelles|privées)|candidatures|documents)\b/iu,
   // French: explicit data-of requests.
@@ -288,7 +292,8 @@ const SYSTEM_PROMPT_WINDOWS = buildWindowSet(
  * answer that reproduces multiple windows of it cannot be a grounded answer.
  *
  * Note the system prompt contains literal citation markers (`[K1]`), which is
- * why citation validation alone cannot catch a full prompt echo.
+ * why a full prompt echo is caught by comparing multiple verbatim windows
+ * rather than by looking for citation syntax.
  */
 export function containsSystemInstructionLeak(text: string): boolean {
   const words = normalizedWords(typeof text === 'string' ? text : '');
@@ -305,27 +310,22 @@ export function containsSystemInstructionLeak(text: string): boolean {
 }
 
 const BROWSE_TITLES: Readonly<
-  Record<
-    'opportunities' | 'organizations',
-    Readonly<Record<PolicyLanguage, string>>
-  >
+  Record<'opportunities' | 'talents', Readonly<Record<PolicyLanguage, string>>>
 > = Object.freeze({
   opportunities: Object.freeze({
     en: 'Browse opportunities',
     ar: 'تصفّح الفرص',
-    fr: 'Parcourir les opportunités',
   }),
-  organizations: Object.freeze({
-    en: 'Browse organizations',
-    ar: 'تصفّح المنظمات',
-    fr: 'Parcourir les organisations',
+  talents: Object.freeze({
+    en: 'Browse talents',
+    ar: 'تصفّح المواهب',
   }),
 });
 
 /** Stable, public browse links for degraded/not-found answers. */
 export function browseSources(language: PolicyLanguage): AiAgentDataSource[] {
   const opportunities = BROWSE_TITLES.opportunities[language];
-  const organizations = BROWSE_TITLES.organizations[language];
+  const talents = BROWSE_TITLES.talents[language];
   return [
     {
       id: 'browse-opportunities',
@@ -335,11 +335,11 @@ export function browseSources(language: PolicyLanguage): AiAgentDataSource[] {
       path: '/opportunities',
     },
     {
-      id: 'browse-organizations',
+      id: 'browse-talents',
       citationId: 'browse',
-      type: 'organization',
-      title: organizations,
-      path: '/orgs',
+      type: 'reference',
+      title: talents,
+      path: '/talents',
     },
   ];
 }

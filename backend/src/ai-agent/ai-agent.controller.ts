@@ -23,6 +23,7 @@ import {
 import {
   AiAgentErrorCode,
   AiAgentFinishReason,
+  AiAgentLocale,
   AiAgentMode,
   AiAgentStatusResponse,
   AiAgentUsage,
@@ -45,12 +46,6 @@ import { detectPromptLanguage } from './router/intent-router';
 import { SseStream, SseWriter } from './sse/sse-writer';
 import { UsageMeterService } from './usage/usage-meter.service';
 
-const RATE_LIMITED_MESSAGE =
-  'Too many assistant requests. Please try again later.';
-const BUSY_MESSAGE = 'The assistant is busy. Please retry shortly.';
-const QUOTA_EXHAUSTED_MESSAGE =
-  'The assistant has reached its free usage limit. You can still browse opportunities and organizations.';
-
 interface FinalizeInput {
   mode: AiAgentMode;
   finishReason: AiAgentFinishReason | 'aborted';
@@ -70,10 +65,10 @@ interface FinalizeInput {
  *
  * The controller owns validation, the kill switch, effective-mode selection,
  * quota reservation/commit/release, the SSE lifecycle, and request logging.
- * `AiAgentOrchestrator` owns routing, retrieval, provider/tool calls, citation
- * validation, and the `status` / `sources` / `token` / in-stream `error`
- * events. The controller always writes `meta` first and the final `done` (or no
- * `done` after an abort/error).
+ * `AiAgentOrchestrator` owns routing, retrieval, provider/tool calls, answer
+ * sanitization, and the `status` / `token` / in-stream `error` events. The
+ * controller always writes `meta` first and the final `done` (or no `done`
+ * after an abort/error).
  */
 @ApiTags('ai-agent')
 @Controller('ai-agent')
@@ -222,7 +217,7 @@ export class AiAgentController {
           rateLimited: true,
           errorCode: reservation.code,
         });
-        throw this.quotaException(reservation);
+        throw this.quotaException(reservation, dto.locale);
       }
 
       // A mode/token denial may still be answered locally from the knowledge
@@ -406,13 +401,18 @@ export class AiAgentController {
     );
   }
 
-  private quotaException(denial: QuotaReservationDenied): BusinessException {
-    const message =
+  private quotaException(
+    denial: QuotaReservationDenied,
+    locale: AiAgentLocale,
+  ): BusinessException {
+    const message = policyMessage(
       denial.code === 'RATE_LIMITED'
-        ? RATE_LIMITED_MESSAGE
+        ? 'rateLimited'
         : denial.code === 'AI_AGENT_BUSY'
-          ? BUSY_MESSAGE
-          : QUOTA_EXHAUSTED_MESSAGE;
+          ? 'busy'
+          : 'quotaExhausted',
+      locale,
+    );
 
     return new BusinessException(
       denial.code,

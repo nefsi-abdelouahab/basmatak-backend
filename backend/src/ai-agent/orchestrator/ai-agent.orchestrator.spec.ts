@@ -392,7 +392,7 @@ describe('orchestrator helpers', () => {
 });
 
 describe('AiAgentOrchestrator', () => {
-  it('answers a knowledge question with one provider call and validated sources', async () => {
+  it('answers a knowledge question with one provider call and no citation UI', async () => {
     const harness = createHarness();
     queueProvider(harness).queueTurn({
       interactionId: 'interaction-1',
@@ -428,27 +428,11 @@ describe('AiAgentOrchestrator', () => {
     expect(request.previousInteractionId).toBeUndefined();
     expect(request.tools).toBeUndefined();
 
-    expect(frames.map((frame) => frame.event)).toEqual([
-      'status',
-      'sources',
-      'token',
-    ]);
-    const sources = frames[1].data as {
-      knowledge: Array<Record<string, unknown>>;
-      data: unknown[];
-    };
-    expect(sources.knowledge).toEqual([
-      {
-        id: 'K1',
-        title: 'Basmatak FAQ',
-        source: 'faq/en.md',
-        heading: 'What is Basmatak?',
-      },
-    ]);
-    expect(sources.data).toEqual([]);
-    expect((frames[2].data as { delta: string }).delta).toBe(
-      'Basmatak is a platform [K1].',
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'token']);
+    expect((frames[1].data as { delta: string }).delta).toBe(
+      'Basmatak is a platform.',
     );
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
   });
 
   it('estimates usage when the provider omits it', async () => {
@@ -507,7 +491,7 @@ describe('AiAgentOrchestrator', () => {
     );
   });
 
-  it('returns fixed quota messaging and browse links in exhausted mode', async () => {
+  it('returns fixed quota messaging without sources in exhausted mode', async () => {
     const harness = createHarness();
 
     const { result, frames } = await runOrchestrator(
@@ -519,14 +503,13 @@ describe('AiAgentOrchestrator', () => {
     expect(queueProvider(harness).calls).toBe(0);
     expect(harness.knowledge.search).not.toHaveBeenCalled();
     expect(result).toMatchObject({ finishReason: 'stop', refusal: true });
-    expect(frames[0].event).toBe('sources');
-    expect((frames[0].data as { data: unknown[] }).data).toHaveLength(2);
-    expect((frames[1].data as { delta: string }).delta).toBe(
+    expect(frames.map((frame) => frame.event)).toEqual(['token']);
+    expect((frames[0].data as { delta: string }).delta).toBe(
       policyMessage('quotaExhausted', 'en'),
     );
   });
 
-  it('returns extractive snippets in retrieval-only mode without a provider call', async () => {
+  it('returns extractive snippets in retrieval-only mode without markers or sources', async () => {
     const harness = createHarness();
 
     const { result, frames } = await runOrchestrator(
@@ -541,23 +524,18 @@ describe('AiAgentOrchestrator', () => {
       inputTokens: 0,
       outputTokens: 0,
     });
-    expect(frames.map((frame) => frame.event)).toEqual([
-      'status',
-      'sources',
-      'token',
-    ]);
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'token']);
     const text = frames
       .filter((frame) => frame.event === 'token')
       .map((frame) => (frame.data as { delta: string }).delta)
       .join('');
-    expect(text).toContain(policyMessage('retrievalIntro', 'en'));
-    expect(text).toContain('[K1]');
-    expect((frames[1].data as { knowledge: unknown[] }).knowledge).toHaveLength(
-      1,
-    );
+    expect(text).toBe('Basmatak connects volunteers with opportunities.');
+    expect(text).not.toContain('Here is what I found');
+    expect(text).not.toContain('[K1]');
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
   });
 
-  it('runs one tool round, validates the data citation, and sums usage', async () => {
+  it('runs one tool round, keeps only allowed links, and sums usage', async () => {
     const harness = createHarness({
       decision: liveDataDecision(),
       executeMany: jest.fn(async () =>
@@ -589,7 +567,9 @@ describe('AiAgentOrchestrator', () => {
     });
     provider.queueTurn({
       interactionId: 'interaction-1',
-      text: ['Beach cleanup is available [T1].'],
+      text: [
+        'Beach cleanup is available: [Beach cleanup](/opportunities/beach-cleanup) [T1].',
+      ],
       usage: { inputTokens: 20, outputTokens: 7 },
     });
 
@@ -619,7 +599,6 @@ describe('AiAgentOrchestrator', () => {
     expect(frames.map((frame) => frame.event)).toEqual([
       'status',
       'status',
-      'sources',
       'token',
     ]);
     expect(frames[0].data).toEqual({ state: 'searching' });
@@ -627,15 +606,125 @@ describe('AiAgentOrchestrator', () => {
       state: 'tool',
       tool: 'search_opportunities',
     });
-    expect((frames[2].data as { data: unknown[] }).data).toEqual([
+    expect((frames[2].data as { delta: string }).delta).toBe(
+      'Beach cleanup is available: [Beach cleanup](/en/opportunities/beach-cleanup).',
+    );
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
+  });
+
+  it('runs a deterministic opportunity search when the model skips the tool', async () => {
+    const harness = createHarness({
+      decision: liveDataDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              {
+                slug: 'mentorat-bootcamp-code-pour-jeunes-oran',
+                title: 'Mentorat bootcamp code pour jeunes — Oran',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+    const provider = queueProvider(harness);
+    provider.queueTurn({
+      text: ['لم تتوفر لدي تفاصيل عن الفرص في الوقت الحالي.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'أعطني فرصة تطوعية في البرمجة',
+    );
+
+    expect(provider.calls).toBe(1);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledTimes(1);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
       {
-        id: 'T1-1',
-        citationId: 'T1',
-        type: 'opportunity',
-        title: 'Beach cleanup',
-        path: '/opportunities/beach-cleanup',
+        name: 'search_opportunities',
+        arguments: {
+          text: 'أعطني فرصة تطوعية في البرمجة',
+          limit: 3,
+        },
       },
     ]);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toContain(
+      '[Mentorat bootcamp code pour jeunes — Oran](/en/opportunities/mentorat-bootcamp-code-pour-jeunes-oran)',
+    );
+  });
+
+  it('returns not-found when the deterministic opportunity fallback finds nothing', async () => {
+    const harness = createHarness({
+      decision: liveDataDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([toolSuccess('search_opportunities', { items: [] })]),
+      ),
+    });
+    queueProvider(harness).queueTurn({
+      text: ['لم تتوفر لدي تفاصيل عن الفرص في الوقت الحالي.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'أعطني فرصة تطوعية في البرمجة',
+    );
+
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: true,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('notFound', 'ar'));
+  });
+
+  it('allows one general browse link when the user asks where to browse', async () => {
+    const harness = createHarness();
+    queueProvider(harness).queueTurn({
+      text: ['You can browse [opportunities](/opportunities).'],
+      usage: { inputTokens: 12, outputTokens: 6 },
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'Where can I find opportunities?',
+    );
+
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'token']);
+    expect((frames[1].data as { delta: string }).delta).toBe(
+      'You can browse [opportunities](/en/opportunities).',
+    );
+  });
+
+  it('turns a general browse link into plain text when the user did not ask to browse', async () => {
+    const harness = createHarness();
+    queueProvider(harness).queueTurn({
+      text: ['You can browse [opportunities](/opportunities).'],
+      usage: { inputTokens: 12, outputTokens: 6 },
+    });
+
+    const { frames } = await runOrchestrator(harness, 'What is Basmatak?');
+
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'token']);
+    expect((frames[1].data as { delta: string }).delta).toBe(
+      'You can browse opportunities.',
+    );
   });
 
   it('answers not-found immediately when a successful tool result is empty', async () => {
@@ -665,13 +754,12 @@ describe('AiAgentOrchestrator', () => {
     expect(frames.map((frame) => frame.event)).toEqual([
       'status',
       'status',
-      'sources',
       'token',
     ]);
-    expect((frames[2].data as { data: unknown[] }).data).toHaveLength(2);
-    expect((frames[3].data as { delta: string }).delta).toBe(
+    expect((frames[2].data as { delta: string }).delta).toBe(
       policyMessage('notFound', 'en'),
     );
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
   });
 
   it('rejects unknown tools without executing them', async () => {
@@ -832,10 +920,56 @@ describe('AiAgentOrchestrator', () => {
     });
   });
 
-  it('replaces an answer with no valid citation and keeps the usage', async () => {
+  it('accepts an uncited answer and keeps the usage', async () => {
     const harness = createHarness();
     queueProvider(harness).queueTurn({
-      text: ['Unsupported answer without sources.'],
+      text: ['Basmatak is a platform.'],
+      usage: { inputTokens: 12, outputTokens: 6 },
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'What is Basmatak?',
+    );
+
+    expect(queueProvider(harness).calls).toBe(1);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      inputTokens: 12,
+      outputTokens: 6,
+      totalTokens: 18,
+    });
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'token']);
+    expect((frames[1].data as { delta: string }).delta).toBe(
+      'Basmatak is a platform.',
+    );
+  });
+
+  it('strips citation markers and source wording from a final answer', async () => {
+    const harness = createHarness();
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform [K1].\n\nSources:\n- faq/en.md'],
+      usage: { inputTokens: 12, outputTokens: 6 },
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'What is Basmatak?',
+    );
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: false });
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'token']);
+    const text = (frames[1].data as { delta: string }).delta;
+    expect(text).toBe('Basmatak is a platform.');
+    expect(text).not.toContain('[K1]');
+    expect(text).not.toMatch(/sources?/iu);
+  });
+
+  it('replaces an answer that is empty after sanitization with the ungrounded policy', async () => {
+    const harness = createHarness();
+    queueProvider(harness).queueTurn({
+      text: ['[K1]'],
       usage: { inputTokens: 12, outputTokens: 6 },
     });
 
@@ -852,17 +986,13 @@ describe('AiAgentOrchestrator', () => {
       outputTokens: 6,
       totalTokens: 18,
     });
-    expect(frames.map((frame) => frame.event)).toEqual([
-      'status',
-      'sources',
-      'token',
-    ]);
-    expect((frames[2].data as { delta: string }).delta).toBe(
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'token']);
+    expect((frames[1].data as { delta: string }).delta).toBe(
       policyMessage('ungrounded', 'en'),
     );
   });
 
-  it('keeps a cited MAX_TOKENS partial answer and marks it truncated', async () => {
+  it('keeps a MAX_TOKENS partial answer and marks it truncated', async () => {
     const harness = createHarness();
     queueProvider(harness).queueTurn({
       text: ['Basmatak is a platform [K1].'],
@@ -887,7 +1017,7 @@ describe('AiAgentOrchestrator', () => {
         .filter((frame) => frame.event === 'token')
         .map((frame) => (frame.data as { delta: string }).delta)
         .join(''),
-    ).toBe('Basmatak is a platform [K1].');
+    ).toBe('Basmatak is a platform.');
   });
 
   it('turns a provider 429 into a cooldown and one in-stream error', async () => {

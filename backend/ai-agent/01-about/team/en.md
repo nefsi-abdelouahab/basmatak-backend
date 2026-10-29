@@ -7,7 +7,7 @@ The project team belongs to the Roeya Association from Timimoun, Algeria. Member
 - Abdelrazak Moulay Omar.
 
 ## Note
-Detailed roles of the other members are not specified in this knowledge base. Do not assign roles to them.
+Detailed roles of the other members are not specified in the available information. Do not assign roles to them.
 
 ## Common Questions
 **Who built the platform?**

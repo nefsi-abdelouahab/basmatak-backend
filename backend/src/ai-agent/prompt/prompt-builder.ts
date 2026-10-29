@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AI_AGENT_CONFIG } from '../ai-agent.constants';
-import type { AiAgentChatMessage } from '../ai-agent.types';
+import type { AiAgentChatMessage, AiAgentLocale } from '../ai-agent.types';
 import { estimateTokens } from '../budget/token-estimator';
 import type { AiAgentConfig } from '../config/ai-agent.config';
 import type { RetrievedChunk } from '../knowledge/retriever';
@@ -16,8 +16,10 @@ import type {
   PromptSectionName,
 } from './prompt.types';
 import {
+  AI_AGENT_FEW_SHOT_EXAMPLES,
   AI_AGENT_SYSTEM_PROMPT,
   AI_AGENT_SYSTEM_PROMPT_VERSION,
+  buildLinkRules,
   buildResponseStyle,
 } from './system-prompt';
 
@@ -25,8 +27,8 @@ import {
  * Deterministic, budget-bounded prompt assembly.
  *
  * Section order (stable):
- *   system_rules -> response_style -> tools -> knowledge -> tool_results
- *   -> history -> examples -> user_message
+ *   system_rules -> response_style -> style_examples -> link_rules -> tools
+ *   -> knowledge -> tool_results -> history -> examples -> user_message
  *
  * Optional content is trimmed in this exact order until the final prompt fits
  * `limits.maxInputTokens`:
@@ -76,6 +78,8 @@ interface PreparedExample {
 interface RenderInput {
   system: string;
   style: string;
+  linkRules: string;
+  locale: AiAgentLocale;
   language: PromptLanguage;
   tools: readonly ToolDescriptor[];
   knowledge: readonly PreparedKnowledge[];
@@ -166,12 +170,11 @@ export class PromptBuilder {
       HARD_MAX_OUTPUT_TOKENS,
     );
     const language: PromptLanguage =
-      input.responseLanguage === 'ar' || input.responseLanguage === 'fr'
-        ? input.responseLanguage
-        : 'en';
+      input.responseLanguage === 'ar' ? 'ar' : 'en';
     const message = typeof input.message === 'string' ? input.message : '';
     const system = AI_AGENT_SYSTEM_PROMPT;
     const style = buildResponseStyle(language);
+    const linkRules = buildLinkRules(input.locale);
     const tools = this.prepareTools(input.tools);
 
     const dropped: PromptDropped = {
@@ -185,6 +188,8 @@ export class PromptBuilder {
     const required = this.render({
       system,
       style,
+      linkRules,
+      locale: input.locale,
       language,
       tools,
       knowledge: [],
@@ -215,6 +220,8 @@ export class PromptBuilder {
     let rendered = this.render({
       system,
       style,
+      linkRules,
+      locale: input.locale,
       language,
       tools,
       knowledge,
@@ -257,6 +264,8 @@ export class PromptBuilder {
       rendered = this.render({
         system,
         style,
+        linkRules,
+        locale: input.locale,
         language,
         tools,
         knowledge,
@@ -527,10 +536,27 @@ export class PromptBuilder {
   }
 
   private render(input: RenderInput): RenderedPrompt {
-    const sections: PromptSectionName[] = ['system_rules', 'response_style'];
+    const sections: PromptSectionName[] = [
+      'system_rules',
+      'response_style',
+      'style_examples',
+      'link_rules',
+    ];
+    const styleExamples = [
+      '<style_examples>',
+      ...AI_AGENT_FEW_SHOT_EXAMPLES.flatMap((example) => [
+        `<example language="${escapeAttribute(example.language)}">`,
+        `<input>${escapeText(example.input)}</input>`,
+        `<output>${escapeText(example.output)}</output>`,
+        '</example>',
+      ]),
+      '</style_examples>',
+    ].join('\n');
     const parts: string[] = [
       `<system_rules>\n${input.system.trim()}\n</system_rules>`,
       `<response_style language="${input.language}">\n${input.style.trim()}\n</response_style>`,
+      styleExamples,
+      `<link_rules locale="${input.locale}">\n${input.linkRules.trim()}\n</link_rules>`,
     ];
 
     if (input.tools.length > 0) {

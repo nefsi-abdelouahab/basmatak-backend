@@ -6,10 +6,10 @@ A visitor is not an account type. It is anyone using the platform without an acc
 No. You can explore public content without an account.
 
 **What can I see without an account?**
-Volunteering opportunities and their full details, public volunteer profiles and talents, and public verified experiences.
+Published volunteering opportunities and their full details, public organization profiles, public volunteer profiles and talents, and public Verified Experiences.
 
 **What can I not do without an account?**
-Apply to opportunities, publish opportunities, submit contributions, manage a profile, or see private data.
+Apply to positions, publish opportunities, submit contributions, manage a profile or portfolio, or see private data.
 
 **Can I apply to an opportunity without an account?**
 No. You can view the opportunity, but applying requires a Volunteer account.
@@ -27,7 +27,13 @@ No. Only public content is shown.
 No. The platform has no followers or likes.
 
 **What is a Verified Experience?**
-A volunteering contribution that the responsible organization reviewed and confirmed as actually completed.
+A volunteering contribution that the responsible organization reviewed and confirmed.
 
-**Who is behind the platform?**
-The Roeya Association for Media and Audiovisual Production in Timimoun, Algeria.
+**Can I see an organization that is not verified?**
+No. Only verified, active organizations have a public profile.
+
+**Can I contact a volunteer directly?**
+No. There is no messaging system, and organizations do not see a volunteer's email or phone.
+
+**Can the AI assistant act for me?**
+No. The assistant is public, has no sign-in session, and does not perform actions. It answers questions from public information and the platform's knowledge.

@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { OrganizationsService } from './organizations.service';
 import { UsersService } from '../users/users.service';
 import {
@@ -613,12 +613,10 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         .exec();
       void user;
       const payload = await service.getPublicBySlug('org-owner');
-      expect(
-        (payload['aggregates'] as Record<string, unknown>)['activeSince'],
-      ).toBe(2018);
+      expect(payload.aggregates.activeSince).toBe(2018);
     });
 
-    it('keeps resolving when the platform toggle is off (no 404 regression)', async () => {
+    it('404s the detail and excludes the list when the platform toggle is off', async () => {
       const { user, org } = await createOrgOwner();
       void user;
       await orgModel
@@ -632,8 +630,169 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
           },
         )
         .exec();
+      await expect(service.getPublicBySlug('org-owner')).rejects.toMatchObject({
+        status: 404,
+        code: 'ORGANIZATION_NOT_FOUND',
+      });
+      expect((await service.listPublic()).items).toHaveLength(0);
+    });
+
+    it('treats a missing platform toggle as enabled', async () => {
+      const { user, org } = await createOrgOwner();
+      void user;
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          { $set: { verificationStatus: 'verified' } },
+        )
+        .exec();
+      // Bypass schema defaults to simulate legacy rows without the subdocument.
+      await handle.connection
+        .collection(OrganizationsCollection)
+        .updateOne({ _id: org._id }, { $unset: { publicProfile: '' } });
+
       const payload = await service.getPublicBySlug('org-owner');
-      expect(payload['publicProfile']).toEqual({ enabled: false });
+      expect(payload.id).toBe(org._id.toString());
+      expect((await service.listPublic()).items).toHaveLength(1);
+    });
+
+    it('returns exactly the public card/profile fields (no owner or internal data)', async () => {
+      const { user, org } = await createOrgOwner();
+      const logo = await createMedia(user._id.toString(), 'organization_logo');
+      const cover = await createMedia(
+        user._id.toString(),
+        'organization_cover',
+      );
+      const report = await createMedia(
+        user._id.toString(),
+        'organization_document',
+      );
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          {
+            $set: {
+              verificationStatus: 'verified',
+              nameAr: 'جمعية الأمل',
+              nameFr: 'Association El-Amel',
+              description: 'Volunteer charity',
+              logoMediaId: logo,
+              coverMediaId: cover,
+              registryId: 'ORG-000042',
+              foundedYear: 2018,
+              registrationNumber: 'REG-2024-001',
+              reliability: { score: 99 },
+              annualReportMediaId: report,
+              publicProfile: { enabled: true },
+              location: {
+                wilayaId: '16',
+                municipalityId: '1601',
+                address: 'Rue Didouche Mourad',
+              },
+              website: 'https://el-amel.example.org',
+              contact: {
+                email: 'contact@el-amel.example.org',
+                phone: '+213555123456',
+              },
+              focusDisciplines: [new Types.ObjectId()],
+              operatingScope: 'Algiers and surroundings',
+            },
+          },
+        )
+        .exec();
+
+      const profile = await service.getPublicBySlug('org-owner');
+      expect(Object.keys(profile).sort()).toEqual(
+        [
+          'aggregates',
+          'contact',
+          'coverMediaId',
+          'description',
+          'focusDisciplines',
+          'foundedYear',
+          'id',
+          'location',
+          'logoMediaId',
+          'nameAr',
+          'nameFr',
+          'operatingScope',
+          'registryId',
+          'slug',
+          'verificationStatus',
+          'website',
+        ].sort(),
+      );
+      expect(profile).toMatchObject({
+        id: org._id.toString(),
+        slug: 'org-owner',
+        registryId: 'ORG-000042',
+        verificationStatus: 'verified',
+        foundedYear: 2018,
+        logoMediaId: logo,
+        coverMediaId: cover,
+        location: {
+          wilayaId: '16',
+          municipalityId: '1601',
+          address: 'Rue Didouche Mourad',
+        },
+        contact: {
+          email: 'contact@el-amel.example.org',
+          phone: '+213555123456',
+        },
+      });
+      for (const forbidden of [
+        '_id',
+        'userId',
+        'status',
+        'reliability',
+        'annualReportMediaId',
+        'publicProfile',
+        'registrationNumber',
+        'createdAt',
+        'updatedAt',
+        '__v',
+      ]) {
+        expect(profile).not.toHaveProperty(forbidden);
+      }
+
+      const card = (await service.listPublic()).items[0];
+      expect(Object.keys(card).sort()).toEqual(
+        [
+          'coverMediaId',
+          'description',
+          'foundedYear',
+          'id',
+          'logoMediaId',
+          'nameAr',
+          'nameFr',
+          'registryId',
+          'slug',
+          'verificationStatus',
+        ].sort(),
+      );
+      expect(card).toMatchObject({
+        id: org._id.toString(),
+        slug: 'org-owner',
+        verificationStatus: 'verified',
+        logoMediaId: logo,
+        coverMediaId: cover,
+        registryId: 'ORG-000042',
+        foundedYear: 2018,
+      });
+      for (const forbidden of [
+        '_id',
+        'userId',
+        'status',
+        'reliability',
+        'annualReportMediaId',
+        'publicProfile',
+        'registrationNumber',
+        'createdAt',
+        'updatedAt',
+        '__v',
+      ]) {
+        expect(card).not.toHaveProperty(forbidden);
+      }
     });
   });
 

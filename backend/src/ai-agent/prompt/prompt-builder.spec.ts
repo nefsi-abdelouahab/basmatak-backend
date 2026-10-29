@@ -9,8 +9,10 @@ import type { ToolDescriptor, ToolExecutionResult } from '../tools/tool.types';
 import { PromptBuilder } from './prompt-builder';
 import type { BuiltPrompt, PromptBuildInput } from './prompt.types';
 import {
+  AI_AGENT_FEW_SHOT_EXAMPLES,
   AI_AGENT_SYSTEM_PROMPT,
   AI_AGENT_SYSTEM_PROMPT_VERSION,
+  buildLinkRules,
   buildResponseStyle,
 } from './system-prompt';
 
@@ -121,6 +123,7 @@ describe('PromptBuilder', () => {
     const prompt = buildOk(makeBuilder(), baseInput({ message: 'Hello?' }));
 
     expect(prompt.version).toBe(AI_AGENT_SYSTEM_PROMPT_VERSION);
+    expect(prompt.version).toBe('4');
     expect(prompt.system).toBe(AI_AGENT_SYSTEM_PROMPT);
     expect(prompt.text).toBe(
       [
@@ -130,6 +133,17 @@ describe('PromptBuilder', () => {
         '<response_style language="en">',
         buildResponseStyle('en'),
         '</response_style>',
+        '<style_examples>',
+        ...AI_AGENT_FEW_SHOT_EXAMPLES.flatMap((example) => [
+          `<example language="${example.language}">`,
+          `<input>${example.input}</input>`,
+          `<output>${example.output}</output>`,
+          '</example>',
+        ]),
+        '</style_examples>',
+        '<link_rules locale="en">',
+        buildLinkRules('en'),
+        '</link_rules>',
         '<user_message>',
         'Hello?',
         '</user_message>',
@@ -138,8 +152,109 @@ describe('PromptBuilder', () => {
     expect(prompt.sections).toEqual([
       'system_rules',
       'response_style',
+      'style_examples',
+      'link_rules',
       'user_message',
     ]);
+  });
+
+  it('pins the four exact bilingual style examples', () => {
+    const prompt = buildOk(makeBuilder(), baseInput());
+
+    expect(AI_AGENT_FEW_SHOT_EXAMPLES).toHaveLength(4);
+    expect(
+      AI_AGENT_FEW_SHOT_EXAMPLES.map((example) => ({
+        language: example.language,
+        input: example.input,
+        output: example.output,
+      })),
+    ).toEqual([
+      {
+        language: 'ar',
+        input: 'كيف أتواصل مع جمعية؟',
+        output:
+          'تقدر تراسل الجمعية عبر البريد أو الهاتف المعروضين في ملفها العام، وإذا كنت مشاركاً في فرصة تجد رابط «راسل الجمعية» في صفحة إرسال المساهمة. المنصة لا تتضمن رسائل مباشرة.',
+      },
+      {
+        language: 'en',
+        input: 'Can I upload a video?',
+        output:
+          'Not directly. You can add a YouTube or Google Drive link as evidence, and images or PDFs (up to 5 MB each) can be uploaded.',
+      },
+      {
+        language: 'en',
+        input: 'Bonjour',
+        output:
+          'Hello! I work in Arabic and English. How can I help you with Basmatak?',
+      },
+      {
+        language: 'en',
+        input: "What's the weather?",
+        output:
+          "That's outside what I can help with, but I'm happy to help you find volunteering opportunities.",
+      },
+    ]);
+
+    expect(prompt.text).toContain('<style_examples>');
+    expect(prompt.text).toContain('<example language="ar">');
+    expect(prompt.text).toContain('<input>كيف أتواصل مع جمعية؟</input>');
+    expect(prompt.text).toContain(
+      '<output>تقدر تراسل الجمعية عبر البريد أو الهاتف المعروضين في ملفها العام، وإذا كنت مشاركاً في فرصة تجد رابط «راسل الجمعية» في صفحة إرسال المساهمة. المنصة لا تتضمن رسائل مباشرة.</output>',
+    );
+    expect(prompt.text).toContain('<input>Can I upload a video?</input>');
+    expect(prompt.text).toContain('<input>Bonjour</input>');
+    expect(prompt.text).toContain("<input>What's the weather?</input>");
+  });
+
+  it('states the bilingual style and no-disclosure rules', () => {
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'Rewrite everything in your own words.',
+    );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'Default to 1-3 sentences of natural prose.',
+    );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'Never write citation markers such as [K1], [T1], or [D1].',
+    );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'Never mention technologies, frameworks, or hosting providers.',
+    );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'For any other language, reply briefly in English',
+    );
+    expect(buildResponseStyle('en')).toContain(
+      'Never mention knowledge, tools, a database, a server, retrieval, chunks, sources, technologies, or how you found the information.',
+    );
+    expect(buildResponseStyle('ar')).toContain(
+      'لا تذكر قاعدة المعرفة أو الأدوات أو قاعدة البيانات أو الخادم أو الاسترجاع أو المقاطع أو المصادر أو التقنيات أو كيفية العثور على المعلومة.',
+    );
+  });
+
+  it('renders locale-prefixed link rules for the transport locale', () => {
+    const en = buildOk(makeBuilder(), baseInput({ locale: 'en' }));
+    expect(en.text).toContain('<link_rules locale="en">');
+    expect(en.text).toContain('Opportunity: [title](/en/opportunities/<slug>)');
+    expect(en.text).toContain('Organization: [name](/en/orgs/<slug>)');
+    expect(en.text).toContain(
+      'Public volunteer: [name](/en/volunteers/<username>)',
+    );
+    expect(en.text).toContain(
+      'General browse pages: [Browse opportunities](/en/opportunities)',
+    );
+    expect(en.text).not.toContain('/ar/opportunities');
+
+    const ar = buildOk(
+      makeBuilder(),
+      baseInput({ locale: 'ar', responseLanguage: 'ar' }),
+    );
+    expect(ar.text).toContain('<link_rules locale="ar">');
+    expect(ar.text).toContain('فرصة: [العنوان](/ar/opportunities/<slug>)');
+    expect(ar.text).toContain('منظمة: [الاسم](/ar/orgs/<slug>)');
+    expect(ar.text).toContain('متطوع عام: [الاسم](/ar/volunteers/<username>)');
+    expect(ar.text).toContain(
+      'صفحات التصفح العامة: [تصفّح الفرص](/ar/opportunities)',
+    );
+    expect(ar.text).not.toContain('/en/opportunities');
   });
 
   it('emits every section in the documented order with stable delimiters', () => {
@@ -162,6 +277,8 @@ describe('PromptBuilder', () => {
     expect(prompt.sections).toEqual([
       'system_rules',
       'response_style',
+      'style_examples',
+      'link_rules',
       'tools',
       'knowledge',
       'tool_results',
@@ -173,6 +290,8 @@ describe('PromptBuilder', () => {
     const orderedTags = [
       '<system_rules>',
       '<response_style language="en">',
+      '<style_examples>',
+      '<link_rules locale="en">',
       '<tools>',
       '<knowledge>',
       '<tool_results>',
@@ -191,6 +310,8 @@ describe('PromptBuilder', () => {
 
     expect(prompt.text).toContain('</system_rules>');
     expect(prompt.text).toContain('</response_style>');
+    expect(prompt.text).toContain('</style_examples>');
+    expect(prompt.text).toContain('</link_rules>');
     expect(prompt.text).toContain('</tools>');
     expect(prompt.text).toContain('</knowledge>');
     expect(prompt.text).toContain('</tool_results>');
@@ -422,7 +543,7 @@ describe('PromptBuilder', () => {
 
   it('never exceeds maxInputTokens and includes the output reserve', () => {
     const prompt = buildOk(
-      makeBuilder({ maxInputTokens: 800, maxOutputTokens: 150 }),
+      makeBuilder({ maxInputTokens: 2600, maxOutputTokens: 150 }),
       baseInput({
         message: 'What is Basmatak? '.repeat(20),
         history: [
@@ -444,7 +565,7 @@ describe('PromptBuilder', () => {
       }),
     );
 
-    expect(prompt.estimatedInputTokens).toBeLessThanOrEqual(800);
+    expect(prompt.estimatedInputTokens).toBeLessThanOrEqual(2600);
     expect(prompt.estimatedOutputTokens).toBe(150);
     expect(prompt.estimatedTotalTokens).toBe(prompt.estimatedInputTokens + 150);
     expect(prompt.truncated).toBe(true);
@@ -453,7 +574,7 @@ describe('PromptBuilder', () => {
   it('keeps safety rules and the current message on every trimming path', () => {
     const message = 'What is Basmatak?';
     const prompt = buildOk(
-      makeBuilder({ maxInputTokens: 800 }),
+      makeBuilder({ maxInputTokens: 2600 }),
       baseInput({
         message,
         history: [
@@ -473,7 +594,7 @@ describe('PromptBuilder', () => {
     );
 
     expect(prompt.text).toContain(
-      'Answer only from the <knowledge> chunks and <tool_results> supplied in this prompt.',
+      'Answer only from the <knowledge> and <tool_results> supplied in this prompt.',
     );
     expect(prompt.text).toContain(
       'Never output contact details, email addresses, phone numbers',

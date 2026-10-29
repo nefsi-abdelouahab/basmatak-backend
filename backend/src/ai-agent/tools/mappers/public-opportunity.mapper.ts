@@ -42,6 +42,7 @@ export interface PublicOpportunitySource {
   applicationDeadline?: unknown;
   location?: unknown;
   positions?: unknown;
+  categoryId?: unknown;
 }
 
 const DESCRIPTION_MAX_CHARS = 280;

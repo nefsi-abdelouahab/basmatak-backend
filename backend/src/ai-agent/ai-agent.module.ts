@@ -15,6 +15,10 @@ import {
   OrganizationsCollection,
 } from '../organizations/schemas/organization.schema';
 import { SkillSchema, SkillsCollection } from '../skills/schemas/skill.schema';
+import {
+  SkillCategoriesCollection,
+  SkillCategorySchema,
+} from '../skills/schemas/skill-category.schema';
 import { AiAgentController } from './ai-agent.controller';
 import { AI_AGENT_CONFIG } from './ai-agent.constants';
 import { QuotaService } from './budget/quota.service';
@@ -79,6 +83,7 @@ import { UsageMeterService } from './usage/usage-meter.service';
       { name: OpportunitiesCollection, schema: OpportunitySchema },
       { name: OrganizationsCollection, schema: OrganizationSchema },
       { name: SkillsCollection, schema: SkillSchema },
+      { name: SkillCategoriesCollection, schema: SkillCategorySchema },
       { name: LocationsCollection, schema: LocationSchema },
     ]),
   ],

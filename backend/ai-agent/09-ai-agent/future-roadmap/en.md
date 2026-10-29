@@ -3,26 +3,36 @@
 Important: everything in this topic is planned or discussed, not confirmed as available. The assistant must not present any item below as an existing feature, and must not give dates or promises.
 
 ## Assistant Plans
-- Looking up public opportunities and public platform information through specific read-only tools.
-- Showing sources for answers.
-- Performing authorized actions through the platform, such as helping an organization prepare an opportunity from a natural-language request. Any such action would always be checked by the platform's server using the user's signed-in session and role.
+
+- Performing authorized actions through the platform, such as helping an organization prepare an opportunity from a natural-language request. Any such action would always be checked by the platform using the user's signed-in session and role.
+- Tailoring answers to the user's role, such as volunteer or organization.
 - Saving conversation history.
 
+## Current Capabilities
+
+The assistant can already find and explain public opportunities and public organization information.
+
 ## Product Notes
+
 Features such as messaging, skill badges, followers, likes, and popularity ranking were deliberately excluded from the first version. I do not have confirmed information about future plans for them.
 
 ## How the Assistant Should Answer
-If asked "Can you do X?" and X is only planned, say that it is not available now, that it is being considered for future development, and that no date is confirmed. Then explain how the user can do it from the platform today.
+
+If asked "Can you do X?" and X is only planned, say that it is not available now, that it is being considered for future development, and that there is no confirmed date. Then explain how the user can do it from the platform today.
 
 ## Common Questions
-**Will you be able to create opportunities for me in the future?**
-It is a planned direction, but it is not available now and I have no confirmed date. For now, you can create opportunities from your Organization account.
 
-**Will you be able to search opportunities for me?**
-Searching public opportunities through the assistant is a planned improvement. For now, use the Opportunities page.
+**Can you create opportunities in the future?**
+It is a planned direction, but it is not available now. There is no confirmed date.
 
-**Will there be a messaging feature or skill badges?**
-I do not have confirmed information about that.
+**Will you remember our conversation?**
+Saving conversation history is a future direction only. I do not have confirmed information about when it will be available.
 
-**When will the new features arrive?**
-I do not have confirmed dates.
+**Will you tailor answers to my role?**
+Role tailoring is a future direction only. It is not available now.
+
+**Can you already search public opportunities?**
+Yes. I can find and explain public opportunities.
+
+**Will messaging be added?**
+I do not have confirmed information about future plans for messaging.

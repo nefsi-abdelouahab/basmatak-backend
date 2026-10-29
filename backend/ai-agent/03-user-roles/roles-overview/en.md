@@ -1,39 +1,41 @@
 # User Roles Overview
 
-Basmatak Tatatoua has two account types, plus visitors who browse without an account.
+## Two Account Types
 
-| Role | Who they are | Has an account? | Main purpose |
-|---|---|---|---|
-| Volunteer | A person who wants to volunteer | Yes | Find opportunities, apply, carry out tasks, submit contributions, build verified experience |
-| Organization | An association or organization | Yes | Publish opportunities, select volunteers, verify contributions |
-| Visitor | Anyone not signed in | No | Explore public opportunities, talents, and verified experiences |
+Basmatak Tatatoua has exactly two account types: Volunteer and Organization. The account type is chosen at registration and cannot be changed later. A new account is needed to use the other type.
 
 ## Volunteer
-Creates a profile, presents skills, explores opportunities, applies, follows applications, carries out tasks, and submits contributions with evidence.
+
+A volunteer looks for opportunities, applies to a specific position, carries out the work after being accepted, and submits a contribution with evidence. A volunteer can also build a portfolio and receive Verified Experiences after organizations confirm their contributions.
 
 ## Organization
-Creates an organization profile, publishes opportunities, receives applications, selects volunteers, follows task execution, reviews contributions, and confirms completed work.
 
-## Visitor
-A visitor is not an account type. It describes anyone who uses the platform without an account or without signing in. Visitors explore the public content of the platform only.
+An organization publishes opportunities and positions, reviews applications, accepts or rejects applicants, follows participation, reviews contributions, verifies or rejects them, and can write a review of a volunteer's contribution.
 
-## Important Notes
-- One opportunity can accommodate several volunteers.
-- Only the Organization side can verify a contribution. Volunteers cannot verify their own.
-- Actions that change data are checked on the server using the user's real signed-in session, not on what the user claims.
+## Visitors (Not an Account Type)
+
+A visitor is anyone using the platform without an account or without being signed in. Visitor is not an account type. Visitors can explore public opportunities, public organization profiles, public volunteer profiles, and public Verified Experiences. They cannot apply, publish, submit contributions, or see private data.
+
+## What Each Can Do
+
+| Action | Visitor | Volunteer | Organization |
+|---|---|---|---|
+| Explore public content | Yes | Yes | Yes |
+| Apply to a position | No | Yes | No |
+| Publish and manage opportunities | No | No | Yes |
+| Submit a contribution | No | Yes | No |
+| Verify a contribution | No | No | Yes |
 
 ## Common Questions
-**What types of accounts exist?**
-Two: Volunteer and Organization. Visitors are people browsing without an account.
 
-**Which account type should I choose?**
-Choose Volunteer if you want to volunteer and build verified experience. Choose Organization if you represent an association that needs volunteers.
+**How many account types are there?**
+Exactly two: Volunteer and Organization.
 
-**Do I need an account to explore the platform?**
-No. You can explore public content as a visitor. To apply, submit contributions, or publish opportunities, you need an account.
+**Is a visitor an account type?**
+No. A visitor is anyone who is not signed in.
 
-**Can a volunteer create an opportunity?**
-No. Opportunities are published by organizations.
+**Can I change my account type later?**
+No. The account type is fixed at registration, so a new account is needed.
 
-**Can a visitor apply to an opportunity?**
-No. Applying requires a Volunteer account.
+**Can an organization apply to an opportunity?**
+No. Applying is a volunteer action.

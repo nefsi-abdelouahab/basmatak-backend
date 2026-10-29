@@ -1,39 +1,102 @@
-# Privacy Policy Summary
+# Privacy Policy
 
-## Status of This Topic
-The full text of the platform's Privacy Policy is not included in this knowledge base. This topic only states the privacy principles that are confirmed from the platform's design. Do not invent policy clauses.
+Last updated: October 2026
 
-## Confirmed Privacy Principles
+At Basmatak Tatatoua, we respect your privacy and strive to protect the information you provide when using the platform.
+
+## 1. Information We Collect
+
+We may collect information you provide when using the platform, such as:
+
+- Your name and account information.
+- Profile picture and public profile information.
+- Contact information you choose to provide.
+- Volunteering opportunities, applications, and contributions you create.
+- Photos, videos, or files attached to your contributions.
+- Technical information required to operate and improve the platform.
+
+## 2. How We Use Your Information
+
+We use information to:
+
+- Create and manage your account.
+- Allow you to apply for volunteering opportunities.
+- Manage opportunities and volunteer contributions.
+- Verify experiences after confirmation by the relevant organization.
+- Display information that you choose to make public.
+- Protect the platform and prevent misuse.
+- Improve the platform and its services.
+
+## 3. Public Information
+
+Some information may be publicly available, particularly information displayed on public talent profiles and verified volunteer experiences.
+
+Do not make sensitive or personal information public unless you are comfortable sharing it.
+
+## 4. Sharing Information
+
+We do not sell users' personal information.
+
+Information may be shared when necessary to operate the service, when required by law, or when necessary to protect the rights and security of the platform and its users.
+
+## 5. Content and Media
+
+When you upload photos, videos, or files, you are responsible for having the necessary rights to use and share them on the platform.
+
+## 6. Data Protection
+
+We implement appropriate technical and organizational measures to help protect user data. However, no method of electronic transmission or storage can be guaranteed to be completely secure.
+
+## 7. Data Retention
+
+We retain information for as long as necessary to provide the service or meet legal obligations.
+
+## 8. User Rights
+
+You may request access to, correction of, or deletion of your personal information or account, subject to the capabilities of the platform and applicable laws.
+
+## 9. Privacy Policy Updates
+
+This Privacy Policy may be updated from time to time. Any new version will be published with its update date.
+
+## 10. AI Assistant
+
+The platform may offer an optional AI assistant that answers questions about volunteering, opportunities, organizations, and public platform information.
+
+The assistant relies only on reviewed public platform content and public data, such as published opportunities and verified organization profiles. It does not access your account, applications, private profile, or other users' personal data, and it is not intended to provide general answers from outside the platform.
+
+When you use the assistant, your message and any recent conversation you choose to include may be processed by a third-party AI provider. On the provider's free tier, content may be used to improve the provider's products and may be reviewed; do not include personal, confidential, or sensitive information in your messages.
+
+The platform does not store your assistant conversation on its servers. The current conversation is kept in your browser's session storage for the open tab and is cleared when you start a new chat, sign out, your session expires, or you close the tab.
+
+The assistant is optional, and you can continue using the rest of the platform without it.
+
+## 11. Contact
+
+If you have questions about your privacy or how your information is processed, you can contact the Basmatak Tatatoua team through the platform's official contact channels. See the contact topic for the association's details.
+
+## Confirmed Principles
+
 - Public data and private user data are kept separate.
-- Visitors (people not signed in) can only see public content.
-- Discover Talents shows public data only, never private data.
-- The AI assistant uses public information and platform knowledge only. It does not reveal users' private data.
-- The AI assistant cannot run arbitrary database queries and has no direct access to the database.
-- Actions that change data are validated on the server using the user's real signed-in session.
-
-## What the Platform Collects
-Volunteers and organizations create profiles. Volunteers can submit descriptions, photos, and videos as evidence of contributions. Files are stored in a separate file storage service, while the platform's data is stored in the database.
-
-The exact list of personal data collected, how long it is kept, and whether it is shared with third parties are not confirmed in this knowledge base.
-
-## How the Agent Should Answer
-- Explain the confirmed principles above.
-- For specific legal or data-handling questions (retention, deletion, sharing, cookies, age limits), say that the detailed policy is not available to the assistant and direct the user to the Privacy link in the platform footer or to the Roeya Association contact details.
+- Visitors can see public content only.
+- Discover Talents shows public data only.
+- The assistant uses public information and platform knowledge only.
+- The assistant cannot run arbitrary database queries and has no direct access to the database.
+- Actions that change data are validated on the server by the platform.
 
 ## Common Questions
-**Is my personal data visible to everyone?**
-Only public profile content is visible to others and to visitors. Private data is not shown publicly.
 
-**Can the AI assistant see my private information?**
-No. The assistant uses public information and platform knowledge only, and it has no direct access to the database.
+**Can I delete my account?**
+Yes. Account deletion exists and is a soft delete: the account is marked as deleted and all sessions end, subject to this policy.
 
-**Can I delete my account or my data?**
-I do not have confirmed information about account or data deletion. Please check the Privacy page or contact the Roeya Association.
+**How long is my information kept?**
+The policy says information is retained for as long as necessary to provide the service or meet legal obligations.
 
-**How long is my data kept?**
-I do not have confirmed information about data retention.
+**Can I export my data?**
+No. Data export is not available.
 
-**Is my data shared with third parties?**
-I do not have confirmed information about this. Please check the Privacy page.
+**Does the platform sell my personal information?**
+No. The policy says the platform does not sell users' personal information.
 
-## Full Text (to be added by the project team)
+**Does the assistant store my conversation?**
+No. The conversation is kept in the browser's session storage for the open tab and is cleared when you start a new chat, sign out, your session expires, or you close the tab.

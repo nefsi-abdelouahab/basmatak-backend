@@ -6,10 +6,8 @@ import type {
   AiAgentChatMessage,
   AiAgentErrorCode,
   AiAgentFinishReason,
-  AiAgentKnowledgeSource,
   AiAgentLocale,
   AiAgentMode,
-  AiAgentSourcesEvent,
 } from '../ai-agent.types';
 import { QuotaService } from '../budget/quota.service';
 import { isProviderQuotaError } from '../budget/quota.types';
@@ -55,7 +53,6 @@ import type {
   ToolInputSchema,
 } from '../tools/tool.types';
 import {
-  browseSources,
   containsSystemInstructionLeak,
   hasUsableToolData,
   isPrivateDataRequest,
@@ -64,12 +61,12 @@ import {
   splitAnswerIntoDeltas,
 } from './answer-policy';
 import type { AnswerCaps } from './answer-policy';
+import { buildAnswerLinks, allowsBrowseLinks } from './answer-links';
 import {
-  buildDataCitationMap,
-  buildKnowledgeCitationMap,
-  buildRetrievalCitationMap,
-  resolveCitations,
-} from './citations';
+  asksForList,
+  CITATION_MARKER_PATTERN,
+  sanitizeAnswer,
+} from './answer-sanitizer';
 import type { CitableToolResult } from './citations';
 
 /**
@@ -77,8 +74,8 @@ import type { CitableToolResult } from './citations';
  *
  * The controller owns transport, validation, quota reservation/commit, and the
  * final `done` event. This orchestrator owns routing, retrieval, prompt
- * assembly, provider calls, bounded tool rounds, citation validation, and the
- * `status` / `sources` / `token` / in-stream `error` events.
+ * assembly, provider calls, bounded tool rounds, answer sanitization, and the
+ * `status` / `token` / in-stream `error` events.
  *
  * Safety properties:
  * - one provider call for knowledge-only turns, at most three calls per turn;
@@ -86,8 +83,8 @@ import type { CitableToolResult } from './citations';
  * - one 45-second turn deadline shared by every provider call;
  * - one transient-5xx retry, only before any text or tool call is produced;
  * - no retry for 429, timeout, abort, invalid responses, or after tools;
- * - model output is buffered until the turn finishes so citations can be
- *   validated before any token is emitted;
+ * - model output is buffered until the turn finishes so the complete answer can
+ *   be sanitized before any token is emitted;
  * - logs never receive message text, prompts, retrieved text, tool arguments,
  *   tool payloads, or completions.
  */
@@ -99,8 +96,6 @@ export const AI_AGENT_TOTAL_TIMEOUT_MS = 45_000;
 
 const MAX_TOOL_CALLS_PER_ROUND = 3;
 const MAX_PROVIDER_TEXT_CHARS = 100_000;
-
-const CITATION_MARKER_PATTERN = /\[[KTD]\d{1,3}(?:\s*[,;]\s*[KTD]\d{1,3})*\]/gi;
 
 export interface AiAgentOrchestratorInput {
   message: string;
@@ -362,7 +357,6 @@ export class AiAgentOrchestrator {
         return this.emitPolicyAnswer(
           input,
           policyMessage('privateData', language),
-          { knowledge: [], data: [] },
           true,
         );
       }
@@ -373,7 +367,6 @@ export class AiAgentOrchestrator {
         return this.emitPolicyAnswer(
           input,
           policyMessage('quotaExhausted', language),
-          { knowledge: [], data: browseSources(language) },
           true,
         );
       }
@@ -386,7 +379,6 @@ export class AiAgentOrchestrator {
         return this.emitPolicyAnswer(
           input,
           decision.directReply ?? policyMessage('notFound', language),
-          { knowledge: [], data: [] },
           decision.intent === 'clarify' || decision.intent === 'off_topic',
         );
       }
@@ -400,19 +392,17 @@ export class AiAgentOrchestrator {
         return this.emitPolicyAnswer(
           input,
           policyMessage('quotaExhausted', language),
-          { knowledge: [], data: browseSources(language) },
           true,
         );
       }
 
       // In knowledge-only mode a live-data question cannot be answered from
-      // tools. Return a clear limitation plus browse links instead of letting
-      // the model speculate or cite a weak knowledge match.
+      // tools. Return a clear limitation instead of letting the model
+      // speculate or use a weak knowledge match.
       if (input.mode === 'knowledge_only' && decision.intent === 'live_data') {
         return this.emitPolicyAnswer(
           input,
           policyMessage('knowledgeOnlyLive', language),
-          { knowledge: [], data: browseSources(language) },
           false,
         );
       }
@@ -454,7 +444,6 @@ export class AiAgentOrchestrator {
       return this.emitPolicyAnswer(
         input,
         policyMessage('knowledgeOnlyLive', language),
-        { knowledge: [], data: browseSources(language) },
         false,
       );
     }
@@ -491,11 +480,6 @@ export class AiAgentOrchestrator {
     }
 
     const prompt = promptResult.prompt;
-    const knowledgeCitations = buildKnowledgeCitationMap(
-      prompt.citations,
-      language,
-    );
-    const knowledgeIds = Object.keys(knowledgeCitations);
     const declarations: LlmToolDeclaration[] = toolsAllowed
       ? decision.tools.map(toLlmToolDeclaration)
       : [];
@@ -507,7 +491,6 @@ export class AiAgentOrchestrator {
     let estimatedInputTokens = prompt.estimatedInputTokens;
     let currentTools: LlmToolDeclaration[] | undefined =
       declarations.length > 0 ? declarations : undefined;
-    let knowledgeInContext = true;
     let interactionId: string | undefined;
     let toolRounds = 0;
     let toolCallCount = 0;
@@ -596,7 +579,6 @@ export class AiAgentOrchestrator {
             return this.emitPolicyAnswer(
               input,
               policyMessage(empty ? 'notFound' : 'toolUnavailable', language),
-              { knowledge: [], data: browseSources(language) },
               true,
               {
                 toolCalls: toolCallCount,
@@ -618,18 +600,12 @@ export class AiAgentOrchestrator {
             callState.calls + 1 < AI_AGENT_MAX_PROVIDER_CALLS;
 
           // Without a server-side interaction id the follow-up request only
-          // contains function results, so the original knowledge chunks are no
-          // longer in the model's context. Drop them from both the instruction
-          // and the citation map to avoid validating citations the model could
-          // not have grounded in the follow-up turn.
-          if (interactionId === undefined) {
-            knowledgeInContext = false;
-          }
-
+          // contains function results. The final answer can still use the
+          // public rows from this turn, but no other context is assumed.
           const instruction = this.buildFollowUpInstruction(
             citableResults,
-            knowledgeInContext ? knowledgeIds : [],
             canCallMoreTools,
+            input.locale,
           );
           currentInput = [
             ...round.functionResults,
@@ -670,7 +646,6 @@ export class AiAgentOrchestrator {
           exhaustedRounds ? 'toolUnavailable' : 'internalError',
           language,
         ),
-        { knowledge: [], data: browseSources(language) },
         true,
         {
           toolCalls: toolCallCount,
@@ -681,11 +656,23 @@ export class AiAgentOrchestrator {
     }
 
     const answerText = finalTurn.text.trim();
+
+    // A clear opportunity search must never end as a generic "no details"
+    // answer when the model skipped the tool. This deterministic fallback
+    // executes the read-only search and builds the entity link itself.
+    if (
+      toolCallCount === 0 &&
+      toolsAllowed &&
+      decision.toolIntents.length === 1 &&
+      decision.toolIntents[0] === 'opportunity_search'
+    ) {
+      return await this.runOpportunityFallback(input, language, totals);
+    }
+
     if (answerText === '') {
       return this.emitPolicyAnswer(
         input,
         policyMessage('toolUnavailable', language),
-        { knowledge: [], data: browseSources(language) },
         true,
         {
           toolCalls: toolCallCount,
@@ -695,27 +682,20 @@ export class AiAgentOrchestrator {
       );
     }
 
-    const resolved = resolveCitations(answerText, {
-      knowledge: knowledgeInContext ? knowledgeCitations : {},
-      data: buildDataCitationMap(citableResults, language),
+    // Run the prompt-echo guard on the raw answer, before sanitization can
+    // remove any phrase that would otherwise reveal the echo.
+    const leaked = containsSystemInstructionLeak(answerText);
+    const sanitized = sanitizeAnswer(answerText, {
+      locale: input.locale,
+      allowedLinks: buildAnswerLinks(citableResults, input.locale),
+      allowBrowseLinks: allowsBrowseLinks(input.message),
+      allowLists: asksForList(input.message),
     });
-    const plainAnswer = resolved.text
-      .replace(CITATION_MARKER_PATTERN, '')
-      .trim();
 
-    // A partial MAX_TOKENS answer without a single valid citation, or an answer
-    // that reproduces the private system rules (which themselves contain
-    // literal `[K1]` markers, so citations alone cannot catch a prompt echo),
-    // is replaced by a complete, citation-free refusal.
-    if (
-      !resolved.hasValidCitations ||
-      plainAnswer === '' ||
-      containsSystemInstructionLeak(plainAnswer)
-    ) {
+    if (leaked || sanitized === '') {
       return this.emitPolicyAnswer(
         input,
         policyMessage('ungrounded', language),
-        { knowledge: [], data: browseSources(language) },
         true,
         {
           toolCalls: toolCallCount,
@@ -726,22 +706,10 @@ export class AiAgentOrchestrator {
     }
 
     const truncated = finalTurn.finishReason === 'length';
-    const sources: AiAgentSourcesEvent = {
-      knowledge: resolved.knowledge,
-      data: resolved.data,
-    };
-
-    if (!this.emitSources(input.stream, sources)) {
-      return this.abortedResult(
-        input.mode,
-        uniqueNames(executedNames),
-        toolCallCount,
-      );
-    }
 
     return this.emitAnswer(
       input,
-      resolved.text,
+      sanitized,
       input.mode,
       totals,
       {
@@ -756,6 +724,100 @@ export class AiAgentOrchestrator {
     );
   }
 
+  /**
+   * Deterministic last resort for a clear opportunity search where the model
+   * answered without calling the tool. It guarantees that a published
+   * opportunity returned by the tool becomes a valid entity link instead of a
+   * generic "no details" answer.
+   */
+  private async runOpportunityFallback(
+    input: AiAgentOrchestratorInput,
+    language: ReturnType<typeof detectPromptLanguage>,
+    totals: UsageTotals,
+  ): Promise<AiAgentOrchestrationResult> {
+    const toolName = 'search_opportunities';
+    const text = input.message.replace(/\s+/g, ' ').trim().slice(0, 120);
+    let result: ToolExecutionResult;
+
+    try {
+      const batch = await this.toolExecutor.executeMany([
+        { name: toolName, arguments: { text, limit: 3 } },
+      ]);
+      result =
+        batch.results[0] ??
+        failureResult(
+          toolName,
+          'UNAVAILABLE',
+          'Tool is temporarily unavailable.',
+        );
+    } catch (error) {
+      this.logFailure('ai_agent_tool_failure', error);
+      result = failureResult(
+        toolName,
+        'UNAVAILABLE',
+        'Tool is temporarily unavailable.',
+      );
+    }
+
+    const toolNames = [toolName];
+    const extra = { toolCalls: 1, toolNames, usage: totals };
+
+    if (!result.ok) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('toolUnavailable', language),
+        true,
+        extra,
+      );
+    }
+
+    const links = buildAnswerLinks(
+      [{ citationId: 'T1', result }],
+      input.locale,
+    );
+    if (links.length === 0) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('notFound', language),
+        true,
+        extra,
+      );
+    }
+
+    const linked = links
+      .slice(0, 3)
+      .map((link) => `[${link.title}](${link.href})`);
+    const textAnswer =
+      language === 'ar'
+        ? linked.length === 1
+          ? `وجدت لك هذه الفرصة: ${linked[0]}.`
+          : `وجدت لك هذه الفرص: ${linked.join('، ')}.`
+        : linked.length === 1
+          ? `I found this opportunity for you: ${linked[0]}.`
+          : `I found these opportunities for you: ${linked.join(', ')}.`;
+
+    const sanitized = sanitizeAnswer(textAnswer, {
+      locale: input.locale,
+      allowedLinks: links,
+      allowBrowseLinks: false,
+      allowLists: false,
+    });
+
+    return this.emitAnswer(
+      input,
+      sanitized === '' ? policyMessage('notFound', language) : sanitized,
+      input.mode,
+      totals,
+      {
+        refusal: sanitized === '',
+        truncated: false,
+        toolCalls: 1,
+        toolNames,
+      },
+      { finishReason: 'stop' },
+    );
+  }
+
   private runRetrievalOnly(
     input: AiAgentOrchestratorInput,
     decision: RouterDecision,
@@ -766,7 +828,6 @@ export class AiAgentOrchestrator {
       return this.emitPolicyAnswer(
         input,
         policyMessage('retrievalOnlyLive', language),
-        { knowledge: [], data: browseSources(language) },
         false,
       );
     }
@@ -782,37 +843,26 @@ export class AiAgentOrchestrator {
       return this.emitPolicyAnswer(
         input,
         policyMessage('notFound', language),
-        { knowledge: [], data: browseSources(language) },
         true,
       );
     }
 
-    const citationMap = buildRetrievalCitationMap(chunks, language);
-    const knowledge: AiAgentKnowledgeSource[] = chunks.flatMap(
-      (_chunk, index) => {
-        const source = citationMap[`K${index + 1}`];
-        return source === undefined ? [] : [source];
-      },
-    );
+    const lines = chunks.map((chunk) => extractSnippet(chunk.text, 280));
 
-    const lines = [policyMessage('retrievalIntro', language)];
-    chunks.forEach((chunk, index) => {
-      lines.push(`- ${extractSnippet(chunk.text, 280)} [K${index + 1}]`);
-    });
-
-    const sources: AiAgentSourcesEvent = { knowledge, data: [] };
     if (decision.intent === 'mixed') {
       lines.push('', policyMessage('retrievalOnlyLive', language));
-      sources.data = browseSources(language);
     }
 
-    if (!this.emitSources(input.stream, sources)) {
-      return this.abortedResult(input.mode, [], 0);
-    }
+    const text = sanitizeAnswer(lines.join('\n'), {
+      locale: input.locale,
+      allowedLinks: [],
+      allowBrowseLinks: false,
+      allowLists: false,
+    });
 
     return this.emitAnswer(
       input,
-      lines.join('\n'),
+      text,
       input.mode,
       zeroUsage(),
       {
@@ -1042,28 +1092,29 @@ export class AiAgentOrchestrator {
 
   private buildFollowUpInstruction(
     citableResults: readonly CitableToolResult[],
-    knowledgeIds: readonly string[],
     canCallMoreTools: boolean,
+    locale: AiAgentLocale,
   ): string {
+    const links = buildAnswerLinks(citableResults, locale);
     const lines = [
-      'The function results above are the only tool evidence for this turn.',
-      'Use only the citation IDs listed below. Do not invent, renumber, or convert IDs.',
-      knowledgeIds.length > 0
-        ? `Knowledge citations available: ${knowledgeIds.join(', ')}.`
-        : 'No knowledge citations are available in this follow-up.',
+      'The function results above are the only public data for this turn.',
+      'Write the final answer in your own words. Do not mention tools, sources, or how you found the information.',
     ];
 
-    for (const item of citableResults) {
+    if (links.length > 0) {
       lines.push(
-        `${item.citationId} = ${item.result.tool} (${
-          item.result.ok ? 'success' : 'error'
-        }).`,
+        'Allowed links for this turn (use only these exact Markdown links, and only if relevant):',
       );
+      for (const link of links.slice(0, 3)) {
+        lines.push(`- [${link.title}](${link.href})`);
+      }
+      lines.push(
+        'Never invent or change a slug or username. For a specific opportunity or organization, include only the single most relevant link.',
+      );
+    } else {
+      lines.push('Do not include any links in this answer.');
     }
 
-    lines.push(
-      'Cite a fact from a successful tool result with its [T#]. Never cite a result marked error.',
-    );
     lines.push(
       canCallMoreTools
         ? 'Call another tool only if a required public detail is still missing.'
@@ -1394,7 +1445,6 @@ export class AiAgentOrchestrator {
   private emitPolicyAnswer(
     input: AiAgentOrchestratorInput,
     text: string,
-    sources: AiAgentSourcesEvent,
     refusal: boolean,
     extra?: {
       toolCalls?: number;
@@ -1406,10 +1456,6 @@ export class AiAgentOrchestrator {
   ): AiAgentOrchestrationResult {
     const toolNames = extra?.toolNames ?? [];
     const toolCalls = extra?.toolCalls ?? 0;
-
-    if (!this.emitSources(input.stream, sources)) {
-      return this.abortedResult(input.mode, toolNames, toolCalls);
-    }
 
     return this.emitAnswer(
       input,
@@ -1458,17 +1504,6 @@ export class AiAgentOrchestrator {
       truncated: options.truncated,
       ...(firstTokenAt !== undefined ? { firstTokenAt } : {}),
     });
-  }
-
-  private emitSources(
-    stream: SseStream,
-    sources: AiAgentSourcesEvent,
-  ): boolean {
-    if (sources.knowledge.length === 0 && sources.data.length === 0) {
-      return true;
-    }
-    if (stream.isClosed) return false;
-    return stream.event('sources', sources);
   }
 
   private writeStatus(

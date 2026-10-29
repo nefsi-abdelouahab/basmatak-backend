@@ -686,10 +686,9 @@ describe('ai-agent e2e (Sessions 2-3)', () => {
       .filter((frame) => frame.event === 'token')
       .map((frame) => (frame.data as { delta: string }).delta)
       .join('');
-    expect(text).toContain(
-      "Here is what I found in Basmatak's public information:",
-    );
-    expect(text).toContain('[K1]');
+    expect(text.trim().length).toBeGreaterThan(0);
+    expect(text).not.toContain('Here is what I found');
+    expect(text).not.toContain('[K1]');
     expect(events[events.length - 1].data).toMatchObject({
       finishReason: 'stop',
       usage: {

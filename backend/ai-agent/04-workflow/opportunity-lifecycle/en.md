@@ -1,29 +1,41 @@
-# The Opportunity Lifecycle
+# Opportunity Lifecycle
+
+## The Full Cycle
 
 The full cycle has seven stages, from publishing an opportunity to adding a Verified Experience to the volunteer's profile.
 
-| # | Stage | Who | What happens |
+| # | Stage | Who does it | What happens |
 |---|---|---|---|
-| 1 | Publish Opportunity | Organization | The organization creates and publishes a volunteering opportunity |
-| 2 | Apply | Volunteer | The volunteer explores the opportunity and sends an application |
-| 3 | Review & Selection | Organization | The organization reviews applications and selects suitable volunteers |
-| 4 | Task Execution | Volunteer | The selected volunteer carries out the task or takes part in the activity |
-| 5 | Submit Contribution | Volunteer | The volunteer sends a description of what they did, with evidence such as photos or videos |
-| 6 | Organization Verification | Organization | The organization reviews the contribution and confirms it was actually completed; it can also give an evaluation |
-| 7 | Verified Experience | Platform | The contribution becomes a Verified Experience shown on the volunteer's public profile |
+| 1 | Publish the opportunity | Organization | The organization creates an opportunity with its positions and publishes it |
+| 2 | Apply | Volunteer | The volunteer chooses a position and sends an application |
+| 3 | Review and selection | Organization | The organization reviews applications and accepts or rejects them |
+| 4 | Carry out the task | Volunteer | The accepted volunteer carries out the work |
+| 5 | Submit the contribution | Volunteer | The volunteer sends a description and evidence |
+| 6 | Verification | Organization | The organization reviews the contribution and verifies or rejects it |
+| 7 | Verified Experience | Platform | A verified contribution appears on the volunteer's public profile |
+
+## Opportunity Statuses
+
+An opportunity moves through draft, published, in progress, completed, closed, or cancelled. Only published opportunities appear in the public feed.
 
 ## Key Points
-- Applying does not make a volunteer a participant.
+
+- Applying does not make the volunteer a participant.
 - Submitting a contribution does not make it a Verified Experience.
-- Verification always comes from the organization.
-- One opportunity can accommodate several volunteers.
+- Verification is the organization's confirmation that the work was actually done.
+- An opportunity can contain several positions and accept several volunteers.
+- Opportunities start automatically at their start date when one is set.
 
 ## Common Questions
-**What are the steps of volunteering on the platform?**
-Publish, apply, review and selection, task execution, submit contribution, verification, then Verified Experience.
 
-**Who does each step?**
-Organizations publish, review, select, and verify. Volunteers apply, carry out tasks, and submit contributions.
+**What happens after I publish an opportunity?**
+It becomes published and appears in the public feed, and volunteers can apply while seats are open.
 
-**How long does each step take?**
-I do not have confirmed information about timing.
+**When does an opportunity start?**
+When a start date is set, the platform starts it automatically at that date.
+
+**What is the difference between closing and cancelling?**
+Both stop the opportunity, but they are different statuses. Closing ends it normally; cancelling ends it before completion.
+
+**Can a completed opportunity return to published?**
+No. The status transitions do not allow that.

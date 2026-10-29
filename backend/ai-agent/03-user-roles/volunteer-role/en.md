@@ -1,46 +1,55 @@
 # The Volunteer Role
 
-The Volunteer is one of the two main parties on the platform.
+A volunteer is one of the two main parties on the platform.
 
 ## What a Volunteer Can Do
-- Create a personal profile.
-- Show personal and professional information.
-- Present the skills they have.
-- Explore volunteering opportunities.
-- View opportunity details.
-- Apply to suitable opportunities.
-- Follow the status of their applications.
-- Carry out the tasks they were selected for.
-- Submit contributions after finishing the work.
-- Attach a description of the contribution.
-- Attach photos or videos as evidence.
-- Receive Verified Experiences after the organization confirms.
 
-## Purpose of the Volunteer Profile
-The profile is not only for displaying information. It is meant to build a record that reflects the volunteer's actual contributions.
+- Create a profile with personal and professional information.
+- List skills.
+- Explore opportunities and read their details.
+- Apply to a specific position in an opportunity.
+- Withdraw an application while it is still pending or under review.
+- Follow applications on the Applications page.
+- See accepted tasks on the My Tasks page.
+- Carry out the work and submit a contribution with a title, a description, and evidence.
+- Withdraw a participation before it is completed.
+- Receive Verified Experiences after the organization confirms a contribution.
+- Build a portfolio of work items.
+- Control public profile visibility settings.
+- Delete the account.
+
+## The Purpose of the Volunteer Profile
+
+The profile is not only a place to show information. It is meant to build a record of the volunteer's actual contributions.
 
 ## Volunteer Journey
+
 1. Create an account and profile.
 2. Explore opportunities.
-3. Apply to an opportunity.
-4. Wait for the organization to review and select.
-5. Carry out the task.
-6. Submit the contribution with description and evidence.
-7. The organization verifies it.
-8. It appears as a Verified Experience on the public profile.
+3. Apply to a position.
+4. Wait for the organization to review and decide.
+5. Carry out the task after acceptance.
+6. Submit a contribution with a description and evidence.
+7. The organization verifies or rejects it.
+8. A verified contribution appears as a Verified Experience on the public profile.
 
-## Pages Used by Volunteers
-Dashboard, Opportunities, Opportunity Details, Discover Talents, Public Profile, My Profile, Applications, My Tasks, Submit Contribution, Verified Experiences.
+## Pages Volunteers Use
+
+Dashboard, Opportunities, Opportunity Details, Discover Talents, Applications, My Tasks, Submit Contribution, My Profile, Portfolio, Verified Experiences, Notifications, and Settings.
 
 ## Common Questions
-**What can I do as a volunteer?**
-Explore and apply to opportunities, carry out tasks, submit contributions with evidence, and build a record of Verified Experiences.
 
-**Do I need to attach evidence?**
-Contributions can include a description and evidence such as photos or videos. The evidence shows the nature of the work done.
+**What can a volunteer do?**
+Explore opportunities, apply, participate, submit contributions, build a portfolio, and collect Verified Experiences.
 
-**Can I create an opportunity as a volunteer?**
-No. Organizations publish opportunities.
+**Can a volunteer publish an opportunity?**
+No. Only organizations publish opportunities.
 
-**Can I confirm my own contribution?**
-No. The organization confirms it.
+**Can a volunteer verify their own contribution?**
+No. Only the responsible organization verifies it.
+
+**Can a volunteer withdraw after being accepted?**
+Yes, before the participation is completed. The seat is freed for another volunteer.
+
+**Can a volunteer see their own applications and tasks?**
+Yes, on the Applications and My Tasks pages.

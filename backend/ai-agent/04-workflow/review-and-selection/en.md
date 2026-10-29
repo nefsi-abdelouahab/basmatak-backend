@@ -1,33 +1,50 @@
 # Review and Selection
 
 ## What Happens
-After volunteers apply, the organization reviews the applications and decides which volunteers to approve.
 
-## Goal
-The organization chooses people based on the needs of the opportunity and the applicants' skills.
+After volunteers apply, the organization reviews the applications and decides which volunteers to accept. The organization can move an application to under review before deciding.
+
+## The Goal
+
+The organization chooses people based on the needs of the position and the applicants' skills.
 
 ## Key Points
-- Sending an application does not automatically make the volunteer a participant.
-- Only selected volunteers move on to carry out the task.
-- One opportunity can accommodate several volunteers, so the organization can select more than one.
+
+- Sending an application does not make the volunteer a participant automatically.
+- Only accepted volunteers move to carrying out the task.
+- An opportunity can contain several positions, so the organization can accept several volunteers.
+- A volunteer can have only one live application per position.
+- A rejection requires a reason.
+- The organization can accept or reject a pending or under-review application.
 
 ## For Organizations
-1. Open your published opportunity.
-2. Review the applicants.
-3. Select the volunteers that fit the opportunity's needs.
+
+1. Open the opportunity you published.
+2. Open its applications.
+3. Review the applicants and their cover messages.
+4. Accept the volunteers who fit the position, or reject with a reason.
+5. Follow participation on the Participants page.
 
 ## For Volunteers
-Follow the result of your application on the Applications page. If you are selected, the task appears in My Tasks.
+
+Follow the result on the Applications page. If you are accepted, the task appears on the My Tasks page. You can withdraw before the participation is completed.
 
 ## Common Questions
+
 **Who decides who is accepted?**
 The organization that published the opportunity.
 
-**Can an organization select several volunteers for one opportunity?**
-Yes.
+**Can an organization accept several volunteers for one opportunity?**
+Yes. Each position has its own required number of volunteers.
 
-**What happens after I am selected?**
-You move to carrying out the task, which you can follow in My Tasks.
+**What happens after I am accepted?**
+You move to carrying out the task, and you can follow it on the My Tasks page.
 
 **Will I be notified?**
-A Notifications module exists in the platform, but I do not have confirmed details about notification types or channels. Check the Applications page for your application's result.
+The platform sends an in-app notification when your application is accepted or rejected.
+
+**Can I be rejected without a reason?**
+No. A rejection requires a reason.
+
+**Can I apply again after rejection?**
+Yes. A rejected application is no longer live, so you can send a new application if the position still has an open seat.

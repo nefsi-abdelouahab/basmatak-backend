@@ -1,21 +1,20 @@
 # Basmatak knowledge corpus
 
-**Status:** initial seed corpus. The content in this folder is a foundation for
-content owners, not a complete manual. Review it before launch and keep it in
-sync with the public product and legal copy.
-
 This folder is the curated knowledge source for the Basmatak Tatatoua assistant.
 It is committed to the backend repository and ships with the backend service.
 There is no runtime upload screen and no database collection for knowledge.
+
+The committed corpus currently contains 138 indexed documents across the
+numbered topic folders and the two data files.
 
 ## Purpose and grounding sources
 
 The assistant is allowed to ground answers in exactly two sources:
 
 1. **Curated knowledge** in this folder: reviewed Markdown, TXT, JSON, and CSV.
-2. **Read-only public database tools** implemented in later sessions, limited to
-   published opportunities, verified active organizations, public reference
-   data, and public platform counts.
+2. **Read-only public database tools**, limited to published opportunities,
+   verified active organizations, public reference data, and public platform
+   counts.
 
 There is no web search, no browsing tool, and no general-knowledge fallback. If
 neither source contains the answer, the assistant must say so and point to the
@@ -39,11 +38,10 @@ At runtime the backend resolves the root with:
 AI_AGENT_KNOWLEDGE_DIR, otherwise process.cwd()/ai-agent
 ```
 
-On Render the service root is `backend/`, so the committed folder is present at
-runtime. Do not point the override at `docs/`, the repository root, a home
-directory, or any folder that contains environment files or internal notes. Do
-not rely on files outside `backend/ai-agent/`; they are outside the deployed
-service root.
+The service root is `backend/`, so the committed folder is present at runtime.
+Do not point the override at `docs/`, the repository root, a home directory, or
+any folder that contains environment files or internal notes. Do not rely on
+files outside `backend/ai-agent/`; they are outside the deployed service root.
 
 ## What is indexed
 
@@ -71,41 +69,42 @@ Hard limits enforced before deployment:
 - at most 1 MB per indexed file;
 - strict UTF-8, no binary content and no legacy encodings.
 
-## Recommended directory layout
+## Directory layout
 
 ```text
 backend/ai-agent/
-  README.md                 # authoring guide, not indexed
+  README.md                     # authoring guide, not indexed
   _config/
-    synonyms.json           # retrieval synonyms, not indexed
-  faq/
-    en.md
-    ar.md
-  guides/
-    en.md
-    ar.md
-  policies/
-    en.md
-    ar.md
+    synonyms.json               # retrieval synonyms, not indexed
+  01-about/                     # platform, team, vision, contact
+  02-concepts/                  # definitions and core concepts
+  03-user-roles/                # visitors, volunteers, organizations, sessions
+  04-workflow/                  # opportunity, application, contribution, verification
+  05-pages-and-features/        # page-by-page behavior
+  06-excluded-features/         # deliberate product exclusions
+  07-privacy-and-trust/         # privacy, terms summaries, public data, deletion
+  08-faq/                       # role-based questions and troubleshooting
+  09-ai-agent/                  # assistant identity, limits, and behavior
   data/
-    glossary.csv
-    topics.json
+    glossary.csv                # bilingual term glossary
+    topics.json                 # bilingual topic index
 ```
 
 Group content by purpose, not by author. Keep one topic per section and split a
 large guide into several files rather than one long document.
 
-Recommended filename conventions:
+Each topic folder contains a locale file pair:
 
-- `<topic>.<locale>.md` or `<topic>-<locale>.md`, for example
-  `verification.en.md` and `verification.ar.md`;
-- or a locale filename inside a topic folder, for example `faq/en.md` and
-  `faq/ar.md`;
-- or a locale subfolder, for example `faq/en/verification.md`;
-- data files: `topics.json`, `glossary.csv`, or locale variants such as
-  `topics.en.json` and `topics.ar.json`.
+- `en.md` for English;
+- `ar.md` for Arabic.
 
-Locale suffixes and directory names are `en`, `ar`, and `fr`. Use lowercase.
+Both files in a pair must use the same heading structure and carry the same
+facts. The file name determines the locale; front matter is optional.
+
+The platform's Terms of Use and Privacy Policy are not copied into this folder.
+Their current text lives in the public product copy, and the
+`07-privacy-and-trust/` folder contains summaries written from that text. Do not
+create a separate policy archive here.
 
 ## Markdown and TXT front matter
 
@@ -124,7 +123,7 @@ priority: 1
 | Key | Rule |
 |---|---|
 | `title` | Non-empty string. Titles must be unique across indexed content after lowercase, trim, and whitespace normalization. |
-| `locale` | One of `en`, `ar`, or `fr`. |
+| `locale` | The document locale, matching the file name or locale directory. |
 | `tags` | Array of short strings. Use an inline array (`[a, b]`) or a block list (`- a`). |
 | `priority` | Integer from 1 to 5. `1` is core, `3` is normal, `5` is low. |
 
@@ -138,8 +137,7 @@ locale directory (`en/verification.md`). When front matter is present but a key
 is missing or invalid, `ai:check` fails; it does not silently guess.
 
 The checker warns, but does not fail, when a directory has only one side of an
-English/Arabic Markdown or TXT pair. French is supported in front matter but is
-not part of that pairing warning.
+English/Arabic Markdown or TXT pair.
 
 ## JSON metadata
 
@@ -195,9 +193,7 @@ Write for small retrieved chunks, not for a printed handbook:
 ## Bilingual expectations
 
 The platform is bilingual in English and Arabic. Core topics must exist in both
-languages, with the same facts and the same conditions. French is supported by
-the schema for future content, but do not publish French copy unless a reviewer
-has checked it.
+languages, with the same facts and the same conditions.
 
 - Use a native-speaker review for Arabic before publishing.
 - Keep titles and section order parallel where practical.
@@ -218,10 +214,10 @@ Do not include:
 - secrets, API keys, tokens, passwords, private-key headers, or connection
   strings with credentials;
 - environment variable names or values;
-- email addresses or phone numbers, except the official Roeya Association
-  contact details in `01-about/contact/en.md`, `01-about/contact/ar.md`,
-  `08-faq/troubleshooting/en.md`, and `08-faq/troubleshooting/ar.md`
-  (`roeyatimimoun@gmail.com`, `+213 663847105`, or `+213 663 847 105`);
+- email addresses or phone numbers, except the official contact details in the
+  four allowlisted files: `01-about/contact/en.md`,
+  `01-about/contact/ar.md`, `08-faq/troubleshooting/en.md`, and
+  `08-faq/troubleshooting/ar.md`;
 - exact private addresses, birth dates, account data, application data,
   submission evidence, or internal identifiers;
 - another person's personal information without permission;
@@ -284,8 +280,9 @@ The checker fails on:
   or provider environment variable names;
 - email addresses and Algerian or international phone-number patterns outside
   the four contact allowlist files; inside those files, any value other than
-  the official association email and phone above;
-- `TODO`, `TBD`, `FIXME`, `lorem ipsum`, `<script`, and `javascript:`;
+  the official association contact details;
+- placeholder markers, draft notes, unfinished text, `<script`, and
+  `javascript:`;
 - CSV cells that begin with `=`, `+`, `-`, or `@` after trimming;
 - JSON nesting deeper than 10 levels;
 - invalid JSON.
@@ -303,5 +300,4 @@ explicitly.
 
 Content owners are responsible for factual accuracy, bilingual parity, legal
 wording, and removing stale copy. Engineering owns the folder contract, the
-checker, and the deployment guard. The initial corpus in this folder is a
-review baseline, not an approved final manual.
+checker, and the deployment guard.

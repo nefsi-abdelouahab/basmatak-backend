@@ -1,48 +1,72 @@
 # Submitting a Contribution
 
 ## What It Is
-After carrying out the work, the volunteer submits a contribution so it can be reviewed and verified.
 
-## What a Contribution Can Include
-- A description of the contribution.
-- Photos.
-- Videos.
-- Other evidence showing the nature of the work done.
+After carrying out the work, the volunteer submits a contribution so the organization can review it and verify it. A participation can have one submission.
+
+## What the Submission Includes
+
+- A title of up to 200 characters.
+- A description of the work of up to 5000 characters.
+- Evidence: up to 50 items. Evidence can be JPEG, PNG, or WebP images and PDF files up to 5 MB each, plus links to YouTube or Google Drive videos.
+- Confirmation that the required deliverables are covered by evidence.
+- Consent when the evidence includes images or video showing people.
 
 ## Where
-On the Submit Contribution page.
+
+On the Submit Contribution page. The volunteer opens it from My Tasks.
 
 ## Steps
-1. Sign in with your Volunteer account.
-2. Open the Submit Contribution page.
-3. Write a clear description of what you did.
-4. Attach photos or videos as evidence.
-5. Submit.
-6. Wait for the organization to review and verify it.
+
+1. Sign in with the Volunteer account.
+2. Open the Submit Contribution page for the participation.
+3. Write a clear title and description of what you did.
+4. Attach evidence for each deliverable.
+5. Confirm consent if the evidence includes images or video.
+6. Submit.
+7. Wait for the organization to review the contribution.
+
+## Editing and Resubmission
+
+A submission can be edited only while it is a draft or after it is rejected. Editing a rejected submission returns it to draft, and it can be submitted again. A submission cannot be deleted.
+
+## Rejection Reason
+
+When the organization rejects a contribution, the volunteer sees the rejection reason written by the organization on the contribution page. The reason stays visible while the contribution is rejected or back in draft after editing. It disappears after the contribution is submitted again.
 
 ## Tips for a Good Contribution
-- Say what task you did, not only that you attended.
+
+- Describe the task you carried out, not only your attendance.
 - Mention the skills you used.
 - Attach visual evidence of the result.
-
-## Example
-A volunteer with design skills helped an association create a visual identity for an activity. Instead of only saying they attended, they submit the designs they made, a description of their work, and visual evidence.
+- Make sure every deliverable has evidence.
 
 ## Important
-Submitting does not make the contribution a Verified Experience. It becomes one only after the organization confirms it.
+
+Submitting a contribution does not make it a Verified Experience. It becomes one only after the organization confirms it.
 
 ## Common Questions
+
 **How do I submit my contribution?**
-From the Submit Contribution page, with a description and evidence.
+From the Submit Contribution page, after the organization accepts you and the participation exists.
 
-**What evidence can I attach?**
-Photos and videos.
+**Can I edit my contribution after submitting?**
+Only while it is a draft or after it is rejected. Once submitted, it cannot be edited until the organization rejects it.
 
-**Is it verified immediately?**
-No. The organization must review and confirm it first.
+**Why was my contribution rejected?**
+Open the contribution page and read the reason written by the organization. Edit the contribution and submit it again.
 
-**Can I edit a contribution after submitting it?**
-I do not have confirmed information about editing after submission.
+**Can I delete my contribution?**
+No.
 
-**Is there a limit on file size or number of files?**
-I do not have confirmed information about file limits.
+**What file types can I attach?**
+JPEG, PNG, or WebP images and PDF files up to 5 MB each, plus YouTube or Google Drive video links.
+
+**How many evidence items can I attach?**
+Up to 50.
+
+**Do I need consent?**
+Yes, when the evidence includes images or video showing people.
+
+**Does submitting make it verified?**
+No. The organization must review and confirm it.

@@ -82,6 +82,137 @@ export class OrganizationPublicProfileDto {
   enabled!: boolean;
 }
 
+/** Public location projection: exactly the three stored location facts. */
+export class PublicOrganizationLocationDto {
+  @ApiProperty({ nullable: true, example: '16' })
+  wilayaId!: string | null;
+
+  @ApiProperty({ nullable: true, example: '1601' })
+  municipalityId!: string | null;
+
+  @ApiProperty({ nullable: true, example: 'Rue Didouche Mourad' })
+  address!: string | null;
+}
+
+/** Public contact projection (both fields optional in storage). */
+export class PublicOrganizationContactDto {
+  @ApiProperty({ nullable: true, example: 'contact@example.org' })
+  email!: string | null;
+
+  @ApiProperty({ nullable: true, example: '+213555123456' })
+  phone!: string | null;
+}
+
+export class PublicOrganizationAggregatesDto {
+  @ApiProperty()
+  volunteers!: number;
+
+  @ApiProperty()
+  initiativesActive!: number;
+
+  @ApiProperty()
+  initiativesCompleted!: number;
+
+  @ApiProperty()
+  verifiedHours!: number;
+
+  @ApiProperty()
+  responseRate!: number;
+
+  @ApiProperty({ type: 'array', items: { type: 'object' } })
+  perDomain!: Array<{ domain: string; share: number }>;
+
+  @ApiProperty({ nullable: true, example: 2018 })
+  activeSince!: number | null;
+}
+
+/**
+ * Public organization card (`GET /organizations`). Deliberately narrow: no
+ * owner, moderation, reliability, registration-number or audit fields.
+ */
+export class PublicOrganizationCardDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameFr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  description!: string | null;
+
+  @ApiProperty({ nullable: true })
+  logoMediaId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  coverMediaId!: string | null;
+
+  @ApiProperty({ nullable: true, example: 'ORG-000123' })
+  registryId!: string | null;
+
+  @ApiProperty({ enum: ['verified'] })
+  verificationStatus!: 'verified';
+
+  @ApiProperty({ nullable: true, example: 2018 })
+  foundedYear!: number | null;
+}
+
+/** Public organization profile (`GET /organizations/:slug`). */
+export class PublicOrganizationProfileDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty({ nullable: true, example: 'ORG-000123' })
+  registryId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameFr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  description!: string | null;
+
+  @ApiProperty({ nullable: true })
+  logoMediaId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  coverMediaId!: string | null;
+
+  @ApiProperty({ type: PublicOrganizationLocationDto })
+  location!: PublicOrganizationLocationDto;
+
+  @ApiProperty({ nullable: true, example: 'https://example.org' })
+  website!: string | null;
+
+  @ApiProperty({ nullable: true, example: 2018 })
+  foundedYear!: number | null;
+
+  @ApiProperty({ enum: ['verified'] })
+  verificationStatus!: 'verified';
+
+  @ApiProperty({ type: PublicOrganizationContactDto })
+  contact!: PublicOrganizationContactDto;
+
+  @ApiProperty({ type: 'array', items: { type: 'string' } })
+  focusDisciplines!: string[];
+
+  @ApiProperty({ nullable: true })
+  operatingScope!: string | null;
+
+  @ApiProperty({ type: PublicOrganizationAggregatesDto })
+  aggregates!: PublicOrganizationAggregatesDto;
+}
+
 export class UpdateOrganizationDto {
   @ApiPropertyOptional({ example: 'جمعية الأمل', maxLength: 200 })
   @IsOptional()

@@ -556,7 +556,8 @@ describe('ai-agent quota and load (S12)', () => {
       expect(metaMode(retrieval)).toBe('retrieval_only');
       expect(provider.calls).toBe(0);
       const retrievalText = streamedAnswer(retrieval);
-      expect(retrievalText).toContain(policyMessage('retrievalIntro', 'en'));
+      expect(retrievalText.trim().length).toBeGreaterThan(0);
+      expect(retrievalText).not.toContain('Here is what I found');
       const done = sseEvents(retrieval).find((event) => event.event === 'done');
       expect(
         (done?.data as { usage?: { totalTokens?: number } }).usage?.totalTokens,

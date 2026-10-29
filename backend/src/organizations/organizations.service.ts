@@ -33,6 +33,8 @@ import {
   OrganizationListQueryDto,
   OrgOpportunitiesQueryDto,
   OrgOpportunityStatus,
+  PublicOrganizationCardDto,
+  PublicOrganizationProfileDto,
   UpdateOrganizationDto,
 } from './dto/organization.dto';
 import { MediaOwnership } from '../common/seams/media-ownership';
@@ -109,10 +111,12 @@ export class OrganizationsService {
 
   async listPublic(
     query?: OrganizationListQueryDto,
-  ): Promise<CursorPage<OrganizationModel>> {
+  ): Promise<CursorPage<PublicOrganizationCardDto>> {
     const filter: FilterQuery<OrganizationModel> = {
       verificationStatus: 'verified',
       status: 'active',
+      // Missing values default to visible; only an explicit `false` opts out.
+      'publicProfile.enabled': { $ne: false },
     };
     if (query?.q) {
       const pattern = query.q
@@ -126,18 +130,23 @@ export class OrganizationsService {
     }
     // Note: `query.page` (roadmap input) is intentionally ignored — pagination
     // stays cursor-based; `page` is returned as response metadata only.
-    return execPage(this.organizationModel, filter, {
-      limit: query?.limit,
-      cursor: query?.cursor,
-      sort: { _id: -1 },
-      sortToken: 'newest',
-      cursorFilter: (decoded) => {
-        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
-          return {};
-        }
-        return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+    return execPage(
+      this.organizationModel,
+      filter,
+      {
+        limit: query?.limit,
+        cursor: query?.cursor,
+        sort: { _id: -1 },
+        sortToken: 'newest',
+        cursorFilter: (decoded) => {
+          if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+            return {};
+          }
+          return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+        },
       },
-    });
+      (items) => items.map((item) => this.toPublicCard(item)),
+    );
   }
 
   /** Public seam (S12 contract): org only when verified AND active, else null. */
@@ -153,28 +162,65 @@ export class OrganizationsService {
     return organization;
   }
 
-  async getPublicBySlug(slug: string): Promise<Record<string, unknown>> {
+  async getPublicBySlug(slug: string): Promise<PublicOrganizationProfileDto> {
     const organization = await this.getPublicOrganization(slug);
-    if (!organization) {
+    if (!organization || organization.publicProfile?.enabled === false) {
       throw new BusinessException(
         ORGANIZATION_NOT_FOUND,
         'Organization not found',
         404,
       );
     }
-    // Aggregates come from the inert seam (zeroed) until Session 16
-    // (`org-dashboard`) swaps the real provider via DI. `activeSince` is
-    // derived here from the already-loaded row, not the seam.
+    // Aggregates come from the seam; `activeSince` is derived here from the
+    // already-loaded row, not the seam.
     const stats = await this.publicStats.getStats(organization._id);
-    const raw = organization.toObject() as Record<string, unknown>;
     return {
-      ...raw,
-      focusDisciplines: raw['focusDisciplines'] ?? [],
-      publicProfile: raw['publicProfile'] ?? { enabled: true },
+      id: organization._id.toString(),
+      slug: organization.slug,
+      registryId: organization.registryId ?? null,
+      nameAr: organization.nameAr ?? null,
+      nameFr: organization.nameFr ?? null,
+      description: organization.description ?? null,
+      logoMediaId: organization.logoMediaId?.toString() ?? null,
+      coverMediaId: organization.coverMediaId?.toString() ?? null,
+      location: {
+        wilayaId: organization.location?.wilayaId ?? null,
+        municipalityId: organization.location?.municipalityId ?? null,
+        address: organization.location?.address ?? null,
+      },
+      website: organization.website ?? null,
+      foundedYear: organization.foundedYear ?? null,
+      verificationStatus: 'verified',
+      contact: {
+        email: organization.contact?.email ?? null,
+        phone: organization.contact?.phone ?? null,
+      },
+      focusDisciplines: (organization.focusDisciplines ?? []).map((id) =>
+        id.toString(),
+      ),
+      operatingScope: organization.operatingScope ?? null,
       aggregates: {
         ...stats,
         activeSince: organization.foundedYear ?? null,
       },
+    };
+  }
+
+  /** Maps a stored organization row to the narrow public card projection. */
+  private toPublicCard(
+    organization: OrganizationModel,
+  ): PublicOrganizationCardDto {
+    return {
+      id: organization._id.toString(),
+      slug: organization.slug,
+      nameAr: organization.nameAr ?? null,
+      nameFr: organization.nameFr ?? null,
+      description: organization.description ?? null,
+      logoMediaId: organization.logoMediaId?.toString() ?? null,
+      coverMediaId: organization.coverMediaId?.toString() ?? null,
+      registryId: organization.registryId ?? null,
+      verificationStatus: 'verified',
+      foundedYear: organization.foundedYear ?? null,
     };
   }
 

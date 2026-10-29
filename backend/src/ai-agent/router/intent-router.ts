@@ -323,10 +323,10 @@ const ENGLISH_MARKERS = normalizeKeywords([
 
 /**
  * Detect the response language from the message while keeping the public DTO
- * locale (`en`/`ar`) unchanged. Arabic script wins; French diacritics or more
- * French than English markers select French; otherwise English is the safe
- * default (or Arabic when the transport locale is Arabic and there is no
- * signal).
+ * locale (`en`/`ar`) unchanged. Arabic script wins. French input is recognized
+ * only so it can be answered in English; the assistant never replies in French.
+ * Otherwise English is the safe default (or Arabic when the transport locale is
+ * Arabic and there is no language signal).
  */
 export function detectPromptLanguage(
   message: string,
@@ -334,10 +334,9 @@ export function detectPromptLanguage(
 ): PromptLanguage {
   const text = typeof message === 'string' ? message : '';
   if (ARABIC_SCRIPT.test(text)) return 'ar';
-  if (FRENCH_DIACRITICS.test(text)) return 'fr';
 
   const normalized = normalizeText(text);
-  let french = 0;
+  let french = FRENCH_DIACRITICS.test(text) ? 1 : 0;
   let english = 0;
   for (const token of normalized.split(' ')) {
     if (token === '') continue;
@@ -345,8 +344,8 @@ export function detectPromptLanguage(
     if (ENGLISH_MARKERS.has(token)) english += 1;
   }
 
-  if (french > english) return 'fr';
-  if (english > french) return 'en';
+  // Any French signal is answered in English, never in French.
+  if (french > 0 || english > 0) return 'en';
   return locale === 'ar' ? 'ar' : 'en';
 }
 
@@ -474,6 +473,56 @@ const REFERENCE_KEYWORDS = normalizeKeywords([
   'categories',
   'specialite',
   'specialites',
+]);
+
+/**
+ * Platform-knowledge questions often share words with off-topic terms (for
+ * example Arabic "سياسة" is both "policy" and "politics"). These signals keep
+ * privacy, verification, application, submission, status, and file questions in
+ * scope so they reach retrieval and the LLM instead of a canned refusal.
+ */
+const PLATFORM_KNOWLEDGE_KEYWORDS = normalizeKeywords([
+  'verification',
+  'verify',
+  'verified',
+  'application',
+  'applications',
+  'apply',
+  'applying',
+  'submission',
+  'submissions',
+  'submit',
+  'submitting',
+  'contribution',
+  'contributions',
+  'status',
+  'statuses',
+  'file',
+  'files',
+  'upload',
+  'uploads',
+  'privacy',
+  'private',
+  'withdraw',
+  'withdrawal',
+  'تحقق',
+  'توثيق',
+  'طلب',
+  'طلبات',
+  'تطبيق',
+  'تقديم',
+  'تقدم',
+  'مساهمة',
+  'مساهمات',
+  'ارسال',
+  'حالة',
+  'حالات',
+  'ملف',
+  'ملفات',
+  'رفع',
+  'فيديو',
+  'خصوصية',
+  'سحب',
 ]);
 
 const STATS_KEYWORDS = normalizeKeywords([
@@ -812,44 +861,26 @@ function hasLocationSignal(
 
 // --- Localized direct replies ---------------------------------------------
 
-const DIRECT_REPLIES: Readonly<
+export const DIRECT_REPLIES: Readonly<
   Record<PromptLanguage, Readonly<Record<DirectReplyKind, string>>>
 > = Object.freeze({
   en: Object.freeze({
-    greeting:
-      'Hello! I can help with public Basmatak information about opportunities, organizations, skills, wilayas, and platform statistics. What would you like to know?',
-    thanks:
-      "You're welcome! Ask me anytime about public Basmatak opportunities, organizations, skills, or platform statistics.",
+    greeting: 'Hi! How can I help you with Basmatak?',
+    thanks: "You're welcome!",
     capability:
-      "I can answer from Basmatak's public information: opportunities, organizations, skills, wilayas, and platform statistics. I cannot access private accounts, contact details, or personal data.",
-    clarify:
-      'I can only help with public Basmatak information. Are you asking about opportunities, organizations, skills, wilayas, or platform statistics?',
+      "I'm Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
+    clarify: 'Could you tell me a bit more about what you need?',
     off_topic:
-      "That question is outside Basmatak's public information. I can help with opportunities, organizations, skills, wilayas, or platform statistics.",
+      "That's outside what I can help with, but I'd be glad to help you find a volunteering opportunity.",
   }),
   ar: Object.freeze({
-    greeting:
-      'مرحبًا! يمكنني المساعدة بمعلومات بصمتك العامة عن الفرص والمنظمات والمهارات والولايات وإحصاءات المنصة. ما الذي تريد معرفته؟',
-    thanks:
-      'على الرحب والسعة! اسألني في أي وقت عن الفرص أو المنظمات أو المهارات أو إحصاءات المنصة العامة.',
+    greeting: 'مرحباً! كيف أقدر أساعدك في بصمتك؟',
+    thanks: 'على الرحب والسعة!',
     capability:
-      'يمكنني الإجابة من معلومات بصمتك العامة عن الفرص والمنظمات والمهارات والولايات وإحصاءات المنصة. لا أستطيع الوصول إلى الحسابات الخاصة أو بيانات الاتصال أو البيانات الشخصية.',
-    clarify:
-      'يمكنني المساعدة فقط بمعلومات بصمتك العامة. هل يمكنك توضيح ما إذا كان سؤالك عن الفرص أو المنظمات أو المهارات أو الولايات أو إحصاءات المنصة؟',
+      'أنا مساعد بصمتك. أشرح لك كيف تعمل المنصة، وأساعدك في العثور على الفرص والمنظمات.',
+    clarify: 'ممكن توضح لي أكثر ماذا تريد؟',
     off_topic:
-      'هذا السؤال خارج نطاق معلومات بصمتك العامة. يمكنني المساعدة في الفرص أو المنظمات أو المهارات أو الولايات أو إحصاءات المنصة.',
-  }),
-  fr: Object.freeze({
-    greeting:
-      'Bonjour ! Je peux vous aider avec les informations publiques de Basmatak : opportunités, organisations, compétences, wilayas et statistiques de la plateforme. Que souhaitez-vous savoir ?',
-    thanks:
-      'Avec plaisir ! Posez-moi vos questions sur les opportunités, organisations, compétences ou statistiques publiques de Basmatak.',
-    capability:
-      "Je peux répondre à partir des informations publiques de Basmatak : opportunités, organisations, compétences, wilayas et statistiques de la plateforme. Je n'accède pas aux comptes privés, coordonnées ou données personnelles.",
-    clarify:
-      'Je peux uniquement aider avec les informations publiques de Basmatak. Votre question porte-t-elle sur les opportunités, les organisations, les compétences, les wilayas ou les statistiques de la plateforme ?',
-    off_topic:
-      'Cette question sort du cadre des informations publiques de Basmatak. Je peux aider avec les opportunités, les organisations, les compétences, les wilayas ou les statistiques de la plateforme.',
+      'هذا خارج ما أستطيع مساعدتك فيه، لكن يسعدني أن أساعدك في إيجاد فرصة تطوعية.',
   }),
 });
 
@@ -905,8 +936,17 @@ export class IntentRouter {
       asksForStats;
 
     // Obvious off-topic questions are rejected before retrieval. A domain word
-    // (for example "sports volunteering") keeps the question in scope.
-    if (hasKeyword(normalized, OFF_TOPIC_KEYWORDS) && !hasDomainTopic) {
+    // (for example "sports volunteering") or a platform-knowledge signal (for
+    // example "privacy policy") keeps the question in scope.
+    const asksAboutPlatformKnowledge = hasKeyword(
+      normalized,
+      PLATFORM_KNOWLEDGE_KEYWORDS,
+    );
+    if (
+      hasKeyword(normalized, OFF_TOPIC_KEYWORDS) &&
+      !hasDomainTopic &&
+      !asksAboutPlatformKnowledge
+    ) {
       return this.directDecision(
         'off_topic',
         language,

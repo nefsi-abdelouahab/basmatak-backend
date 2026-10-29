@@ -17,11 +17,13 @@ import type { ToolDescriptor, ToolExecutionResult } from '../tools/tool.types';
  */
 
 /** Internal response language. The public DTO remains `AiAgentLocale`. */
-export type PromptLanguage = 'ar' | 'en' | 'fr';
+export type PromptLanguage = 'ar' | 'en';
 
 export type PromptSectionName =
   | 'system_rules'
   | 'response_style'
+  | 'style_examples'
+  | 'link_rules'
   | 'tools'
   | 'knowledge'
   | 'tool_results'

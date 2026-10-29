@@ -91,7 +91,6 @@ export class OpportunitiesModule implements OnModuleInit {
       ['published', 'cancelled'],
       ['in_progress', 'closed'],
       ['in_progress', 'cancelled'],
-      ['accepted', 'active'],
     ]);
     this.jobRegistry.register('opportunityStartTicker', () =>
       this.opportunities.runStartTicker(),

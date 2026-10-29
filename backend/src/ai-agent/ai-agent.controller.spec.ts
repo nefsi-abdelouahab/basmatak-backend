@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 import { AppLogger } from '../common/logger/app.logger';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { AiAgentController } from './ai-agent.controller';
-import { AiAgentKnowledgeCounts } from './ai-agent.types';
+import { AiAgentKnowledgeCounts, AiAgentLocale } from './ai-agent.types';
 import { QuotaService } from './budget/quota.service';
 import {
   AiAgentConfig,
@@ -187,10 +187,11 @@ async function expectChatRejected(
   controller: AiAgentController,
   response: FakeResponse,
   message = 'Hello',
+  locale: AiAgentLocale = 'en',
 ): Promise<BusinessException> {
   try {
     await controller.chat(
-      { message, locale: 'en' },
+      { message, locale },
       new FakeRequest() as unknown as Request,
       response as unknown as Response,
     );
@@ -199,6 +200,11 @@ async function expectChatRejected(
     return error as BusinessException;
   }
   throw new Error('Expected the controller to reject the request');
+}
+
+function exceptionMessage(error: BusinessException): string {
+  const body = error.getResponse() as { message?: unknown };
+  return typeof body.message === 'string' ? body.message : '';
 }
 
 function parseFrames(chunks: string[]): ParsedFrame[] {
@@ -722,6 +728,9 @@ describe('AiAgentController', () => {
 
     expect(error.code).toBe('RATE_LIMITED');
     expect(error.getStatus()).toBe(429);
+    expect(exceptionMessage(error)).toBe(
+      'Too many assistant requests. Please try again later.',
+    );
     expect(denied.chunks).toEqual([]);
     expect(denied.statusCode).toBe(0);
     const retryAfter = Number(denied.headers['retry-after']);
@@ -736,6 +745,30 @@ describe('AiAgentController', () => {
       requests: 2,
       rateLimited: 1,
     });
+  });
+
+  it('localizes a rate-limit denial in Arabic from the request locale', async () => {
+    const { controller } = createController(
+      createConfig({ limits: highLimits({ ipRequestsPerMinute: 1 }) }),
+    );
+    const request = new FakeRequest() as unknown as Request;
+
+    const first = new FakeResponse();
+    await controller.chat(
+      { message: 'Hello', locale: 'en' },
+      request,
+      first as unknown as Response,
+    );
+    expect(first.chunks.join('')).toContain('event: done');
+
+    const denied = new FakeResponse();
+    const error = await expectChatRejected(controller, denied, 'مرحبا', 'ar');
+
+    expect(error.code).toBe('RATE_LIMITED');
+    expect(exceptionMessage(error)).toBe(
+      'طلبات كثيرة جداً، حاول مرة أخرى بعد قليل.',
+    );
+    expect(denied.chunks).toEqual([]);
   });
 
   it('maps a concurrency overflow to 429 AI_AGENT_BUSY', async () => {
@@ -754,12 +787,36 @@ describe('AiAgentController', () => {
 
     expect(error.code).toBe('AI_AGENT_BUSY');
     expect(error.getStatus()).toBe(429);
+    expect(exceptionMessage(error)).toBe(
+      'The assistant is busy. Please retry shortly.',
+    );
     expect(denied.chunks).toEqual([]);
     expect(denied.headers['retry-after']).toBe('1');
     expect(error.details).toMatchObject({ reason: 'concurrency' });
 
     quota.release(held.reservationId);
     expect(quota.activeConcurrencyCount).toBe(0);
+  });
+
+  it('localizes a busy denial in Arabic from the request locale', async () => {
+    const { controller, quota } = createController(
+      createConfig({ limits: highLimits({ maxConcurrent: 1 }) }),
+    );
+    const held = quota.reserve({
+      ip: 'held-by-test',
+      estimatedInputTokens: 1,
+      maxOutputTokens: 1,
+    });
+    if (!held.allowed) throw new Error('Expected the test reservation');
+
+    const denied = new FakeResponse();
+    const error = await expectChatRejected(controller, denied, 'مرحبا', 'ar');
+
+    expect(error.code).toBe('AI_AGENT_BUSY');
+    expect(exceptionMessage(error)).toBe('المساعد مشغول الآن، حاول بعد لحظات.');
+    expect(denied.chunks).toEqual([]);
+
+    quota.release(held.reservationId);
   });
 
   it('keeps a provider cooldown as a pre-stream JSON denial', async () => {
@@ -776,9 +833,31 @@ describe('AiAgentController', () => {
 
     expect(error.code).toBe('AI_AGENT_QUOTA_EXHAUSTED');
     expect(error.getStatus()).toBe(429);
+    expect(exceptionMessage(error)).toBe(
+      'The assistant has reached its free usage limit, but you can still browse opportunities and organizations.',
+    );
     expect(error.details).toMatchObject({ reason: 'cooldown_day' });
     expect(denied.chunks).toEqual([]);
     expect(denied.headers['retry-after']).toBeDefined();
+  });
+
+  it('localizes a quota denial in Arabic from the request locale', async () => {
+    const { controller, quota } = createController(
+      createConfig({ limits: highLimits() }),
+    );
+    quota.markProviderQuotaExhausted({
+      window: 'day',
+      retryAfterSeconds: 30,
+    });
+
+    const denied = new FakeResponse();
+    const error = await expectChatRejected(controller, denied, 'مرحبا', 'ar');
+
+    expect(error.code).toBe('AI_AGENT_QUOTA_EXHAUSTED');
+    expect(exceptionMessage(error)).toBe(
+      'وصل المساعد إلى حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
+    );
+    expect(denied.chunks).toEqual([]);
   });
 
   it('serves exhausted mode as retrieval-only SSE without a reservation', async () => {
@@ -811,14 +890,13 @@ describe('AiAgentController', () => {
     expect(quota.getBudgetSnapshot().usedToday).toBe(1000);
   });
 
-  it('serves exhausted mode with browse links when fallback is disabled', async () => {
+  it('serves exhausted mode when fallback is disabled', async () => {
     const config = createConfig({
       limits: highLimits({ dailyTokenBudget: 1000, retrievalFallback: false }),
     });
     const { controller, quota, orchestrator } = createController(config);
     exhaustBudget(quota, config);
     orchestrator.impl = async (input) => {
-      input.stream.event('sources', { knowledge: [], data: [] });
       input.stream.event('token', { delta: 'Quota message.' });
       return defaultResult({ mode: 'exhausted', refusal: true });
     };

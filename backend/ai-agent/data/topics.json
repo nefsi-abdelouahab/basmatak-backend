@@ -3,8 +3,8 @@
     "id": "opportunities",
     "title_en": "Finding volunteer opportunities",
     "title_ar": "العثور على فرص التطوع",
-    "summary_en": "How to browse, search, and filter published opportunities by place, skill, category, and format.",
-    "summary_ar": "كيفية تصفح الفرص المنشورة والبحث فيها وتصفيتها حسب المكان والمهارة والفئة والصيغة."
+    "summary_en": "How to browse published opportunities and search by title or description, with filters for place, skill, category, and open positions.",
+    "summary_ar": "كيفية تصفح الفرص المنشورة والبحث بالعنوان أو الوصف، مع عوامل تصفية حسب المكان والمهارة والفئة والمناصب المتاحة."
   },
   {
     "id": "applications",

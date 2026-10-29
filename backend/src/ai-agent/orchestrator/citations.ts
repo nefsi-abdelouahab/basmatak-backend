@@ -43,32 +43,26 @@ const FALLBACK_TITLES: Readonly<
   knowledge: Object.freeze({
     en: 'Basmatak knowledge',
     ar: 'معلومات بصمتك',
-    fr: 'Informations Basmatak',
   }),
   opportunity: Object.freeze({
     en: 'Opportunity',
     ar: 'فرصة',
-    fr: 'Opportunité',
   }),
   organization: Object.freeze({
     en: 'Organization',
     ar: 'منظمة',
-    fr: 'Organisation',
   }),
   reference: Object.freeze({
     en: 'Reference data',
     ar: 'بيانات مرجعية',
-    fr: 'Données de référence',
   }),
   stats: Object.freeze({
     en: 'Platform statistics',
     ar: 'إحصاءات المنصة',
-    fr: 'Statistiques de la plateforme',
   }),
   data: Object.freeze({
     en: 'Public data',
     ar: 'بيانات عامة',
-    fr: 'Données publiques',
   }),
 });
 
