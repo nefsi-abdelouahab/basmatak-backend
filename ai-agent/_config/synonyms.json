@@ -1,0 +1,18 @@
+{
+  "groups": [
+    ["opportunity", "opportunities", "فرصة", "فرص"],
+    ["organization", "organizations", "منظمة", "منظمات", "جمعية", "جمعيات"],
+    ["volunteer", "volunteering", "متطوع", "متطوعون", "تطوع"],
+    ["verification", "verified", "verify", "تحقق", "توثيق", "موثق"],
+    ["application", "applications", "apply", "ترشح", "ترشيح", "طلب", "طلبات"],
+    ["participation", "participate", "مشاركة", "مشارك"],
+    ["submission", "submissions", "contribution", "contributions", "مساهمة", "مساهمات"],
+    ["skill", "skills", "مهارة", "مهارات"],
+    ["wilaya", "wilayas", "ولاية", "ولايات"],
+    ["privacy", "private", "خصوصية", "خاص"],
+    ["profile", "profiles", "ملف", "ملفات"],
+    ["account", "accounts", "حساب", "حسابات"],
+    ["programming", "program", "code", "coding", "software", "programmation", "développement", "developpement", "برمجة", "برمجه", "تطوير"],
+    ["technology", "technologies", "technologie", "تقنية", "تقنيات", "تقني"]
+  ]
+}

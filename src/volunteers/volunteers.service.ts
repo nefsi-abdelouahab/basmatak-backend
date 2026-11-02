@@ -175,13 +175,51 @@ export interface PublicReviewCard {
 }
 
 export interface VolunteerDashboard {
+  /** Legacy numeric alias kept in sync with `completion.percent`. */
   completionPercent: number;
+  completion: VolunteerProfileCompletion;
   stats: VolunteerProfile['stats'];
   /** Newest verified experience (any visibility), enriched — null when none. */
   latestVerifiedExperience: EnrichedExperience | null;
 }
 
-const FILLABLE_COUNT = 7;
+export interface VolunteerProfileCompletion {
+  percent: number;
+  missingFields: string[];
+  complete: boolean;
+}
+
+/** One own-skill row with catalog labels for the profile editor. */
+export interface OwnVolunteerSkill {
+  _id: string;
+  skillId: string;
+  level: number;
+  yearsOfExperience: number;
+  isPrimary: boolean;
+  nameAr: string;
+  nameFr: string;
+  categoryId: string | null;
+  categoryNameAr: string | null;
+  categoryNameFr: string | null;
+}
+
+const VOLUNTEER_COMPLETION_WEIGHTS = [
+  { key: 'name', weight: 10 },
+  { key: 'headline', weight: 5 },
+  { key: 'bio', weight: 15 },
+  { key: 'birthDate', weight: 10 },
+  { key: 'location', weight: 10 },
+  { key: 'avatar', weight: 10 },
+  { key: 'banner', weight: 5 },
+  { key: 'skills', weight: 15 },
+  { key: 'availability', weight: 10 },
+  { key: 'availabilityNote', weight: 3 },
+  { key: 'preferredDomains', weight: 4 },
+  { key: 'geographicBase', weight: 3 },
+] as const;
+
+type VolunteerCompletionKey =
+  (typeof VOLUNTEER_COMPLETION_WEIGHTS)[number]['key'];
 
 /** Escapes regex meta-characters so user input stays a literal match (F11). */
 function escapeRegex(text: string): string {
@@ -259,7 +297,11 @@ export class VolunteersService {
       set.avatar = new Types.ObjectId(dto.avatar);
     }
     if (dto.banner !== undefined) {
-      await this.mediaOwnership.assertFor(dto.banner, userId);
+      await this.mediaOwnership.assertFor(
+        dto.banner,
+        userId,
+        'volunteer_banner',
+      );
       set.banner = new Types.ObjectId(dto.banner);
     }
     if (dto.headline !== undefined) {
@@ -333,12 +375,54 @@ export class VolunteersService {
     return updated;
   }
 
-  async listMySkills(userId: string): Promise<VolunteerSkillModel[]> {
+  async listMySkills(userId: string): Promise<OwnVolunteerSkill[]> {
     await this.requireProfile(userId);
-    return this.volunteerSkillModel
+    const rows = await this.volunteerSkillModel
       .find({ volunteerId: userId })
       .sort({ isPrimary: -1, createdAt: 1 })
+      .lean()
       .exec();
+    if (rows.length === 0) {
+      return [];
+    }
+    const skills = await this.skillsCatalogModel
+      .find({ _id: { $in: rows.map((row) => row.skillId) } })
+      .lean()
+      .exec();
+    const skillById = new Map(
+      skills.map((skill) => [skill._id.toString(), skill]),
+    );
+    const categoryIds = Array.from(
+      new Set(skills.map((skill) => skill.categoryId.toString())),
+    );
+    const categories =
+      categoryIds.length > 0
+        ? await this.skillCategoryModel
+            .find({ _id: { $in: categoryIds } })
+            .lean()
+            .exec()
+        : [];
+    const categoryById = new Map(
+      categories.map((category) => [category._id.toString(), category]),
+    );
+    return rows.map((row) => {
+      const skill = skillById.get(row.skillId.toString());
+      const category = skill
+        ? categoryById.get(skill.categoryId.toString())
+        : undefined;
+      return {
+        _id: row._id.toString(),
+        skillId: row.skillId.toString(),
+        level: row.level,
+        yearsOfExperience: row.yearsOfExperience,
+        isPrimary: row.isPrimary,
+        nameAr: skill?.nameAr ?? '',
+        nameFr: skill?.nameFr ?? '',
+        categoryId: skill?.categoryId.toString() ?? null,
+        categoryNameAr: category?.nameAr ?? null,
+        categoryNameFr: category?.nameFr ?? null,
+      };
+    });
   }
 
   async addSkill(
@@ -487,7 +571,7 @@ export class VolunteersService {
         .sort({ _id: -1 })
         .exec(),
     ]);
-    const completionPercent = this.computeCompletion(
+    const completion = this.computeCompletion(
       profile,
       Boolean(hasSkill),
       availabilityRow?.schedule,
@@ -500,10 +584,26 @@ export class VolunteersService {
       latestVerifiedExperience = enriched ?? null;
     }
     return {
-      completionPercent,
+      completionPercent: completion.percent,
+      completion,
       stats: profile.stats,
       latestVerifiedExperience,
     };
+  }
+
+  async getProfileCompletion(
+    userId: string,
+  ): Promise<VolunteerProfileCompletion> {
+    const profile = await this.requireProfile(userId);
+    const [hasSkill, availabilityRow] = await Promise.all([
+      this.volunteerSkillModel.exists({ volunteerId: userId }).exec(),
+      this.availabilityModel.findOne({ volunteerId: userId }).lean().exec(),
+    ]);
+    return this.computeCompletion(
+      profile,
+      Boolean(hasSkill),
+      availabilityRow?.schedule,
+    );
   }
 
   async findEnabledProfileByUsername(
@@ -535,38 +635,46 @@ export class VolunteersService {
     const flags = profile.publicProfile;
     const userId = profile.userId.toString();
 
-    const [skills, experiences, availability, avatar, banner, portfolio, areas, publicVerified] =
-      await Promise.all([
-        flags.showSkills ? this.loadPublicSkills(userId) : Promise.resolve([]),
-        flags.showExperiences
-          ? this.loadPublicExperiences(userId, MAX_LIMIT).then(
-              (page) => page.items,
-            )
-          : Promise.resolve([]),
-        flags.showAvailability
-          ? this.loadAvailability(userId)
-          : Promise.resolve(emptySchedule()),
-        flags.showAvatar && profile.avatar
-          ? this.resolvePublicAvatar(profile.avatar)
-          : Promise.resolve(null),
-        flags.showAvatar && profile.banner
-          ? this.resolvePublicAvatar(profile.banner)
-          : Promise.resolve(null),
-        flags.showPortfolio
-          ? this.portfolioQuery.getPublicPortfolio(username)
-          : Promise.resolve(null),
-        flags.showExperiences
-          ? this.deriveAreasOfContribution(userId)
-          : Promise.resolve([]),
-        flags.showStats
-          ? this.experienceModel
-              .countDocuments({
-                volunteerId: new Types.ObjectId(userId),
-                publicVisibility: 'public',
-              })
-              .exec()
-          : Promise.resolve(null),
-      ]);
+    const [
+      skills,
+      experiences,
+      availability,
+      avatar,
+      banner,
+      portfolio,
+      areas,
+      publicVerified,
+    ] = await Promise.all([
+      flags.showSkills ? this.loadPublicSkills(userId) : Promise.resolve([]),
+      flags.showExperiences
+        ? this.loadPublicExperiences(userId, MAX_LIMIT).then(
+            (page) => page.items,
+          )
+        : Promise.resolve([]),
+      flags.showAvailability
+        ? this.loadAvailability(userId)
+        : Promise.resolve(emptySchedule()),
+      flags.showAvatar && profile.avatar
+        ? this.resolvePublicAvatar(profile.avatar)
+        : Promise.resolve(null),
+      flags.showAvatar && profile.banner
+        ? this.resolvePublicAvatar(profile.banner)
+        : Promise.resolve(null),
+      flags.showPortfolio
+        ? this.portfolioQuery.getPublicPortfolio(username)
+        : Promise.resolve(null),
+      flags.showExperiences
+        ? this.deriveAreasOfContribution(userId)
+        : Promise.resolve([]),
+      flags.showStats
+        ? this.experienceModel
+            .countDocuments({
+              volunteerId: new Types.ObjectId(userId),
+              publicVisibility: 'public',
+            })
+            .exec()
+        : Promise.resolve(null),
+    ]);
 
     const fullName = [profile.firstName, profile.lastName]
       .map((part) => part?.trim())
@@ -1412,7 +1520,7 @@ export class VolunteersService {
         .exec(),
       this.verificationModel
         .find({ submissionId: { $in: submissionIds } })
-        .select('submissionId decidedAt')
+        .select('_id submissionId decidedAt')
         .lean()
         .exec(),
       this.reviewModel
@@ -1455,23 +1563,40 @@ export class VolunteersService {
     profile: VolunteerProfileModel,
     hasSkill: boolean,
     schedule?: WeeklySchedule,
-  ): number {
-    const hasNames = Boolean(profile.firstName && profile.lastName);
-    const hasLocation = Boolean(
-      profile.location?.wilayaId && profile.location?.municipalityId,
-    );
+  ): VolunteerProfileCompletion {
     const hasAvailability = Object.values(schedule ?? {}).some(
       (slots) => slots.length > 0,
     );
-    const filled = [
-      hasNames,
-      Boolean(profile.bio),
-      Boolean(profile.birthDate),
-      hasLocation,
-      Boolean(profile.avatar),
-      hasSkill,
-      hasAvailability,
-    ].filter(Boolean).length;
-    return Math.round((filled / FILLABLE_COUNT) * 100);
+    const filled: Record<VolunteerCompletionKey, boolean> = {
+      name: Boolean(profile.firstName && profile.lastName),
+      headline: Boolean(profile.headline?.trim()),
+      bio: Boolean(profile.bio?.trim()),
+      birthDate: Boolean(profile.birthDate),
+      location: Boolean(
+        profile.location?.wilayaId && profile.location?.municipalityId,
+      ),
+      avatar: Boolean(profile.avatar),
+      banner: Boolean(profile.banner),
+      skills: hasSkill,
+      availability: hasAvailability,
+      availabilityNote: Boolean(profile.availabilityNote?.trim()),
+      preferredDomains: (profile.preferredDomains?.length ?? 0) > 0,
+      geographicBase: Boolean(profile.geographicBase?.trim()),
+    };
+    const missingFields = VOLUNTEER_COMPLETION_WEIGHTS.filter(
+      ({ key }) => !filled[key],
+    ).map(({ key }) => key);
+    const total = VOLUNTEER_COMPLETION_WEIGHTS.reduce(
+      (sum, entry) => sum + entry.weight,
+      0,
+    );
+    const earned = VOLUNTEER_COMPLETION_WEIGHTS.filter(
+      ({ key }) => filled[key],
+    ).reduce((sum, entry) => sum + entry.weight, 0);
+    return {
+      percent: Math.round((earned / total) * 100),
+      missingFields,
+      complete: missingFields.length === 0,
+    };
   }
 }

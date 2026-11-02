@@ -1,0 +1,11 @@
+term_en,term_ar,definition_en,definition_ar
+opportunity,فرصة,"A published volunteer task with positions, dates, and requirements.","مهمة تطوعية منشورة تتضمن مناصب وتواريخ ومتطلبات."
+organization,منظمة,"A registered entity that publishes volunteer opportunities and verifies completed contributions.","جهة مسجلة تنشر فرص التطوع وتوثق المساهمات المكتملة."
+volunteer,متطوع,"A person who applies for opportunities and documents their contribution.","شخص يترشح للفرص ويوثق مساهمته."
+verification,توثيق,"Confirmation by the organization that a submitted contribution was completed.","تأكيد المنظمة أن المساهمة المقدمة قد أُنجزت."
+participation,مشاركة,"The phase after an application is accepted, when the volunteer takes part in the opportunity.","المرحلة التي تلي قبول الترشح، حيث يشارك المتطوع في الفرصة."
+submission,مساهمة,"The volunteer's record of completed work, including a description and evidence, sent to the organization for review.","سجل المتطوع للعمل المنجز، ويشمل وصفاً وأدلة، ويُرسل إلى المنظمة للمراجعة."
+skill,مهارة,"An ability listed on an opportunity or volunteer profile.","قدرة تُدرج في فرصة أو ملف متطوع."
+wilaya,ولاية,"An Algerian administrative region used to locate opportunities and organizations.","منطقة إدارية جزائرية تُستخدم لتحديد موقع الفرص والمنظمات."
+portfolio,ملف الأعمال,"A volunteer's showcase of work items that does not require verification.","عرض المتطوع لعناصر عمله، ولا يحتاج إلى توثيق."
+review,تقييم,"An organization's rating of a volunteer's completed work, from 1 to 5 with an optional comment.","درجة المنظمة لعمل المتطوع المنجز، من 1 إلى 5 مع تعليق اختياري."

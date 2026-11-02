@@ -70,7 +70,6 @@ const OP_PAIRS = [
   ['published', 'cancelled'],
   ['in_progress', 'closed'],
   ['in_progress', 'cancelled'],
-  ['accepted', 'active'],
 ] as const;
 
 describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
@@ -215,7 +214,7 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
   }
 
   describe('5.1 opportunity transition whitelist', () => {
-    it('accepts the authorized pairs, including the accepted→active job path', async () => {
+    it('accepts only the opportunity lifecycle pairs', async () => {
       for (const [from, to] of OP_PAIRS) {
         const entry = await transitions.assert({
           entityType: 'opportunity',
@@ -237,6 +236,8 @@ describe('OpportunitiesService (inventory §2.8, roadmap S6)', () => {
         ['completed', 'published'],
         ['closed', 'in_progress'],
         ['published', 'published'],
+        // Participant statuses belong to the task_participant lifecycle.
+        ['accepted', 'active'],
       ] as const) {
         await expect(
           transitions.assert({

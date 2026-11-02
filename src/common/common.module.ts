@@ -28,6 +28,7 @@ import {
 } from '../portfolio/schemas/portfolio-item.schema';
 import { TrustModule } from '../trust/trust.module';
 import { TrustPublishGateService } from '../trust/trust-publish-gate.service';
+import { UsersCollection, UserSchema } from '../users/schemas/user.schema';
 
 /**
  * Cross-cutting providers: seams (inert defaults until their owning sessions)
@@ -45,6 +46,7 @@ import { TrustPublishGateService } from '../trust/trust-publish-gate.service';
       { name: MediaCollection, schema: MediaSchema },
       { name: PortfolioItemsCollection, schema: PortfolioItemSchema },
       { name: CountersCollection, schema: CounterSchema },
+      { name: UsersCollection, schema: UserSchema },
     ]),
     VolunteersModule,
     TrustModule,

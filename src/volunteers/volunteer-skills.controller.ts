@@ -22,7 +22,7 @@ import {
   UpdateVolunteerSkillDto,
 } from './dto/volunteer-skill.dto';
 import { VolunteerSkillModel } from './schemas/volunteer-skill.schema';
-import { VolunteersService } from './volunteers.service';
+import { OwnVolunteerSkill, VolunteersService } from './volunteers.service';
 
 @ApiBearerAuth()
 @ApiTags('volunteers')
@@ -35,7 +35,7 @@ export class VolunteerSkillsController {
   @ApiOperation({ summary: 'List own skills' })
   async listMySkills(
     @CurrentAccount() account: AccountToken,
-  ): Promise<VolunteerSkillModel[]> {
+  ): Promise<OwnVolunteerSkill[]> {
     return this.volunteers.listMySkills(account.sub);
   }
 

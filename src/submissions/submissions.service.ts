@@ -25,6 +25,10 @@ import {
   TaskParticipantsCollection,
 } from '../participations/schemas/task-participant.schema';
 import {
+  VerificationModel,
+  VerificationsCollection,
+} from '../verifications/schemas/verification.schema';
+import {
   VolunteerProfileModel,
   VolunteerProfilesCollection,
 } from '../volunteers/schemas/volunteer-profile.schema';
@@ -97,6 +101,10 @@ export class SubmissionsService {
     // exports — same pattern as opportunityModel above; no module edit).
     @InjectModel(VolunteerProfilesCollection)
     private readonly profileModel: Model<VolunteerProfileModel>,
+    // Latest rejection decision, surfaced only on owner-scoped reads while the
+    // submission is rejected or back in draft.
+    @InjectModel(VerificationsCollection)
+    private readonly verificationModel: Model<VerificationModel>,
   ) {}
 
   /***************************************************************************
@@ -456,7 +464,7 @@ export class SubmissionsService {
   async listMine(
     account: AccountToken,
     query: SubmissionListQueryDto,
-  ): Promise<CursorPage<SubmissionModel>> {
+  ): Promise<CursorPage<Record<string, unknown>>> {
     const filter: FilterQuery<SubmissionModel> = {
       volunteerId: new Types.ObjectId(account.sub),
     };
@@ -464,7 +472,44 @@ export class SubmissionsService {
     if (statuses) {
       filter.status = statuses.length === 1 ? statuses[0] : { $in: statuses };
     }
-    return this.paginateSubmissions(filter, query);
+    const page = await this.paginateSubmissions(filter, query);
+    const reasons = await this.rejectionReasonsFor(page.items);
+    return {
+      ...page,
+      items: page.items.map((item) => ({
+        ...item.toObject(),
+        rejectionReason: reasons.get(item._id.toString()) ?? null,
+      })),
+    };
+  }
+
+  /**
+   * Latest rejected `Verification.reason` per submission, for submissions
+   * still in `rejected`, or in `draft` after a rejection edit. Once the draft
+   * is resubmitted (`submitted|under_review|approved`) the reason is hidden.
+   */
+  private async rejectionReasonsFor(
+    submissions: SubmissionModel[],
+  ): Promise<Map<string, string | null>> {
+    const eligible = submissions.filter(
+      (submission) =>
+        submission.status === 'rejected' || submission.status === 'draft',
+    );
+    if (eligible.length === 0) {
+      return new Map();
+    }
+    const rows = await this.verificationModel
+      .find({
+        submissionId: { $in: eligible.map((submission) => submission._id) },
+        status: 'rejected',
+      })
+      .sort({ decidedAt: -1 })
+      .select('submissionId reason')
+      .lean()
+      .exec();
+    return new Map(
+      rows.map((row) => [row.submissionId.toString(), row.reason ?? null]),
+    );
   }
 
   async getDetail(
@@ -549,8 +594,13 @@ export class SubmissionsService {
         }
       }
     }
+    const rejectionReason =
+      (await this.rejectionReasonsFor([submission])).get(
+        submission._id.toString(),
+      ) ?? null;
     return {
       ...submission.toObject(),
+      rejectionReason,
       evidence,
       // Session 19: submitting-volunteer identity join.
       volunteer: await this.volunteerJoin(submission.volunteerId),

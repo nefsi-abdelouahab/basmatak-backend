@@ -8,6 +8,8 @@ import {
 } from '../common/seams/registration-extras.service';
 import { slugifyText, createWithUniqueSlug } from '../common/slug/slugify.util';
 import { RegistryIdService } from '../common/counters/registry-id.service';
+import { normalizeAlgerianPhone } from '../common/phone/algerian-phone';
+import { UserModel, UsersCollection } from '../users/schemas/user.schema';
 import {
   OrganizationsCollection,
   OrganizationModel,
@@ -24,6 +26,8 @@ export class OrganizationRegistrationExtrasService implements RegistrationExtras
   constructor(
     @InjectModel(OrganizationsCollection)
     private readonly organizationModel: Model<OrganizationModel>,
+    @InjectModel(UsersCollection)
+    private readonly userModel: Model<UserModel>,
     @Inject(InertRegistrationExtrasService)
     private readonly inert: InertRegistrationExtrasService,
     private readonly registryId: RegistryIdService,
@@ -40,6 +44,14 @@ export class OrganizationRegistrationExtrasService implements RegistrationExtras
     const localPart = String(dto.email ?? '').split('@')[0] ?? '';
     const baseSlug = slugifyText(localPart) || 'organization';
     const registryId = await this.registryId.getNext('organization');
+    const account = await this.userModel
+      .findById(user.id)
+      .select('phone')
+      .lean()
+      .exec();
+    const phone = normalizeAlgerianPhone(
+      account?.phone ?? (dto.phone as string | undefined),
+    );
     await createWithUniqueSlug(
       (slug) =>
         this.organizationModel.create({
@@ -48,6 +60,7 @@ export class OrganizationRegistrationExtrasService implements RegistrationExtras
           registryId,
           verificationStatus: 'pending',
           status: 'active',
+          ...(phone ? { contact: { phone } } : {}),
         }),
       baseSlug,
     );

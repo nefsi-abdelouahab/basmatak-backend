@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -18,6 +18,10 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ALGERIAN_PHONE_PATTERN,
+  normalizeAlgerianPhone,
+} from '../../common/phone/algerian-phone';
 
 export const MAX_ORG_TYPE_LENGTH = 80;
 export const MAX_ORG_REGISTRATION_NUMBER_LENGTH = 80;
@@ -27,8 +31,8 @@ export const MIN_ORG_FOUNDED_YEAR = 1800;
 export const MAX_ORG_FOCUS_DISCIPLINES = 12;
 export const MAX_ORG_OPERATING_SCOPE_LENGTH = 120;
 
-/** Canonical phone pattern shared with the auth/users DTOs. */
-export const ORG_PHONE_PATTERN = /^\+?[0-9]{8,15}$/;
+/** Canonical Algerian phone stored by the platform (`+213` + 9 digits). */
+export const ORG_PHONE_PATTERN = ALGERIAN_PHONE_PATTERN;
 
 export class OrganizationLocationDto {
   @ApiPropertyOptional({ description: 'Wilaya code (01-58)', example: '16' })
@@ -62,13 +66,19 @@ export class OrganizationContactDto {
   email?: string;
 
   @ApiPropertyOptional({
-    description: 'International phone number',
+    description:
+      'Optional Algerian phone. Accepts 0XXXXXXXXX, +213XXXXXXXXX, or 00213XXXXXXXXX and stores +213XXXXXXXXX',
     example: '+213555123456',
   })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? (normalizeAlgerianPhone(value) ?? value)
+      : value,
+  )
   @Matches(ORG_PHONE_PATTERN, {
-    message: 'phone must be a valid phone number',
+    message: 'phone must be a valid Algerian phone number',
   })
   phone?: string;
 }
@@ -80,6 +90,143 @@ export class OrganizationPublicProfileDto {
   })
   @IsBoolean()
   enabled!: boolean;
+}
+
+/** Public location projection: exactly the three stored location facts. */
+export class PublicOrganizationLocationDto {
+  @ApiProperty({ nullable: true, example: '16' })
+  wilayaId!: string | null;
+
+  @ApiProperty({ nullable: true, example: '1601' })
+  municipalityId!: string | null;
+
+  @ApiProperty({ nullable: true, example: 'Rue Didouche Mourad' })
+  address!: string | null;
+}
+
+/** Public contact projection (both fields optional in storage). */
+export class PublicOrganizationContactDto {
+  @ApiProperty({ nullable: true, example: 'contact@example.org' })
+  email!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    required: false,
+    example: '+213555123456',
+    description:
+      'Present only for an eligible signed-in viewer with a dedicated organization contact phone.',
+  })
+  phone?: string;
+}
+
+export class PublicOrganizationAggregatesDto {
+  @ApiProperty()
+  volunteers!: number;
+
+  @ApiProperty()
+  initiativesActive!: number;
+
+  @ApiProperty()
+  initiativesCompleted!: number;
+
+  @ApiProperty()
+  verifiedHours!: number;
+
+  @ApiProperty()
+  responseRate!: number;
+
+  @ApiProperty({ type: 'array', items: { type: 'object' } })
+  perDomain!: Array<{ domain: string; share: number }>;
+
+  @ApiProperty({ nullable: true, example: 2018 })
+  activeSince!: number | null;
+}
+
+/**
+ * Public organization card (`GET /organizations`). Deliberately narrow: no
+ * owner, moderation, reliability, registration-number or audit fields.
+ */
+export class PublicOrganizationCardDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameFr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  description!: string | null;
+
+  @ApiProperty({ nullable: true })
+  logoMediaId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  coverMediaId!: string | null;
+
+  @ApiProperty({ nullable: true, example: 'ORG-000123' })
+  registryId!: string | null;
+
+  @ApiProperty({ enum: ['verified'] })
+  verificationStatus!: 'verified';
+
+  @ApiProperty({ nullable: true, example: 2018 })
+  foundedYear!: number | null;
+}
+
+/** Public organization profile (`GET /organizations/:slug`). */
+export class PublicOrganizationProfileDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty({ nullable: true, example: 'ORG-000123' })
+  registryId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameFr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  description!: string | null;
+
+  @ApiProperty({ nullable: true })
+  logoMediaId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  coverMediaId!: string | null;
+
+  @ApiProperty({ type: PublicOrganizationLocationDto })
+  location!: PublicOrganizationLocationDto;
+
+  @ApiProperty({ nullable: true, example: 'https://example.org' })
+  website!: string | null;
+
+  @ApiProperty({ nullable: true, example: 2018 })
+  foundedYear!: number | null;
+
+  @ApiProperty({ enum: ['verified'] })
+  verificationStatus!: 'verified';
+
+  @ApiProperty({ type: PublicOrganizationContactDto })
+  contact!: PublicOrganizationContactDto;
+
+  @ApiProperty({ type: 'array', items: { type: 'string' } })
+  focusDisciplines!: string[];
+
+  @ApiProperty({ nullable: true })
+  operatingScope!: string | null;
+
+  @ApiProperty({ type: PublicOrganizationAggregatesDto })
+  aggregates!: PublicOrganizationAggregatesDto;
 }
 
 export class UpdateOrganizationDto {

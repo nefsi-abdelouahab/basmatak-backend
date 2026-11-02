@@ -33,6 +33,7 @@ export interface ExperienceOrganizationLike {
 }
 
 export interface ExperienceVerificationLike {
+  _id?: Types.ObjectId;
   submissionId: Types.ObjectId;
   decidedAt: Date;
 }
@@ -68,6 +69,11 @@ export interface EnrichedExperience {
   verificationCode: string;
   publicVisibility: string;
   review: EnrichedExperienceReview | null;
+  /**
+   * Owner/admin-only pointer to the issued verification row, used to read the
+   * organization's private notes. Never present on public views.
+   */
+  verificationId: string | null;
 }
 
 /**
@@ -108,6 +114,10 @@ export function toEnrichedExperience(
     review: usableReview
       ? { rating: usableReview.rating, notes: usableReview.comment ?? null }
       : null,
+    verificationId:
+      opts?.publicView || !verification?._id
+        ? null
+        : verification._id.toString(),
   };
 }
 

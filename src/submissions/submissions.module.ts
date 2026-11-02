@@ -6,6 +6,10 @@ import { OpportunitiesModule } from '../opportunities/opportunities.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { ParticipationsModule } from '../participations/participations.module';
 import {
+  VerificationSchema,
+  VerificationsCollection,
+} from '../verifications/schemas/verification.schema';
+import {
   SubmissionsCollection,
   SubmissionSchema,
 } from './schemas/submission.schema';
@@ -23,6 +27,10 @@ import { SubmissionsService } from './submissions.service';
   imports: [
     MongooseModule.forFeature([
       { name: SubmissionsCollection, schema: SubmissionSchema },
+      // Read-only rejection reason for owner-scoped submission reads. Direct
+      // registration avoids a module cycle (VerificationsModule imports this
+      // module).
+      { name: VerificationsCollection, schema: VerificationSchema },
     ]),
     // Read-only sibling models: the participant (→ its position snapshot) and
     // the owning organization (→ inbox/detail scoping), plus media reads for

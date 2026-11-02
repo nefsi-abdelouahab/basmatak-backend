@@ -137,7 +137,9 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
   afterEach(async () => {
     await handle.connection.collection(OpportunitiesCollection).deleteMany({});
     await handle.connection.collection(StatusHistoryCollection).deleteMany({});
-    await handle.connection.collection(TaskParticipantsCollection).deleteMany({});
+    await handle.connection
+      .collection(TaskParticipantsCollection)
+      .deleteMany({});
     await handle.connection
       .collection(VolunteerProfilesCollection)
       .deleteMany({});
@@ -377,7 +379,9 @@ describe('AdminOpportunitiesService (inventory §2.20 opportunities)', () => {
     });
 
     it('404s for a malformed id', async () => {
-      await expect(service.getVerificationStatus('not-an-id')).rejects.toMatchObject({
+      await expect(
+        service.getVerificationStatus('not-an-id'),
+      ).rejects.toMatchObject({
         status: 404,
         code: 'OPPORTUNITY_NOT_FOUND',
       });

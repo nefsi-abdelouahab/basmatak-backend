@@ -32,6 +32,7 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
   let orgModel: Model<OrganizationModel>;
   let participantModel: Model<TaskParticipantModel>;
   let observed: string[];
+  let prefsEnabled: (recipientId: string, type: string) => boolean;
 
   const bus = new EventEmitter2({ wildcard: false, delimiter: '.' });
 
@@ -65,6 +66,24 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
     });
   }
 
+  async function seedWithdrawableParticipant(
+    organizationId: Types.ObjectId,
+    volunteerId: Types.ObjectId,
+    applicationId: Types.ObjectId,
+  ): Promise<Types.ObjectId> {
+    const id = new Types.ObjectId();
+    await participantModel.create({
+      _id: id,
+      opportunityId: new Types.ObjectId(),
+      positionId: new Types.ObjectId(),
+      applicationId,
+      organizationId,
+      volunteerId,
+      status: 'withdrawn',
+    });
+    return id;
+  }
+
   beforeAll(async () => {
     handle = await startMemoryConnection();
     notificationModel = handle.connection.model<NotificationModel>(
@@ -82,8 +101,10 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
     await notificationModel.init();
 
     const repository = new MongoNotificationsRepository(notificationModel);
+    prefsEnabled = () => true;
     const prefs = {
-      enabledFor: async (): Promise<boolean> => true,
+      enabledFor: async (recipientId: string, type: string): Promise<boolean> =>
+        prefsEnabled(recipientId, type),
     } as unknown as NotificationPrefsService;
     const service = new NotificationsService(
       notificationModel,
@@ -107,6 +128,8 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
         handlers.onApplicationWithdrawn(p),
       [DomainEvents.ParticipationRemoved]: (p) =>
         handlers.onParticipationRemoved(p),
+      [DomainEvents.ParticipationWithdrawn]: (p) =>
+        handlers.onParticipationWithdrawn(p),
       [DomainEvents.OpportunityCancelled]: (p) =>
         handlers.onOpportunityCancelled(p),
       [DomainEvents.OpportunityStarted]: (p) =>
@@ -144,6 +167,7 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
     await orgModel.deleteMany({});
     await participantModel.deleteMany({});
     observed = [];
+    prefsEnabled = () => true;
   });
 
   it('application.created notifies the owning org account', async () => {
@@ -292,7 +316,87 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
     ]);
   });
 
-  it('ignores events whose entity does not exist or is unregistered (no row, no error)', async () => {
+  it('participation.withdrawn notifies the owning org from the full participant row', async () => {
+    const organizationId = orgId();
+    const owner = volunteerId();
+    const applicant = volunteerId();
+    const applicationId = new Types.ObjectId();
+    const participantId = await seedWithdrawableParticipant(
+      organizationId,
+      applicant,
+      applicationId,
+    );
+    await seedOrg(organizationId, owner);
+
+    const payload = {
+      participant: {
+        _id: participantId.toString(),
+        applicationId: applicationId.toString(),
+        organizationId: organizationId.toString(),
+        volunteerId: applicant.toString(),
+      },
+    };
+    await bus.emitAsync(DomainEvents.ParticipationWithdrawn, payload);
+    await bus.emitAsync(DomainEvents.ParticipationWithdrawn, payload);
+
+    const rows = await notificationModel.find({}).exec();
+    expect(rows).toHaveLength(1);
+    expect(String(rows[0].userId)).toBe(owner.toString());
+    expect(rows[0].type).toBe(DomainEvents.ParticipationWithdrawn);
+    expect(rows[0].payload).toEqual(payload);
+    expect(observed).toEqual([
+      DomainEvents.ParticipationWithdrawn,
+      DomainEvents.ParticipationWithdrawn,
+    ]);
+  });
+
+  it('participation.withdrawn resolves the org from applicationId and normalizes the payload', async () => {
+    const organizationId = orgId();
+    const owner = volunteerId();
+    const applicant = volunteerId();
+    const applicationId = new Types.ObjectId();
+    const participantId = await seedWithdrawableParticipant(
+      organizationId,
+      applicant,
+      applicationId,
+    );
+    await seedOrg(organizationId, owner);
+
+    const payload = {
+      participant: { applicationId: applicationId.toString() },
+    };
+    await bus.emitAsync(DomainEvents.ParticipationWithdrawn, payload);
+    await bus.emitAsync(DomainEvents.ParticipationWithdrawn, payload);
+
+    const rows = await notificationModel.find({}).exec();
+    expect(rows).toHaveLength(1);
+    expect(String(rows[0].userId)).toBe(owner.toString());
+    expect(rows[0].type).toBe(DomainEvents.ParticipationWithdrawn);
+    expect(rows[0].payload).toEqual({
+      ...payload,
+      participationId: participantId.toString(),
+    });
+  });
+
+  it('participation.withdrawn respects disabled application update prefs', async () => {
+    const organizationId = orgId();
+    const owner = volunteerId();
+    await seedOrg(organizationId, owner);
+    prefsEnabled = (recipientId, type) =>
+      !(
+        recipientId === owner.toString() &&
+        type === DomainEvents.ParticipationWithdrawn
+      );
+
+    await bus.emitAsync(DomainEvents.ParticipationWithdrawn, {
+      participant: { organizationId: organizationId.toString() },
+    });
+
+    expect(await notificationModel.countDocuments({}).exec()).toBe(0);
+    expect(observed).toEqual([DomainEvents.ParticipationWithdrawn]);
+  });
+
+  it('ignores events whose entity does not exist or cannot be resolved (no row, no error)', async () => {
     await bus.emitAsync(DomainEvents.ApplicationCreated, {
       application: { organizationId: new Types.ObjectId().toString() },
     });
@@ -301,7 +405,10 @@ describe('NotificationsEventHandlers (S9 D4)', () => {
     });
 
     expect(await notificationModel.countDocuments({}).exec()).toBe(0);
-    expect(observed).toEqual([DomainEvents.ApplicationCreated]);
+    expect(observed).toEqual([
+      DomainEvents.ApplicationCreated,
+      DomainEvents.ParticipationWithdrawn,
+    ]);
   });
 
   it('forward registrations resolve org and submission recipients', async () => {

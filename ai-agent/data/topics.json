@@ -1,0 +1,30 @@
+[
+  {
+    "id": "opportunities",
+    "title_en": "Finding volunteer opportunities",
+    "title_ar": "العثور على فرص التطوع",
+    "summary_en": "How to browse published opportunities and search by title or description, with filters for place, skill, category, and open positions.",
+    "summary_ar": "كيفية تصفح الفرص المنشورة والبحث بالعنوان أو الوصف، مع عوامل تصفية حسب المكان والمهارة والفئة والمناصب المتاحة."
+  },
+  {
+    "id": "applications",
+    "title_en": "Applying and participating",
+    "title_ar": "الترشح والمشاركة",
+    "summary_en": "What happens after you apply: review, acceptance, participation, evidence, and verification.",
+    "summary_ar": "ما يحدث بعد الترشح: المراجعة والقبول والمشاركة والأدلة والتوثيق."
+  },
+  {
+    "id": "organizations",
+    "title_en": "Organizations and verification",
+    "title_ar": "المنظمات والتوثيق",
+    "summary_en": "How organizations register, become verified, publish opportunities, and confirm completed work.",
+    "summary_ar": "كيف تسجل المنظمات وتصبح موثقة وتنشر الفرص وتؤكد الأعمال المنجزة."
+  },
+  {
+    "id": "profiles",
+    "title_en": "Public profiles and privacy",
+    "title_ar": "الملفات العامة والخصوصية",
+    "summary_en": "How volunteers control public profile visibility and how the platform handles personal information.",
+    "summary_ar": "كيف يتحكم المتطوعون في ظهور ملفاتهم العامة وكيف تتعامل المنصة مع المعلومات الشخصية."
+  }
+]

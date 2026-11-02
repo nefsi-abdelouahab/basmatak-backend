@@ -21,6 +21,7 @@ interface EntityRef {
   id?: unknown;
   organizationId?: unknown;
   volunteerId?: unknown;
+  applicationId?: unknown;
 }
 
 function toId(value: unknown): Types.ObjectId | null {
@@ -131,6 +132,52 @@ export class NotificationsEventHandlers {
       volunteerId,
       DomainEvents.ParticipationRemoved,
       payload,
+    );
+  }
+
+  /**
+   * Withdrawal notifies the owning organization (`applicationUpdates` pref).
+   * The participations flow emits the full participant row; the applications
+   * flow emits `{ applicationId }` only, so the participant is resolved first.
+   * When the event carried no stable participant id, the normalized payload
+   * adds one so the notification dedupe key stays deterministic.
+   */
+  @OnEvent(DomainEvents.ParticipationWithdrawn)
+  async onParticipationWithdrawn(payload: unknown): Promise<void> {
+    const participant = entityRef(payload, 'participant');
+    let organizationId = toId(participant.organizationId);
+    let participantId = toId(participant._id ?? participant.id);
+    const applicationId = toId(participant.applicationId);
+    if (!organizationId && applicationId) {
+      const row = await this.participantModel
+        .findOne({ applicationId })
+        .select('_id organizationId')
+        .exec();
+      if (row) {
+        organizationId = row.organizationId;
+        participantId = participantId ?? row._id;
+      }
+    }
+    if (!organizationId) {
+      return;
+    }
+    const organization = await this.organizationModel
+      .findById(organizationId)
+      .exec();
+    if (!organization) {
+      return;
+    }
+    const normalizedPayload =
+      participantId && !(participant._id ?? participant.id)
+        ? {
+            ...entityPayload(payload),
+            participationId: participantId.toString(),
+          }
+        : payload;
+    await this.notifications.createForRecipientIfEnabled(
+      organization.userId,
+      DomainEvents.ParticipationWithdrawn,
+      normalizedPayload,
     );
   }
 

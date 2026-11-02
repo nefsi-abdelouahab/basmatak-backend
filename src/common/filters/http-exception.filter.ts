@@ -24,6 +24,37 @@ function isRecord(value: unknown): value is Record<string, any> {
   return typeof value === 'object' && value !== null;
 }
 
+/**
+ * Body-parser rejects malformed or oversized payloads before routing. Those
+ * errors are not Nest HttpExceptions, so map them explicitly: a client mistake
+ * must not surface as a 500, and the fixed message never echoes body content.
+ */
+function resolveBodyParserError(exception: unknown): ErrorBody | undefined {
+  if (!isRecord(exception)) return undefined;
+  switch (exception.type) {
+    case 'entity.too.large':
+      return {
+        statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'Request body is too large',
+      };
+    case 'entity.parse.failed':
+      return {
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: 'INVALID_JSON',
+        message: 'Malformed JSON body',
+      };
+    case 'encoding.unsupported':
+      return {
+        statusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+        code: 'UNSUPPORTED_MEDIA_TYPE',
+        message: 'Unsupported request encoding',
+      };
+    default:
+      return undefined;
+  }
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
@@ -82,6 +113,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         code: 'INVALID_ID',
         message: 'Invalid identifier format',
       };
+    }
+
+    const bodyParserError = resolveBodyParserError(exception);
+    if (bodyParserError !== undefined) {
+      return bodyParserError;
     }
 
     return {

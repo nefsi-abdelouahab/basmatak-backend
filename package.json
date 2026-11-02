@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "prebuild": "npm run ai:check",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nodemon",
@@ -18,6 +19,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "ai:check": "ts-node -r tsconfig-paths/register src/scripts/ai-check.ts",
+    "ai:eval": "ts-node -r tsconfig-paths/register src/scripts/ai-eval.ts",
     "seed:locations": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only locations",
     "seed:skills": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only skills",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only admin",
@@ -27,6 +30,7 @@
     "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only all"
   },
   "dependencies": {
+    "@google/genai": "^2.31.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.0.0",

@@ -38,12 +38,17 @@ function organization(
 describe('toEnrichedExperience', () => {
   it('maps org identity, verifiedAt, code, registryId, duration, and neutral review', () => {
     const submissionId = new Types.ObjectId();
+    const verificationId = new Types.ObjectId();
     const row = experience({ submissionId });
     const org = organization();
     const enriched = toEnrichedExperience(
       row,
       org,
-      { submissionId, decidedAt: new Date('2026-09-05T12:00:00.000Z') },
+      {
+        _id: verificationId,
+        submissionId,
+        decidedAt: new Date('2026-09-05T12:00:00.000Z'),
+      },
       {
         submissionId,
         rating: 5,
@@ -67,6 +72,25 @@ describe('toEnrichedExperience', () => {
     });
     expect(enriched.verifiedAt.toISOString()).toBe('2026-09-05T12:00:00.000Z');
     expect(enriched.skills).toEqual([row.skills[0].toString()]);
+    expect(enriched.verificationId).toBe(verificationId.toString());
+  });
+
+  it('omits verificationId from public views and when no row exists', () => {
+    const submissionId = new Types.ObjectId();
+    const verification = {
+      _id: new Types.ObjectId(),
+      submissionId,
+      decidedAt: new Date(),
+    };
+    const row = experience({ submissionId });
+    expect(
+      toEnrichedExperience(row, null, verification, null, {
+        publicView: true,
+      }).verificationId,
+    ).toBeNull();
+    expect(
+      toEnrichedExperience(row, null, null, null).verificationId,
+    ).toBeNull();
   });
 
   it('falls back to createdAt when no verification row exists', () => {

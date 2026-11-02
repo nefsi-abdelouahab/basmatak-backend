@@ -78,7 +78,20 @@ export async function createTestApp(
     mongod,
     uri,
     close: async () => {
-      await app.close();
+      try {
+        await app.close();
+      } catch (error) {
+        // An operation still in flight when Mongoose closes the client can
+        // surface as MongoClientClosedError. The connection is already gone,
+        // so only this shutdown race is safe to ignore. Match by name because
+        // Mongoose and mongodb-memory-server load different mongodb versions.
+        if (
+          !(error instanceof Error) ||
+          error.name !== 'MongoClientClosedError'
+        ) {
+          throw error;
+        }
+      }
       await mongod.stop();
     },
   };

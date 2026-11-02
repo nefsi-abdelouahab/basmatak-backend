@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { OrganizationsService } from './organizations.service';
 import { UsersService } from '../users/users.service';
 import {
@@ -521,12 +521,12 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
       });
       const completion = await service.getProfileCompletion(accountOf(user));
       expect(completion.complete).toBe(false);
-      expect(completion.missing).toContain('description');
-      expect(completion.missing).toContain('coverMediaId');
-      expect(completion.missing).not.toContain('name');
-      expect(completion.missing).not.toContain('contact');
-      // 2 of 11 keys filled → 18%.
-      expect(completion.percent).toBe(18);
+      expect(completion.missingFields).toContain('description');
+      expect(completion.missingFields).toContain('coverMediaId');
+      expect(completion.missingFields).not.toContain('name');
+      expect(completion.missingFields).not.toContain('contact');
+      // name (10) + contact (10) of 100 → 20%.
+      expect(completion.percent).toBe(20);
     });
 
     it('reports complete at 100 once every key is filled', async () => {
@@ -548,6 +548,7 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         user._id.toString(),
         'organization_cover',
       );
+      const logo = await createMedia(user._id.toString(), 'organization_logo');
       await service.updateOwn(accountOf(user), {
         nameFr: 'Association El-Amel',
         description: 'Charity',
@@ -559,10 +560,15 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         contact: { email: 'a@example.org' },
         focusDisciplines: [category._id.toString()],
         operatingScope: 'National',
+        logoMediaId: logo,
         coverMediaId: cover,
       });
       const completion = await service.getProfileCompletion(accountOf(user));
-      expect(completion).toEqual({ percent: 100, missing: [], complete: true });
+      expect(completion).toEqual({
+        percent: 100,
+        missingFields: [],
+        complete: true,
+      });
     });
 
     it('404s for accounts without an organization', async () => {
@@ -613,12 +619,10 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
         .exec();
       void user;
       const payload = await service.getPublicBySlug('org-owner');
-      expect(
-        (payload['aggregates'] as Record<string, unknown>)['activeSince'],
-      ).toBe(2018);
+      expect(payload.aggregates.activeSince).toBe(2018);
     });
 
-    it('keeps resolving when the platform toggle is off (no 404 regression)', async () => {
+    it('404s the detail and excludes the list when the platform toggle is off', async () => {
       const { user, org } = await createOrgOwner();
       void user;
       await orgModel
@@ -632,8 +636,314 @@ describe('OrganizationsService (inventory §2.7, roadmap S5)', () => {
           },
         )
         .exec();
+      await expect(service.getPublicBySlug('org-owner')).rejects.toMatchObject({
+        status: 404,
+        code: 'ORGANIZATION_NOT_FOUND',
+      });
+      expect((await service.listPublic()).items).toHaveLength(0);
+    });
+
+    it('treats a missing platform toggle as enabled', async () => {
+      const { user, org } = await createOrgOwner();
+      void user;
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          { $set: { verificationStatus: 'verified' } },
+        )
+        .exec();
+      // Bypass schema defaults to simulate legacy rows without the subdocument.
+      await handle.connection
+        .collection(OrganizationsCollection)
+        .updateOne({ _id: org._id }, { $unset: { publicProfile: '' } });
+
       const payload = await service.getPublicBySlug('org-owner');
-      expect(payload['publicProfile']).toEqual({ enabled: false });
+      expect(payload.id).toBe(org._id.toString());
+      expect((await service.listPublic()).items).toHaveLength(1);
+    });
+
+    it('returns exactly the public card/profile fields (no owner or internal data)', async () => {
+      const { user, org } = await createOrgOwner();
+      const logo = await createMedia(user._id.toString(), 'organization_logo');
+      const cover = await createMedia(
+        user._id.toString(),
+        'organization_cover',
+      );
+      const report = await createMedia(
+        user._id.toString(),
+        'organization_document',
+      );
+      await orgModel
+        .updateOne(
+          { _id: org._id },
+          {
+            $set: {
+              verificationStatus: 'verified',
+              nameAr: 'جمعية الأمل',
+              nameFr: 'Association El-Amel',
+              description: 'Volunteer charity',
+              logoMediaId: logo,
+              coverMediaId: cover,
+              registryId: 'ORG-000042',
+              foundedYear: 2018,
+              registrationNumber: 'REG-2024-001',
+              reliability: { score: 99 },
+              annualReportMediaId: report,
+              publicProfile: { enabled: true },
+              location: {
+                wilayaId: '16',
+                municipalityId: '1601',
+                address: 'Rue Didouche Mourad',
+              },
+              website: 'https://el-amel.example.org',
+              contact: {
+                email: 'contact@el-amel.example.org',
+                phone: '+213555123456',
+              },
+              focusDisciplines: [new Types.ObjectId()],
+              operatingScope: 'Algiers and surroundings',
+            },
+          },
+        )
+        .exec();
+
+      const profile = await service.getPublicBySlug('org-owner');
+      expect(Object.keys(profile).sort()).toEqual(
+        [
+          'aggregates',
+          'contact',
+          'coverMediaId',
+          'description',
+          'focusDisciplines',
+          'foundedYear',
+          'id',
+          'location',
+          'logoMediaId',
+          'nameAr',
+          'nameFr',
+          'operatingScope',
+          'registryId',
+          'slug',
+          'verificationStatus',
+          'website',
+        ].sort(),
+      );
+      expect(profile).toMatchObject({
+        id: org._id.toString(),
+        slug: 'org-owner',
+        registryId: 'ORG-000042',
+        verificationStatus: 'verified',
+        foundedYear: 2018,
+        logoMediaId: logo,
+        coverMediaId: cover,
+        location: {
+          wilayaId: '16',
+          municipalityId: '1601',
+          address: 'Rue Didouche Mourad',
+        },
+        contact: {
+          email: 'contact@el-amel.example.org',
+        },
+      });
+      // Guests never receive the contact phone key (Phase 2 privacy rule).
+      expect(profile.contact).not.toHaveProperty('phone');
+      for (const forbidden of [
+        '_id',
+        'userId',
+        'status',
+        'reliability',
+        'annualReportMediaId',
+        'publicProfile',
+        'registrationNumber',
+        'createdAt',
+        'updatedAt',
+        '__v',
+      ]) {
+        expect(profile).not.toHaveProperty(forbidden);
+      }
+
+      const card = (await service.listPublic()).items[0];
+      expect(Object.keys(card).sort()).toEqual(
+        [
+          'coverMediaId',
+          'description',
+          'foundedYear',
+          'id',
+          'logoMediaId',
+          'nameAr',
+          'nameFr',
+          'registryId',
+          'slug',
+          'verificationStatus',
+        ].sort(),
+      );
+      expect(card).toMatchObject({
+        id: org._id.toString(),
+        slug: 'org-owner',
+        verificationStatus: 'verified',
+        logoMediaId: logo,
+        coverMediaId: cover,
+        registryId: 'ORG-000042',
+        foundedYear: 2018,
+      });
+      for (const forbidden of [
+        '_id',
+        'userId',
+        'status',
+        'reliability',
+        'annualReportMediaId',
+        'publicProfile',
+        'registrationNumber',
+        'createdAt',
+        'updatedAt',
+        '__v',
+      ]) {
+        expect(card).not.toHaveProperty(forbidden);
+      }
+    });
+  });
+
+  describe('public contact phone gating (Phase 2)', () => {
+    async function seedPublicOrg(
+      options: {
+        orgPhone?: string;
+        accountPhone?: string;
+        accountStatus?: 'active' | 'suspended' | 'deleted';
+      } = {},
+    ) {
+      const user = await userModel.create({
+        email: `phone-org-${Math.random()}@example.com`,
+        passwordHash: 'hash',
+        role: 'organization',
+        status: options.accountStatus ?? 'active',
+        emailVerifiedAt: new Date(),
+        ...(options.accountPhone ? { phone: options.accountPhone } : {}),
+      });
+      const org = await orgModel.create({
+        userId: user._id,
+        slug: 'phone-org',
+        verificationStatus: 'verified',
+        status: 'active',
+        publicProfile: { enabled: true },
+        ...(options.orgPhone ? { contact: { phone: options.orgPhone } } : {}),
+      });
+      return { user, org };
+    }
+
+    async function liveSession(
+      userId: Types.ObjectId,
+      overrides: { expiresAt?: Date; rotatedAt?: Date } = {},
+    ) {
+      return sessionModel.create({
+        userId,
+        refreshTokenHash: `hash-${Math.random()}`,
+        expiresAt: overrides.expiresAt ?? new Date(Date.now() + 3600_000),
+        ...(overrides.rotatedAt ? { rotatedAt: overrides.rotatedAt } : {}),
+      });
+    }
+
+    function viewerOf(
+      user: UserModel,
+      session: SessionModel,
+    ): Pick<AccountToken, 'sub' | 'sessionId'> {
+      return {
+        sub: user._id.toString(),
+        sessionId: session._id.toString(),
+      };
+    }
+
+    it('omits the dedicated phone key from guests', async () => {
+      await seedPublicOrg({ orgPhone: '+213555123456' });
+      const guest = await service.getPublicBySlug('phone-org');
+      expect(guest.contact).toEqual({ email: null });
+    });
+
+    it('returns the dedicated phone to an active account with a live session', async () => {
+      const { user } = await seedPublicOrg({ orgPhone: '+213555123456' });
+      const session = await liveSession(user._id);
+      const viewer = await service.getPublicBySlug(
+        'phone-org',
+        viewerOf(user, session),
+      );
+      expect(viewer.contact.phone).toBe('+213555123456');
+    });
+
+    it('does not fall back to the owning account phone', async () => {
+      const { user } = await seedPublicOrg({ accountPhone: '+213661234567' });
+      const session = await liveSession(user._id);
+      const viewer = await service.getPublicBySlug(
+        'phone-org',
+        viewerOf(user, session),
+      );
+      expect(viewer.contact).not.toHaveProperty('phone');
+    });
+
+    it.each([
+      ['suspended', 'suspended'],
+      ['deleted', 'deleted'],
+    ] as const)('treats a %s account as a guest', async (_label, status) => {
+      const { user } = await seedPublicOrg({
+        orgPhone: '+213555123456',
+        accountStatus: status,
+      });
+      const session = await liveSession(user._id);
+      const viewer = await service.getPublicBySlug(
+        'phone-org',
+        viewerOf(user, session),
+      );
+      expect(viewer.contact).not.toHaveProperty('phone');
+    });
+
+    it('treats a rotated session as a guest', async () => {
+      const { user } = await seedPublicOrg({ orgPhone: '+213555123456' });
+      const session = await liveSession(user._id, {
+        rotatedAt: new Date(Date.now() - 60_000),
+      });
+      const viewer = await service.getPublicBySlug(
+        'phone-org',
+        viewerOf(user, session),
+      );
+      expect(viewer.contact).not.toHaveProperty('phone');
+    });
+
+    it('treats an expired session as a guest', async () => {
+      const { user } = await seedPublicOrg({ orgPhone: '+213555123456' });
+      const session = await liveSession(user._id, {
+        expiresAt: new Date(Date.now() - 60_000),
+      });
+      const viewer = await service.getPublicBySlug(
+        'phone-org',
+        viewerOf(user, session),
+      );
+      expect(viewer.contact).not.toHaveProperty('phone');
+    });
+
+    it('treats a session owned by another account as a guest', async () => {
+      const { user } = await seedPublicOrg({ orgPhone: '+213555123456' });
+      const other = await userModel.create({
+        email: `other-viewer-${Math.random()}@example.com`,
+        passwordHash: 'hash',
+        role: 'volunteer',
+        status: 'active',
+        emailVerifiedAt: new Date(),
+      });
+      const session = await liveSession(other._id);
+      const viewer = await service.getPublicBySlug('phone-org', {
+        sub: user._id.toString(),
+        sessionId: session._id.toString(),
+      });
+      expect(viewer.contact).not.toHaveProperty('phone');
+    });
+
+    it('does not run a session lookup for guests', async () => {
+      await seedPublicOrg({ orgPhone: '+213555123456' });
+      const spy = jest.spyOn(sessionModel, 'findOne');
+      try {
+        await service.getPublicBySlug('phone-org');
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 

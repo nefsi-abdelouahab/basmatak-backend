@@ -33,9 +33,12 @@ import {
   OrganizationListQueryDto,
   OrgOpportunitiesQueryDto,
   OrgOpportunityStatus,
+  PublicOrganizationCardDto,
+  PublicOrganizationProfileDto,
   UpdateOrganizationDto,
 } from './dto/organization.dto';
 import { MediaOwnership } from '../common/seams/media-ownership';
+import { normalizeAlgerianPhone } from '../common/phone/algerian-phone';
 import {
   OrganizationsCollection,
   OrganizationModel,
@@ -47,24 +50,27 @@ import {
 
 const ORGANIZATION_NOT_FOUND = 'ORGANIZATION_NOT_FOUND';
 
-/** Keys counted by the profile-completion checklist (annual report excluded). */
-const COMPLETION_KEYS = [
-  'name',
-  'description',
-  'type',
-  'registrationNumber',
-  'location',
-  'website',
-  'foundedYear',
-  'contact',
-  'focusDisciplines',
-  'operatingScope',
-  'coverMediaId',
+/** Weighted keys counted by the profile-completion checklist (annual report excluded). */
+const COMPLETION_WEIGHTS = [
+  { key: 'name', weight: 10 },
+  { key: 'description', weight: 15 },
+  { key: 'type', weight: 5 },
+  { key: 'registrationNumber', weight: 10 },
+  { key: 'location', weight: 10 },
+  { key: 'website', weight: 5 },
+  { key: 'foundedYear', weight: 5 },
+  { key: 'contact', weight: 10 },
+  { key: 'focusDisciplines', weight: 10 },
+  { key: 'operatingScope', weight: 5 },
+  { key: 'logoMediaId', weight: 5 },
+  { key: 'coverMediaId', weight: 10 },
 ] as const;
+
+type CompletionKey = (typeof COMPLETION_WEIGHTS)[number]['key'];
 
 export interface ProfileCompletion {
   percent: number;
-  missing: string[];
+  missingFields: string[];
   complete: boolean;
 }
 
@@ -109,10 +115,12 @@ export class OrganizationsService {
 
   async listPublic(
     query?: OrganizationListQueryDto,
-  ): Promise<CursorPage<OrganizationModel>> {
+  ): Promise<CursorPage<PublicOrganizationCardDto>> {
     const filter: FilterQuery<OrganizationModel> = {
       verificationStatus: 'verified',
       status: 'active',
+      // Missing values default to visible; only an explicit `false` opts out.
+      'publicProfile.enabled': { $ne: false },
     };
     if (query?.q) {
       const pattern = query.q
@@ -126,18 +134,23 @@ export class OrganizationsService {
     }
     // Note: `query.page` (roadmap input) is intentionally ignored — pagination
     // stays cursor-based; `page` is returned as response metadata only.
-    return execPage(this.organizationModel, filter, {
-      limit: query?.limit,
-      cursor: query?.cursor,
-      sort: { _id: -1 },
-      sortToken: 'newest',
-      cursorFilter: (decoded) => {
-        if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
-          return {};
-        }
-        return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+    return execPage(
+      this.organizationModel,
+      filter,
+      {
+        limit: query?.limit,
+        cursor: query?.cursor,
+        sort: { _id: -1 },
+        sortToken: 'newest',
+        cursorFilter: (decoded) => {
+          if (!decoded.id || !Types.ObjectId.isValid(decoded.id)) {
+            return {};
+          }
+          return { _id: { $lt: new Types.ObjectId(decoded.id) } };
+        },
       },
-    });
+      (items) => items.map((item) => this.toPublicCard(item)),
+    );
   }
 
   /** Public seam (S12 contract): org only when verified AND active, else null. */
@@ -153,28 +166,109 @@ export class OrganizationsService {
     return organization;
   }
 
-  async getPublicBySlug(slug: string): Promise<Record<string, unknown>> {
+  async getPublicBySlug(
+    slug: string,
+    viewer?: Pick<AccountToken, 'sub' | 'sessionId'>,
+  ): Promise<PublicOrganizationProfileDto> {
     const organization = await this.getPublicOrganization(slug);
-    if (!organization) {
+    if (!organization || organization.publicProfile?.enabled === false) {
       throw new BusinessException(
         ORGANIZATION_NOT_FOUND,
         'Organization not found',
         404,
       );
     }
-    // Aggregates come from the inert seam (zeroed) until Session 16
-    // (`org-dashboard`) swaps the real provider via DI. `activeSince` is
-    // derived here from the already-loaded row, not the seam.
+    // Aggregates come from the seam; `activeSince` is derived here from the
+    // already-loaded row, not the seam.
     const stats = await this.publicStats.getStats(organization._id);
-    const raw = organization.toObject() as Record<string, unknown>;
+    // Contact phone is a signed-in-only detail (Phase 2 privacy rule). The
+    // eligibility query runs only when a bearer token produced a viewer, so
+    // anonymous reads stay a single organization lookup. The dedicated
+    // organization phone is the only eligible source; there is no fallback to
+    // the owning account's phone.
+    const eligible = viewer ? await this.isEligibleViewer(viewer) : false;
+    const phone = eligible ? this.resolveContactPhone(organization) : null;
     return {
-      ...raw,
-      focusDisciplines: raw['focusDisciplines'] ?? [],
-      publicProfile: raw['publicProfile'] ?? { enabled: true },
+      id: organization._id.toString(),
+      slug: organization.slug,
+      registryId: organization.registryId ?? null,
+      nameAr: organization.nameAr ?? null,
+      nameFr: organization.nameFr ?? null,
+      description: organization.description ?? null,
+      logoMediaId: organization.logoMediaId?.toString() ?? null,
+      coverMediaId: organization.coverMediaId?.toString() ?? null,
+      location: {
+        wilayaId: organization.location?.wilayaId ?? null,
+        municipalityId: organization.location?.municipalityId ?? null,
+        address: organization.location?.address ?? null,
+      },
+      website: organization.website ?? null,
+      foundedYear: organization.foundedYear ?? null,
+      verificationStatus: 'verified',
+      contact: phone
+        ? { email: organization.contact?.email ?? null, phone }
+        : { email: organization.contact?.email ?? null },
+      focusDisciplines: (organization.focusDisciplines ?? []).map((id) =>
+        id.toString(),
+      ),
+      operatingScope: organization.operatingScope ?? null,
       aggregates: {
         ...stats,
         activeSince: organization.foundedYear ?? null,
       },
+    };
+  }
+
+  /**
+   * A public phone is eligible only for a live, active account whose current
+   * session is still live. `OptionalJwtAuthGuard` validates signature/expiry
+   * only and `@Public` routes skip the global status guards, so this check is
+   * the backend privacy boundary.
+   */
+  private async isEligibleViewer(
+    viewer: Pick<AccountToken, 'sub' | 'sessionId'>,
+  ): Promise<boolean> {
+    if (
+      !Types.ObjectId.isValid(viewer.sub) ||
+      !Types.ObjectId.isValid(viewer.sessionId)
+    ) {
+      return false;
+    }
+    const [user, session] = await Promise.all([
+      this.userModel.findById(viewer.sub).select('status').lean().exec(),
+      this.sessionModel
+        .findOne({
+          _id: viewer.sessionId,
+          userId: viewer.sub,
+          rotatedAt: null,
+          expiresAt: { $gt: new Date() },
+        })
+        .select('_id')
+        .lean()
+        .exec(),
+    ]);
+    return Boolean(user && user.status === 'active' && session);
+  }
+
+  private resolveContactPhone(organization: OrganizationModel): string | null {
+    return normalizeAlgerianPhone(organization.contact?.phone);
+  }
+
+  /** Maps a stored organization row to the narrow public card projection. */
+  private toPublicCard(
+    organization: OrganizationModel,
+  ): PublicOrganizationCardDto {
+    return {
+      id: organization._id.toString(),
+      slug: organization.slug,
+      nameAr: organization.nameAr ?? null,
+      nameFr: organization.nameFr ?? null,
+      description: organization.description ?? null,
+      logoMediaId: organization.logoMediaId?.toString() ?? null,
+      coverMediaId: organization.coverMediaId?.toString() ?? null,
+      registryId: organization.registryId ?? null,
+      verificationStatus: 'verified',
+      foundedYear: organization.foundedYear ?? null,
     };
   }
 
@@ -309,9 +403,22 @@ export class OrganizationsService {
     if (dto.focusDisciplines !== undefined) {
       set['focusDisciplines'] = Array.from(new Set(dto.focusDisciplines));
     }
+    const contact =
+      dto.contact === undefined
+        ? undefined
+        : {
+            ...dto.contact,
+            ...(dto.contact.phone !== undefined
+              ? {
+                  phone:
+                    normalizeAlgerianPhone(dto.contact.phone) ??
+                    dto.contact.phone,
+                }
+              : {}),
+          };
     for (const [prefix, nested] of [
       ['location', dto.location],
-      ['contact', dto.contact],
+      ['contact', contact],
       ['publicProfile', dto.publicProfile],
     ] as const) {
       if (nested !== undefined) {
@@ -354,7 +461,7 @@ export class OrganizationsService {
     account: AccountToken,
   ): Promise<ProfileCompletion> {
     const organization = await this.getOwn(account);
-    const filled: Record<(typeof COMPLETION_KEYS)[number], boolean> = {
+    const filled: Record<CompletionKey, boolean> = {
       name: !!(organization.nameAr || organization.nameFr),
       description: !!organization.description,
       type: !!organization.type,
@@ -371,14 +478,24 @@ export class OrganizationsService {
       contact: !!(organization.contact?.email || organization.contact?.phone),
       focusDisciplines: (organization.focusDisciplines?.length ?? 0) > 0,
       operatingScope: !!organization.operatingScope,
+      logoMediaId: !!organization.logoMediaId,
       coverMediaId: !!organization.coverMediaId,
     };
-    const missing = COMPLETION_KEYS.filter((key) => !filled[key]);
-    const done = COMPLETION_KEYS.length - missing.length;
+    const missingFields = COMPLETION_WEIGHTS.filter(
+      ({ key }) => !filled[key],
+    ).map(({ key }) => key);
+    const total = COMPLETION_WEIGHTS.reduce(
+      (sum, entry) => sum + entry.weight,
+      0,
+    );
+    const earned = COMPLETION_WEIGHTS.filter(({ key }) => filled[key]).reduce(
+      (sum, entry) => sum + entry.weight,
+      0,
+    );
     return {
-      percent: Math.round((done / COMPLETION_KEYS.length) * 100),
-      missing: [...missing],
-      complete: missing.length === 0,
+      percent: Math.round((earned / total) * 100),
+      missingFields,
+      complete: missingFields.length === 0,
     };
   }
 

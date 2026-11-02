@@ -43,10 +43,7 @@ import {
   PortfolioItemModel,
 } from '../portfolio/schemas/portfolio-item.schema';
 import { PortfolioService } from '../portfolio/portfolio.service';
-import {
-  ReviewModel,
-  ReviewsCollection,
-} from '../reviews/review.schema';
+import { ReviewModel, ReviewsCollection } from '../reviews/review.schema';
 import {
   SkillCategoriesCollection,
   SkillCategoryModel,
@@ -273,7 +270,12 @@ interface DevVolunteerSpec {
   availabilityNote: string;
   preferredDomains: string[];
   geographicBase: string;
-  skills: Array<{ slug: string; level: number; years: number; primary: boolean }>;
+  skills: Array<{
+    slug: string;
+    level: number;
+    years: number;
+    primary: boolean;
+  }>;
   schedule: WeeklySchedule;
   publicProfile: {
     enabled?: boolean;
@@ -329,7 +331,11 @@ const VOLUNTEER_SPECS: DevVolunteerSpec[] = [
       { slug: 'accueil', level: 3, years: 2, primary: false },
     ],
     schedule: scheduleOf(['tuesday', 'thursday'], '18:00', '21:00'),
-    publicProfile: { showAvatar: true, showLocation: true, showAvailability: true },
+    publicProfile: {
+      showAvatar: true,
+      showLocation: true,
+      showAvailability: true,
+    },
   },
   {
     key: 'amine',
@@ -391,7 +397,11 @@ const VOLUNTEER_SPECS: DevVolunteerSpec[] = [
       { slug: 'soutien-scolaire', level: 5, years: 8, primary: true },
       { slug: 'encadrement', level: 4, years: 6, primary: false },
     ],
-    schedule: scheduleOf(['monday', 'tuesday', 'wednesday', 'thursday'], '18:00', '20:00'),
+    schedule: scheduleOf(
+      ['monday', 'tuesday', 'wednesday', 'thursday'],
+      '18:00',
+      '20:00',
+    ),
     publicProfile: { showLocation: true },
   },
   {
@@ -531,7 +541,8 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
     positions: [
       {
         title: 'Distributeur bénévole',
-        description: 'Accueil des familles et remise des couffins au point de distribution.',
+        description:
+          'Accueil des familles et remise des couffins au point de distribution.',
         requiredCount: 6,
         requiredSkillSlugs: ['accueil', 'organisation'],
         deliverables: ['Distribution de 60 couffins par volontaire'],
@@ -539,7 +550,8 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
       },
       {
         title: 'Coordinateur logistique',
-        description: 'Gestion des stocks, du planning des équipes et des tournées.',
+        description:
+          'Gestion des stocks, du planning des équipes et des tournées.',
         requiredCount: 2,
         requiredSkillSlugs: ['coordination'],
         deliverables: ['Planning des équipes', 'Inventaire final des stocks'],
@@ -574,7 +586,8 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
       },
       {
         title: 'Chef d’équipe',
-        description: 'Encadrement d’un groupe de 8 volontaires et point de contact org.',
+        description:
+          'Encadrement d’un groupe de 8 volontaires et point de contact org.',
         requiredCount: 2,
         requiredSkillSlugs: ['coordination', 'encadrement'],
         deliverables: ['Rapport photo de la zone'],
@@ -601,7 +614,8 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
     positions: [
       {
         title: 'Tuteur bénévole',
-        description: 'Accompagnement d’un groupe de 5 élèves en maths ou en français.',
+        description:
+          'Accompagnement d’un groupe de 5 élèves en maths ou en français.',
         requiredCount: 5,
         requiredSkillSlugs: ['soutien-scolaire'],
         deliverables: ['Fiches de suivi des élèves'],
@@ -621,12 +635,16 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
     startOffsetDays: 42,
     endOffsetDays: 84,
     durationMinutes: 3600,
-    prerequisites: ['2 ans d’expérience en développement web', 'Connexion stable'],
+    prerequisites: [
+      '2 ans d’expérience en développement web',
+      'Connexion stable',
+    ],
     deadlineOffsetDays: 90,
     positions: [
       {
         title: 'Mentor code',
-        description: 'Animation de 2 ateliers par semaine et revue des projets.',
+        description:
+          'Animation de 2 ateliers par semaine et revue des projets.',
         requiredCount: 4,
         requiredSkillSlugs: ['programmation'],
         deliverables: ['Projets étudiants évalués'],
@@ -680,7 +698,8 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
     positions: [
       {
         title: 'Animateur de soirée',
-        description: 'Présentation des séquences et interaction avec le public.',
+        description:
+          'Présentation des séquences et interaction avec le public.',
         requiredCount: 3,
         requiredSkillSlugs: ['presentation', 'animation'],
         deliverables: ['Déroulé animé de la soirée'],
@@ -715,7 +734,8 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
       },
       {
         title: 'Chauffeur arrosage',
-        description: 'Tournées d’arrosage avec le camion-citerne de l’association.',
+        description:
+          'Tournées d’arrosage avec le camion-citerne de l’association.',
         requiredCount: 2,
         requiredSkillSlugs: ['coordination'],
         deliverables: ['Carnet de tournées'],
@@ -819,7 +839,8 @@ const OPPORTUNITY_SPECS: DevOpportunitySpec[] = [
     positions: [
       {
         title: 'Traducteur bénévole',
-        description: 'Traduction d’un chapitre par semaine avec relecture croisée.',
+        description:
+          'Traduction d’un chapitre par semaine avec relecture croisée.',
         requiredCount: 3,
         requiredSkillSlugs: ['traduction'],
         deliverables: ['Chapitres traduits et relus'],
@@ -958,25 +979,141 @@ interface DevApplicationSpec {
 }
 
 const APPLICATION_SPECS: DevApplicationSpec[] = [
-  { volunteerKey: 'yasmine', opportunityKey: 'ramadan', positionIndex: 0, message: 'Je souhaite aider aux distributions du soir après mes cours.', outcome: 'accepted' },
-  { volunteerKey: 'yasmine', opportunityKey: 'mural', positionIndex: 0, message: 'Je peux documenter la fresque en photo en plus de peindre.', outcome: 'accepted' },
-  { volunteerKey: 'yasmine', opportunityKey: 'storytelling', positionIndex: 0, message: 'Photographe amateur, ce reportage est fait pour moi.', outcome: 'pending' },
-  { volunteerKey: 'amine', opportunityKey: 'coding', positionIndex: 0, message: 'Développeur depuis 5 ans, je veux transmettre aux jeunes d’Oran.', outcome: 'accepted' },
-  { volunteerKey: 'amine', opportunityKey: 'translation', positionIndex: 0, message: 'Je peux aussi aider sur les outils numériques du projet.', outcome: 'accepted' },
-  { volunteerKey: 'amine', opportunityKey: 'mural', positionIndex: 0, message: 'Disponible le week-end du vernissage.', outcome: 'accepted' },
-  { volunteerKey: 'sara', opportunityKey: 'cleanup', positionIndex: 0, message: 'J’habite près des Sablettes et je viens avec des amies.', outcome: 'accepted' },
-  { volunteerKey: 'sara', opportunityKey: 'storytelling', positionIndex: 0, message: 'Je peux photographier les écoles de ma région pour les récits.', outcome: 'pending' },
-  { volunteerKey: 'karim', opportunityKey: 'tutoring', positionIndex: 0, message: 'Prof de maths, je prends un groupe de 5 élèves.', outcome: 'accepted' },
-  { volunteerKey: 'karim', opportunityKey: 'examprep', positionIndex: 0, message: 'Je peux assurer les révisions de physique aussi.', outcome: 'pending' },
-  { volunteerKey: 'lina', opportunityKey: 'planting', positionIndex: 0, message: 'Je veux troquer ma tablette contre une pelle le temps d’un mois.', outcome: 'accepted' },
-  { volunteerKey: 'lina', opportunityKey: 'ramadan', positionIndex: 1, message: 'Je peux mettre en page le planning des équipes.', outcome: 'rejected', reason: 'Poste déjà pourvu par un bénévole confirmé.' },
-  { volunteerKey: 'omar', opportunityKey: 'recycling', positionIndex: 0, message: 'Habitué des tournées, je connais les écoles du secteur.', outcome: 'accepted' },
-  { volunteerKey: 'omar', opportunityKey: 'cleanup', positionIndex: 1, message: 'Je peux encadrer une équipe de 8 volontaires.', outcome: 'withdrawn' },
-  { volunteerKey: 'nadia', opportunityKey: 'examprep', positionIndex: 0, message: 'Je peux relire les supports de cours avant diffusion.', outcome: 'under_review' },
-  { volunteerKey: 'nadia', opportunityKey: 'translation', positionIndex: 1, message: 'Traductrice professionnelle, relecture dans mes cordes.', outcome: 'pending' },
-  { volunteerKey: 'nadia', opportunityKey: 'summercamp', positionIndex: 0, message: 'Je peux animer les veillées contes du soir.', outcome: 'accepted' },
-  { volunteerKey: 'riad', opportunityKey: 'blankets', positionIndex: 0, message: 'Je peux tenir les permanences du week-end.', outcome: 'pending' },
-  { volunteerKey: 'riad', opportunityKey: 'planting', positionIndex: 1, message: 'J’ai le permis et je suis disponible en semaine.', outcome: 'rejected', reason: 'Le poste exige une expérience de conduite d’utilitaire.' },
+  {
+    volunteerKey: 'yasmine',
+    opportunityKey: 'ramadan',
+    positionIndex: 0,
+    message: 'Je souhaite aider aux distributions du soir après mes cours.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'yasmine',
+    opportunityKey: 'mural',
+    positionIndex: 0,
+    message: 'Je peux documenter la fresque en photo en plus de peindre.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'yasmine',
+    opportunityKey: 'storytelling',
+    positionIndex: 0,
+    message: 'Photographe amateur, ce reportage est fait pour moi.',
+    outcome: 'pending',
+  },
+  {
+    volunteerKey: 'amine',
+    opportunityKey: 'coding',
+    positionIndex: 0,
+    message: 'Développeur depuis 5 ans, je veux transmettre aux jeunes d’Oran.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'amine',
+    opportunityKey: 'translation',
+    positionIndex: 0,
+    message: 'Je peux aussi aider sur les outils numériques du projet.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'amine',
+    opportunityKey: 'mural',
+    positionIndex: 0,
+    message: 'Disponible le week-end du vernissage.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'sara',
+    opportunityKey: 'cleanup',
+    positionIndex: 0,
+    message: 'J’habite près des Sablettes et je viens avec des amies.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'sara',
+    opportunityKey: 'storytelling',
+    positionIndex: 0,
+    message: 'Je peux photographier les écoles de ma région pour les récits.',
+    outcome: 'pending',
+  },
+  {
+    volunteerKey: 'karim',
+    opportunityKey: 'tutoring',
+    positionIndex: 0,
+    message: 'Prof de maths, je prends un groupe de 5 élèves.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'karim',
+    opportunityKey: 'examprep',
+    positionIndex: 0,
+    message: 'Je peux assurer les révisions de physique aussi.',
+    outcome: 'pending',
+  },
+  {
+    volunteerKey: 'lina',
+    opportunityKey: 'planting',
+    positionIndex: 0,
+    message: 'Je veux troquer ma tablette contre une pelle le temps d’un mois.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'lina',
+    opportunityKey: 'ramadan',
+    positionIndex: 1,
+    message: 'Je peux mettre en page le planning des équipes.',
+    outcome: 'rejected',
+    reason: 'Poste déjà pourvu par un bénévole confirmé.',
+  },
+  {
+    volunteerKey: 'omar',
+    opportunityKey: 'recycling',
+    positionIndex: 0,
+    message: 'Habitué des tournées, je connais les écoles du secteur.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'omar',
+    opportunityKey: 'cleanup',
+    positionIndex: 1,
+    message: 'Je peux encadrer une équipe de 8 volontaires.',
+    outcome: 'withdrawn',
+  },
+  {
+    volunteerKey: 'nadia',
+    opportunityKey: 'examprep',
+    positionIndex: 0,
+    message: 'Je peux relire les supports de cours avant diffusion.',
+    outcome: 'under_review',
+  },
+  {
+    volunteerKey: 'nadia',
+    opportunityKey: 'translation',
+    positionIndex: 1,
+    message: 'Traductrice professionnelle, relecture dans mes cordes.',
+    outcome: 'pending',
+  },
+  {
+    volunteerKey: 'nadia',
+    opportunityKey: 'summercamp',
+    positionIndex: 0,
+    message: 'Je peux animer les veillées contes du soir.',
+    outcome: 'accepted',
+  },
+  {
+    volunteerKey: 'riad',
+    opportunityKey: 'blankets',
+    positionIndex: 0,
+    message: 'Je peux tenir les permanences du week-end.',
+    outcome: 'pending',
+  },
+  {
+    volunteerKey: 'riad',
+    opportunityKey: 'planting',
+    positionIndex: 1,
+    message: 'J’ai le permis et je suis disponible en semaine.',
+    outcome: 'rejected',
+    reason: 'Le poste exige une expérience de conduite d’utilitaire.',
+  },
 ];
 
 /* ------------------------------------------------------------------ types */
@@ -1176,9 +1313,7 @@ export async function seedDev(
     url: string,
     filename: string,
   ): Promise<MediaModel> => {
-    const existing = await mediaModel
-      .findOne({ ownerId, purpose, url })
-      .exec();
+    const existing = await mediaModel.findOne({ ownerId, purpose, url }).exec();
     if (existing) {
       return existing;
     }
@@ -1277,7 +1412,10 @@ export async function seedDev(
       },
       website: spec.website,
       foundedYear: spec.foundedYear,
-      contact: { email: `contact-${spec.key}@example.org`, phone: spec.contactPhone },
+      contact: {
+        email: `contact-${spec.key}@example.org`,
+        phone: spec.contactPhone,
+      },
       focusDisciplines: spec.focusCategories.map((slug) => categoryIdOf(slug)),
       operatingScope: spec.operatingScope,
       publicProfile: { enabled: true },
@@ -1309,13 +1447,17 @@ export async function seedDev(
           `verification_document/dev/${user._id.toString()}/id.pdf`,
           'application/pdf',
         );
-        await organizations.submitVerification(account, [document._id.toString()]);
+        await organizations.submitVerification(account, [
+          document._id.toString(),
+        ]);
       }
       if (spec.verified) {
         await adminOrganizations.approve(adminAccount, orgDoc._id.toString());
         const approved = await organizationModel.findById(orgDoc._id).exec();
         if (!approved) {
-          throw new Error(`seed-dev: organization row missing for ${spec.email}`);
+          throw new Error(
+            `seed-dev: organization row missing for ${spec.email}`,
+          );
         }
         orgByKey.set(spec.key, approved);
       } else {
@@ -1440,16 +1582,16 @@ export async function seedDev(
           spec.wilayaId && spec.municipalityId
             ? {
                 ...(await resolvePlace(spec.wilayaId, spec.municipalityId)),
-                ...(spec.coordinates
-                  ? { coordinates: spec.coordinates }
-                  : {}),
+                ...(spec.coordinates ? { coordinates: spec.coordinates } : {}),
               }
             : undefined,
         positions: spec.positions.map((position) => ({
           title: position.title,
           description: position.description,
           requiredCount: position.requiredCount,
-          requiredSkills: position.requiredSkillSlugs.map((slug) => skillIdOf(slug)),
+          requiredSkills: position.requiredSkillSlugs.map((slug) =>
+            skillIdOf(slug),
+          ),
           deliverables: position.deliverables,
           startAt: daysFromNow(
             position.startOffsetDays ?? spec.startOffsetDays,
@@ -1478,10 +1620,7 @@ export async function seedDev(
   }
 
   /* Applications through apply → startReview/accept/reject/withdraw. */
-  const positionIdOf = (
-    opportunity: OppSeedRef,
-    index: number,
-  ): string => {
+  const positionIdOf = (opportunity: OppSeedRef, index: number): string => {
     const position = opportunity.positions[index];
     if (!position) {
       throw new Error(
@@ -1511,7 +1650,10 @@ export async function seedDev(
     }
     const positionId = positionIdOf(opportunity, spec.positionIndex);
     const existingApplication = await applicationModel
-      .findOne({ positionId: new Types.ObjectId(positionId), volunteerId: user._id })
+      .findOne({
+        positionId: new Types.ObjectId(positionId),
+        volunteerId: user._id,
+      })
       .exec();
     if (!existingApplication) {
       await applications.apply(
@@ -1521,9 +1663,13 @@ export async function seedDev(
         spec.message,
       );
     }
-    const orgAccount = orgAccountByKey.get(oppOrgKey.get(spec.opportunityKey) ?? '');
+    const orgAccount = orgAccountByKey.get(
+      oppOrgKey.get(spec.opportunityKey) ?? '',
+    );
     if (!orgAccount) {
-      throw new Error(`seed-dev: org account missing for ${spec.opportunityKey}`);
+      throw new Error(
+        `seed-dev: org account missing for ${spec.opportunityKey}`,
+      );
     }
     let application = await readApplication(positionId, user._id);
     if (spec.outcome === 'under_review' && application.status === 'pending') {
@@ -1531,12 +1677,16 @@ export async function seedDev(
       application = await readApplication(positionId, user._id);
     }
     if (spec.outcome === 'accepted' && application.status !== 'accepted') {
-      await applications.acceptApplication(orgAccount, application._id.toString());
+      await applications.acceptApplication(
+        orgAccount,
+        application._id.toString(),
+      );
       application = await readApplication(positionId, user._id);
     }
     if (
       spec.outcome === 'rejected' &&
-      (application.status === 'pending' || application.status === 'under_review')
+      (application.status === 'pending' ||
+        application.status === 'under_review')
     ) {
       await applications.rejectApplication(
         orgAccount,
@@ -1547,7 +1697,8 @@ export async function seedDev(
     }
     if (
       spec.outcome === 'withdrawn' &&
-      (application.status === 'pending' || application.status === 'under_review')
+      (application.status === 'pending' ||
+        application.status === 'under_review')
     ) {
       await applications.withdrawApplication(
         volAccount,
@@ -1582,12 +1733,12 @@ export async function seedDev(
     if (!organization || !account) {
       throw new Error('seed-dev: unknown org for completed opportunity');
     }
-    let completed = await readOpportunity(organization._id, completedSpec.title);
+    let completed = await readOpportunity(
+      organization._id,
+      completedSpec.title,
+    );
     if (completed.status === 'draft') {
-      await opportunities.publishOpportunity(
-        account,
-        completed._id.toString(),
-      );
+      await opportunities.publishOpportunity(account, completed._id.toString());
       completed = await readOpportunity(organization._id, completedSpec.title);
     }
     if (completed.status === 'published') {
@@ -1611,7 +1762,10 @@ export async function seedDev(
     positionIndex: number;
     title: string;
     description: string;
-    verify: null | { notes: string; review?: { rating: number; comment: string } };
+    verify: null | {
+      notes: string;
+      review?: { rating: number; comment: string };
+    };
   }> = [
     {
       volunteerKey: 'yasmine',
@@ -1634,7 +1788,10 @@ export async function seedDev(
         'Animation de 8 ateliers JavaScript et revue des projets de 5 jeunes. Tous ont présenté un site vitrine fonctionnel en fin de bootcamp.',
       verify: {
         notes: 'Ateliers assurés en visio, supports fournis.',
-        review: { rating: 5, comment: 'Excellent mentor, pédagogie remarquable.' },
+        review: {
+          rating: 5,
+          comment: 'Excellent mentor, pédagogie remarquable.',
+        },
       },
     },
     {
@@ -1665,7 +1822,9 @@ export async function seedDev(
       title: 'Veillées contes — colonie d’été',
       description:
         'Animation de 6 veillées contes bilingues pour les enfants de la colonie, avec préparation des supports et gestion du coucher.',
-      verify: { notes: 'Mission réalisée l’été dernier, attestée par la direction.' },
+      verify: {
+        notes: 'Mission réalisée l’été dernier, attestée par la direction.',
+      },
     },
   ];
   for (const spec of SUBMISSION_SPECS) {
@@ -1735,9 +1894,12 @@ export async function seedDev(
     }
     if (
       spec.verify &&
-      (submission.status === 'submitted' || submission.status === 'under_review')
+      (submission.status === 'submitted' ||
+        submission.status === 'under_review')
     ) {
-      const orgAccount = orgAccountByKey.get(oppOrgKey.get(spec.opportunityKey) ?? '');
+      const orgAccount = orgAccountByKey.get(
+        oppOrgKey.get(spec.opportunityKey) ?? '',
+      );
       if (!orgAccount) {
         throw new Error('seed-dev: org account missing for verify');
       }
@@ -1757,9 +1919,13 @@ export async function seedDev(
       .findOne({ volunteerId: saraUser._id })
       .exec();
     if (saraExperience && saraExperience.publicVisibility !== 'private') {
-      await experiences.updateVisibility(saraAccount, saraExperience._id.toString(), {
-        publicVisibility: 'private',
-      });
+      await experiences.updateVisibility(
+        saraAccount,
+        saraExperience._id.toString(),
+        {
+          publicVisibility: 'private',
+        },
+      );
     }
   }
 
@@ -1878,7 +2044,10 @@ export async function seedDev(
   ];
   const allDevOrgIds = [...orgIds.values()].map((o) => o._id);
   const devOppIds = (
-    await opportunityModel.find({ organizationId: { $in: allDevOrgIds } }).select('_id').exec()
+    await opportunityModel
+      .find({ organizationId: { $in: allDevOrgIds } })
+      .select('_id')
+      .exec()
   ).map((o) => o._id);
   const countBy = async (
     model: Model<any>,
@@ -1895,7 +2064,11 @@ export async function seedDev(
     }
     return out;
   };
-  const oppStatus = await countBy(opportunityModel, { _id: { $in: devOppIds } }, 'status');
+  const oppStatus = await countBy(
+    opportunityModel,
+    { _id: { $in: devOppIds } },
+    'status',
+  );
   const appStatus = await countBy(
     applicationModel,
     { opportunityId: { $in: devOppIds } },
@@ -1916,7 +2089,9 @@ export async function seedDev(
             $filter: {
               input: '$positions',
               as: 'position',
-              cond: { $lt: ['$$position.filledCount', '$$position.requiredCount'] },
+              cond: {
+                $lt: ['$$position.filledCount', '$$position.requiredCount'],
+              },
             },
           },
         },
@@ -1937,7 +2112,9 @@ export async function seedDev(
     })),
   ];
   return {
-    organizations: await organizationModel.countDocuments({ _id: { $in: allDevOrgIds } }),
+    organizations: await organizationModel.countDocuments({
+      _id: { $in: allDevOrgIds },
+    }),
     organizationsVerified: await organizationModel.countDocuments({
       _id: { $in: allDevOrgIds },
       verificationStatus: 'verified',
@@ -1956,27 +2133,27 @@ export async function seedDev(
     }),
     applicationsByStatus: appStatus,
     participants: await participantModel.countDocuments({
-      opportunityId: { $in: devOppIds } },
-    ),
+      opportunityId: { $in: devOppIds },
+    }),
     submissions: await submissionModel.countDocuments({
-      opportunityId: { $in: devOppIds } },
-    ),
+      opportunityId: { $in: devOppIds },
+    }),
     submissionsByStatus: submissionStatus,
     experiences: await experienceModel.countDocuments({
-      opportunityId: { $in: devOppIds } },
-    ),
+      opportunityId: { $in: devOppIds },
+    }),
     reviews: await reviewModel.countDocuments({
-      organizationId: { $in: allDevOrgIds } },
-    ),
+      organizationId: { $in: allDevOrgIds },
+    }),
     verifications: await verificationModel.countDocuments({
-      organizationId: { $in: allDevOrgIds } },
-    ),
+      organizationId: { $in: allDevOrgIds },
+    }),
     favorites: await favoriteModel.countDocuments({
-      userId: { $in: allDevUserIds } },
-    ),
+      userId: { $in: allDevUserIds },
+    }),
     portfolioItems: await portfolioModel.countDocuments({
-      volunteerId: { $in: [...volUserByKey.values()].map((u) => u._id) } },
-    ),
+      volunteerId: { $in: [...volUserByKey.values()].map((u) => u._id) },
+    }),
     media: await mediaModel.countDocuments({ ownerId: { $in: allDevUserIds } }),
     credentials,
   };
