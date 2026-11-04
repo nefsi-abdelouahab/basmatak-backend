@@ -45,6 +45,16 @@ import {
   buildOpportunitySearchText,
   isGenericOpportunityBrowse,
 } from '../opportunity-query';
+import {
+  extractOrganizationName,
+  organizationMatchesName,
+  organizationNameContainsName,
+} from '../organization-query';
+import type { ConversationFocus } from '../conversation-focus';
+import {
+  deriveConversationFocus,
+  selectFocusedOpportunitySlugs,
+} from '../conversation-focus';
 import { PromptBuilder } from '../prompt/prompt-builder';
 import { detectPromptLanguage, IntentRouter } from '../router/intent-router';
 import type { RouterDecision } from '../router/intent-router';
@@ -71,12 +81,14 @@ import {
   buildBrowseLinks,
   allowsBrowseLinks,
 } from './answer-links';
+import type { AnswerLink } from './answer-links';
 import {
   asksForList,
   CITATION_MARKER_PATTERN,
   sanitizeAnswer,
 } from './answer-sanitizer';
 import type { CitableToolResult } from './citations';
+import { containsUnbackedPromise } from './promise-guard';
 
 /**
  * Session 9 answer pipeline.
@@ -212,6 +224,199 @@ function uniqueNames(names: readonly string[]): string[] {
   return [...new Set(names)];
 }
 
+function organizationRows(data: unknown): Record<string, unknown>[] {
+  if (!isRecord(data) || !Array.isArray(data.items)) return [];
+  return data.items.filter(isRecord);
+}
+
+function opportunityRows(data: unknown): Record<string, unknown>[] {
+  return organizationRows(data);
+}
+
+function focusString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const text = value.replace(/\s+/g, ' ').trim();
+  return text === '' ? null : text;
+}
+
+function focusCount(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.trunc(value)
+    : null;
+}
+
+const FOCUS_STATUS_LABELS = {
+  ar: {
+    published: 'مفتوحة للتقديم',
+    in_progress: 'قيد التنفيذ',
+    completed: 'مكتملة',
+    closed: 'مغلقة',
+    cancelled: 'ملغاة',
+    draft: 'غير منشورة',
+  },
+  en: {
+    published: 'open for applications',
+    in_progress: 'in progress',
+    completed: 'completed',
+    closed: 'closed',
+    cancelled: 'cancelled',
+    draft: 'not published',
+  },
+} as const;
+
+function focusStatusLabel(
+  status: string | null,
+  language: 'ar' | 'en',
+): string {
+  const labels: Readonly<Record<string, string>> =
+    FOCUS_STATUS_LABELS[language];
+  if (status === null) {
+    return language === 'ar' ? 'الحالة غير مذكورة' : 'status not listed';
+  }
+  return (
+    labels[status] ??
+    (language === 'ar' ? `الحالة ${status}` : `status ${status}`)
+  );
+}
+
+function focusDeadlineLabel(
+  deadline: string | null,
+  language: 'ar' | 'en',
+): string {
+  if (deadline === null) {
+    return language === 'ar' ? 'غير محدد' : 'not specified';
+  }
+  const time = Date.parse(deadline);
+  if (!Number.isFinite(time)) {
+    return language === 'ar' ? 'غير محدد' : 'not specified';
+  }
+  try {
+    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-DZ' : 'en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+      calendar: 'gregory',
+    }).format(new Date(time));
+  } catch {
+    return deadline;
+  }
+}
+
+function focusPositionsLabel(
+  count: number | null,
+  language: 'ar' | 'en',
+): string {
+  if (count === null) {
+    return language === 'ar'
+      ? 'عدد المناصب المتاحة غير مذكور'
+      : 'open positions not listed';
+  }
+  if (count === 0) {
+    return language === 'ar' ? 'لا توجد مناصب متاحة' : 'no open positions';
+  }
+  return language === 'ar'
+    ? `المناصب المتاحة ${count}`
+    : `open positions ${count}`;
+}
+
+function focusLocationLabel(
+  row: Record<string, unknown>,
+  language: 'ar' | 'en',
+): string {
+  const names = isRecord(row.locationNames) ? row.locationNames : undefined;
+  const pick = (kind: 'wilaya' | 'municipality'): string | null => {
+    if (names === undefined || !isRecord(names[kind])) return null;
+    const pair = names[kind] as Record<string, unknown>;
+    return focusString(language === 'ar' ? pair.ar : pair.fr);
+  };
+
+  const wilaya = pick('wilaya');
+  const municipality = pick('municipality');
+  let place = '';
+  if (wilaya !== null && municipality !== null && municipality !== wilaya) {
+    place = `${municipality}${language === 'ar' ? '،' : ','} ${wilaya}`;
+  } else {
+    place = municipality ?? wilaya ?? '';
+  }
+
+  if (place === '') {
+    const location = isRecord(row.location) ? row.location : undefined;
+    place =
+      focusString(location?.municipality) ??
+      focusString(location?.wilaya) ??
+      '';
+  }
+
+  if (place === '') {
+    return language === 'ar' ? 'الموقع غير مذكور' : 'location not listed';
+  }
+  return language === 'ar' ? `الموقع ${place}` : `location ${place}`;
+}
+
+function linkForOpportunityRow(
+  row: Record<string, unknown>,
+  links: readonly AnswerLink[],
+): AnswerLink | undefined {
+  const slug = focusString(row.slug);
+  if (slug === null) return undefined;
+  for (const link of links) {
+    const segment = link.href.slice(link.href.lastIndexOf('/') + 1);
+    let decoded = segment;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      decoded = segment;
+    }
+    if (decoded === slug) return link;
+  }
+  return undefined;
+}
+
+/**
+ * One sentence covering status, deadline, open positions, and location for
+ * every focused row. Links come only from the same tool result.
+ */
+function formatFocusedOpportunityAnswer(
+  rows: readonly Record<string, unknown>[],
+  links: readonly AnswerLink[],
+  language: 'ar' | 'en',
+): string {
+  const clauses: string[] = [];
+
+  for (const row of rows) {
+    const link = linkForOpportunityRow(row, links);
+    const title = focusString(row.title) ?? focusString(row.slug);
+    if (link === undefined && title === null) continue;
+
+    const label =
+      link !== undefined ? `[${link.title}](${link.href})` : (title ?? '');
+    const status = focusStatusLabel(focusString(row.status), language);
+    const deadline = focusDeadlineLabel(
+      focusString(row.applicationDeadline),
+      language,
+    );
+    const positions = focusPositionsLabel(
+      focusCount(row.openPositions),
+      language,
+    );
+    const location = focusLocationLabel(row, language);
+
+    clauses.push(
+      language === 'ar'
+        ? `${label} — ${status}، آخر موعد ${deadline}، ${positions}، ${location}`
+        : `${label} — ${status}, deadline ${deadline}, ${positions}, ${location}`,
+    );
+  }
+
+  if (clauses.length === 0) return '';
+  const intro =
+    language === 'ar'
+      ? 'حالة الفرص التي ذكرتها: '
+      : 'Here is the status of the opportunities you mentioned: ';
+  return `${intro}${clauses.join(language === 'ar' ? '؛ ' : '; ')}.`;
+}
+
 /**
  * The prompt builder includes a `<system_rules>` section and also exposes the
  * same rules as `prompt.system`. Providers receive the rules once through the
@@ -309,6 +514,37 @@ export function validateToolArguments(
         if (typeof value !== 'boolean') return 'Invalid argument value.';
         break;
       }
+      case 'array': {
+        if (!Array.isArray(value)) return 'Invalid argument value.';
+        if (
+          property.minItems !== undefined &&
+          value.length < property.minItems
+        ) {
+          return 'Invalid argument value.';
+        }
+        if (
+          property.maxItems !== undefined &&
+          value.length > property.maxItems
+        ) {
+          return 'Invalid argument value.';
+        }
+        for (const item of value) {
+          if (typeof item !== 'string') return 'Invalid argument value.';
+          if (
+            property.items?.minLength !== undefined &&
+            item.length < property.items.minLength
+          ) {
+            return 'Invalid argument value.';
+          }
+          if (
+            property.items?.maxLength !== undefined &&
+            item.length > property.items.maxLength
+          ) {
+            return 'Invalid argument value.';
+          }
+        }
+        break;
+      }
       default:
         return 'Invalid argument value.';
     }
@@ -380,10 +616,12 @@ export class AiAgentOrchestrator {
         );
       }
 
+      const focus = deriveConversationFocus(input.history);
       const decision = this.router.route(
         input.message,
         input.locale,
         input.history,
+        focus,
       );
 
       // Greetings, thanks, capability questions, and clarifications are
@@ -420,6 +658,40 @@ export class AiAgentOrchestrator {
         );
       }
 
+      // Focused follow-ups are answered from the exact slugs the previous
+      // answer linked, and lookup confirmations rerun the focused lookup. Both
+      // paths are deterministic and never send the sentence itself to a tool.
+      if (caps.toolsEnabled) {
+        if (
+          decision.reason === 'FOCUS_ORGANIZATION_FOLLOW_UP' &&
+          decision.focusOrganizationName !== undefined
+        ) {
+          return await this.runOrganizationLookup(
+            input,
+            language,
+            decision.focusOrganizationName,
+            zeroUsage(),
+          );
+        }
+
+        if (
+          decision.reason === 'FOCUS_OPPORTUNITY_DETAIL' ||
+          decision.reason === 'FOCUS_OPPORTUNITY_FOLLOW_UP'
+        ) {
+          const slugs =
+            decision.focusOpportunitySlugs ??
+            selectFocusedOpportunitySlugs(input.message, focus);
+          if (slugs !== undefined && slugs.length > 0) {
+            return await this.runFocusedOpportunityDetail(
+              input,
+              language,
+              slugs,
+              zeroUsage(),
+            );
+          }
+        }
+      }
+
       return await this.runProviderAnswer(
         input,
         decision,
@@ -427,6 +699,7 @@ export class AiAgentOrchestrator {
         language,
         deadline,
         deadlineStartedAt,
+        focus,
       );
     } catch (error) {
       return this.handleUnexpectedFailure(input, language, deadline, error);
@@ -442,6 +715,7 @@ export class AiAgentOrchestrator {
     language: ReturnType<typeof detectPromptLanguage>,
     deadline: ProviderDeadline,
     deadlineStartedAt: number,
+    focus?: ConversationFocus,
   ): Promise<AiAgentOrchestrationResult> {
     if (!this.writeStatus(input.stream, 'searching')) {
       return this.abortedResult(input.mode, [], 0);
@@ -464,6 +738,22 @@ export class AiAgentOrchestrator {
     const toolsAllowed =
       caps.toolsEnabled && caps.maxToolRounds > 0 && decision.tools.length > 0;
 
+    // A named organization question is a deterministic exact-name lookup. The
+    // provider is not called, so it cannot turn "نور" into a substring match
+    // for "جمعية نور للتضامن" or fail with an internal error when the name is
+    // absent.
+    if (toolsAllowed && decision.toolIntents.includes('organization_search')) {
+      const organizationName = extractOrganizationName(input.message);
+      if (organizationName !== undefined) {
+        return await this.runOrganizationLookup(
+          input,
+          language,
+          organizationName,
+          zeroUsage(),
+        );
+      }
+    }
+
     // A generic browse request has no search topic. Answer it deterministically
     // with the newest published rows and an empty text filter instead of
     // letting the model invent a filter or claim it has no information.
@@ -485,6 +775,7 @@ export class AiAgentOrchestrator {
       locale: input.locale,
       responseLanguage: decision.language,
       history,
+      ...(focus !== undefined ? { focus } : {}),
       knowledge: retrieval,
       tools: toolsAllowed ? decision.tools : [],
       mode: input.mode,
@@ -742,6 +1033,75 @@ export class AiAgentOrchestrator {
       );
     }
 
+    // A promise ("سأتحقق", "let me check") is not an answer, especially when no
+    // tool ran. Replace it with the deterministic lookup it promised, or with
+    // the fixed not-found reply when no entity can be resolved.
+    if (citableResults.length === 0 && containsUnbackedPromise(answerText)) {
+      // Tools are a local read-only capability, so recovery does not depend on
+      // the model having declared or called a tool this turn. Mode caps still
+      // decide whether any tool may run.
+      const deterministicTools = caps.toolsEnabled && caps.maxToolRounds > 0;
+      const namedOrganization = extractOrganizationName(input.message);
+      if (deterministicTools && namedOrganization !== undefined) {
+        return await this.runOrganizationLookup(
+          input,
+          language,
+          namedOrganization,
+          totals,
+          toolCallCount,
+          uniqueNames(executedNames),
+        );
+      }
+
+      const focusedSlugs = selectFocusedOpportunitySlugs(input.message, focus);
+      if (
+        deterministicTools &&
+        focusedSlugs !== undefined &&
+        focusedSlugs.length > 0
+      ) {
+        return await this.runFocusedOpportunityDetail(
+          input,
+          language,
+          focusedSlugs,
+          totals,
+          toolCallCount,
+          uniqueNames(executedNames),
+        );
+      }
+
+      if (
+        deterministicTools &&
+        decision.toolIntents.includes('opportunity_search')
+      ) {
+        return isGenericOpportunityBrowse(input.message, true)
+          ? await this.runOpportunityBrowse(
+              input,
+              language,
+              totals,
+              toolCallCount,
+              uniqueNames(executedNames),
+            )
+          : await this.runOpportunityFallback(
+              input,
+              language,
+              totals,
+              toolCallCount,
+              uniqueNames(executedNames),
+            );
+      }
+
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('notFound', language),
+        true,
+        {
+          toolCalls: toolCallCount,
+          toolNames: uniqueNames(executedNames),
+          usage: totals,
+        },
+      );
+    }
+
     // Run the prompt-echo guard on the raw answer, before sanitization can
     // remove any phrase that would otherwise reveal the echo.
     const leaked = containsSystemInstructionLeak(answerText);
@@ -815,7 +1175,10 @@ export class AiAgentOrchestrator {
       // No `text` key at all: the tool must return the newest published rows
       // regardless of the browse wording in the user message.
       const batch = await this.toolExecutor.executeMany([
-        { name: toolName, arguments: { limit: 3, sort: 'newest' } },
+        {
+          name: toolName,
+          arguments: { limit: 3, sort: 'newest', compact: true },
+        },
       ]);
       result =
         batch.results[0] ??
@@ -899,6 +1262,258 @@ export class AiAgentOrchestrator {
   }
 
   /**
+   * Deterministic detail answer for an anaphoric follow-up ("هل هي مفتوحة",
+   * "the first one", "وما شروطها"). The tool receives the exact slugs from the
+   * conversation focus, never the user sentence, and the answer reports status,
+   * deadline, open positions, and location without calling the provider.
+   */
+  private async runFocusedOpportunityDetail(
+    input: AiAgentOrchestratorInput,
+    language: ReturnType<typeof detectPromptLanguage>,
+    slugs: readonly string[],
+    totals: UsageTotals,
+    priorToolCalls = 0,
+    priorToolNames: readonly string[] = [],
+  ): Promise<AiAgentOrchestrationResult> {
+    const toolName = 'search_opportunities';
+    const toolNames = uniqueNames([...priorToolNames, toolName]);
+    const toolCalls = priorToolCalls + 1;
+    const extra = { toolCalls, toolNames, usage: totals };
+
+    if (!this.writeStatus(input.stream, 'tool', toolName)) {
+      return this.abortedResult(
+        input.mode,
+        [...priorToolNames],
+        priorToolCalls,
+      );
+    }
+
+    let result: ToolExecutionResult;
+    try {
+      const batch = await this.toolExecutor.executeMany([
+        {
+          name: toolName,
+          arguments: { slugs: [...slugs], limit: slugs.length },
+        },
+      ]);
+      result =
+        batch.results[0] ??
+        failureResult(
+          toolName,
+          'UNAVAILABLE',
+          'Tool is temporarily unavailable.',
+        );
+    } catch (error) {
+      this.logFailure('ai_agent_tool_failure', error);
+      result = failureResult(
+        toolName,
+        'UNAVAILABLE',
+        'Tool is temporarily unavailable.',
+      );
+    }
+
+    if (!result.ok) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('toolUnavailable', language),
+        true,
+        extra,
+      );
+    }
+
+    const rows = opportunityRows(result.data);
+    if (rows.length === 0) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('notFound', language),
+        true,
+        extra,
+      );
+    }
+
+    const links = buildAnswerLinks(
+      [{ citationId: 'T1', result }],
+      input.locale,
+      language,
+    );
+    const textAnswer = formatFocusedOpportunityAnswer(rows, links, language);
+    const sanitized = sanitizeAnswer(textAnswer, {
+      locale: input.locale,
+      allowedLinks: links,
+      allowBrowseLinks: false,
+      allowLists: false,
+      maxLinks: 3,
+    });
+
+    return this.emitAnswer(
+      input,
+      sanitized === '' ? policyMessage('notFound', language) : sanitized,
+      input.mode,
+      totals,
+      {
+        refusal: sanitized === '',
+        truncated: false,
+        toolCalls,
+        toolNames,
+      },
+      { finishReason: 'stop' },
+    );
+  }
+
+  /**
+   * Deterministic exact-name organization lookup. A substring search is only
+   * the fetch step; the answer is built from rows whose normalized names match
+   * the extracted name exactly. Tool failures are logged and answered with the
+   * fixed "temporarily unavailable" policy, never with an internal error.
+   */
+  private async runOrganizationLookup(
+    input: AiAgentOrchestratorInput,
+    language: ReturnType<typeof detectPromptLanguage>,
+    organizationName: string,
+    totals: UsageTotals,
+    priorToolCalls = 0,
+    priorToolNames: readonly string[] = [],
+  ): Promise<AiAgentOrchestrationResult> {
+    const toolName = 'search_organizations';
+    const toolNames = uniqueNames([...priorToolNames, toolName]);
+    const toolCalls = priorToolCalls + 1;
+    const extra = { toolCalls, toolNames, usage: totals };
+
+    if (!this.writeStatus(input.stream, 'tool', toolName)) {
+      return this.abortedResult(
+        input.mode,
+        [...priorToolNames],
+        priorToolCalls,
+      );
+    }
+
+    let result: ToolExecutionResult;
+    try {
+      const batch = await this.toolExecutor.executeMany([
+        {
+          name: toolName,
+          arguments: { name: organizationName, limit: 8 },
+        },
+      ]);
+      result =
+        batch.results[0] ??
+        failureResult(
+          toolName,
+          'UNAVAILABLE',
+          'Tool is temporarily unavailable.',
+        );
+    } catch (error) {
+      this.logFailure('ai_agent_tool_failure', error);
+      result = failureResult(
+        toolName,
+        'UNAVAILABLE',
+        'Tool is temporarily unavailable.',
+      );
+    }
+
+    if (!result.ok) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('toolUnavailable', language),
+        true,
+        extra,
+      );
+    }
+
+    const matchedRows = organizationRows(result.data).filter((row) =>
+      organizationMatchesName(organizationName, row),
+    );
+    if (matchedRows.length === 0) {
+      // No exact name. A single stored name that contains every typed token as
+      // a whole word is a safe suggestion ("نور" -> "جمعية نور للتضامن").
+      // Zero or multiple candidates still get the fixed not-found answer.
+      const suggestionRows = organizationRows(result.data).filter((row) =>
+        organizationNameContainsName(organizationName, row),
+      );
+      if (suggestionRows.length === 1) {
+        const suggestionResult: ToolExecutionResult = {
+          ok: true,
+          tool: toolName,
+          data: { items: suggestionRows },
+          meta: result.meta,
+        };
+        const suggestion = buildAnswerLinks(
+          [{ citationId: 'T1', result: suggestionResult }],
+          input.locale,
+          language,
+        )[0];
+        if (suggestion !== undefined) {
+          const text =
+            language === 'ar'
+              ? `لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [${suggestion.title}](${suggestion.href})؟`
+              : `I couldn't find that exact name. Did you mean [${suggestion.title}](${suggestion.href})?`;
+          return this.emitPolicyAnswer(input, text, false, extra);
+        }
+      }
+
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('organizationNotFound', language),
+        true,
+        extra,
+      );
+    }
+
+    const matchedResult: ToolExecutionResult = {
+      ok: true,
+      tool: toolName,
+      data: { items: matchedRows },
+      meta: result.meta,
+    };
+    const links = buildAnswerLinks(
+      [{ citationId: 'T1', result: matchedResult }],
+      input.locale,
+      language,
+    ).slice(0, 3);
+    if (links.length === 0) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('toolUnavailable', language),
+        true,
+        extra,
+      );
+    }
+
+    const rendered = links.map((link) => `[${link.title}](${link.href})`);
+    const last = rendered[rendered.length - 1] ?? '';
+    const textAnswer =
+      language === 'ar'
+        ? rendered.length === 1
+          ? `وجدت هذه الجمعية: ${rendered[0]}.`
+          : `وجدت هذه الجمعيات: ${rendered.slice(0, -1).join('، ')}، و${last}.`
+        : rendered.length === 1
+          ? `I found this organization: ${rendered[0]}.`
+          : `I found these organizations: ${rendered.slice(0, -1).join(', ')}, and ${last}.`;
+
+    const sanitized = sanitizeAnswer(textAnswer, {
+      locale: input.locale,
+      allowedLinks: links,
+      allowBrowseLinks: false,
+      allowLists: false,
+      maxLinks: 3,
+    });
+
+    return this.emitAnswer(
+      input,
+      sanitized === '' ? policyMessage('toolUnavailable', language) : sanitized,
+      input.mode,
+      totals,
+      {
+        refusal: sanitized === '',
+        truncated: false,
+        toolCalls,
+        toolNames,
+      },
+      { finishReason: 'stop' },
+    );
+  }
+
+  /**
    * Deterministic last resort for a clear opportunity search where the model
    * answered without calling the tool. It guarantees that a published
    * opportunity returned by the tool becomes a valid entity link instead of a
@@ -930,7 +1545,7 @@ export class AiAgentOrchestrator {
       const batch = await this.toolExecutor.executeMany([
         {
           name: toolName,
-          arguments: { text, limit: 3, sort: 'newest' },
+          arguments: { text, limit: 3, sort: 'newest', compact: true },
         },
       ]);
       result =
@@ -981,20 +1596,29 @@ export class AiAgentOrchestrator {
     }
 
     const linked = links.map((link) => `[${link.title}](${link.href})`);
-    const textAnswer =
+    const base =
       language === 'ar'
         ? linked.length === 1
-          ? `وجدت لك هذه الفرصة: ${linked[0]}.`
-          : `وجدت لك هذه الفرص: ${linked.join('، ')}.`
+          ? `وجدت لك هذه الفرصة: ${linked[0]}`
+          : `وجدت لك هذه الفرص: ${linked.join('، ')}`
         : linked.length === 1
-          ? `I found this opportunity for you: ${linked[0]}.`
-          : `I found these opportunities for you: ${linked.join(', ')}.`;
+          ? `I found this opportunity for you: ${linked[0]}`
+          : `I found these opportunities for you: ${linked.join(', ')}`;
+    const browse = buildBrowseLinks(input.locale)[0];
+    const textAnswer =
+      browse === undefined
+        ? `${base}.`
+        : language === 'ar'
+          ? `${base} — يمكنك تصفح المزيد في [صفحة الفرص](${browse.href}).`
+          : `${base} — you can browse more on the [Opportunities page](${browse.href}).`;
+    const allowedLinks = browse === undefined ? links : [...links, browse];
 
     const sanitized = sanitizeAnswer(textAnswer, {
       locale: input.locale,
-      allowedLinks: links,
+      allowedLinks,
       allowBrowseLinks: false,
       allowLists: false,
+      maxLinks: 4,
     });
 
     return this.emitAnswer(

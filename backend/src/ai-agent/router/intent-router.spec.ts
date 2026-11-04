@@ -22,6 +22,7 @@ import {
   ROUTER_TOP_K,
   type RouterKnowledgeSearch,
 } from './intent-router';
+import { deriveConversationFocus } from '../conversation-focus';
 
 function emptyResult(): RetrievalResult {
   return {
@@ -724,6 +725,164 @@ describe('IntentRouter', () => {
       expect(router.route('example', 'en').reason).toBe('LOW_KNOWLEDGE_SCORE');
       expect(router.route('اشرح أكثر', 'ar').intent).toBe('clarify');
       expect(router.route('example', 'en', []).intent).toBe('clarify');
+    });
+  });
+
+  describe('focused anaphora and lookup continuations', () => {
+    const OPPORTUNITY_HISTORY: AiAgentChatMessage[] = [
+      { role: 'user', content: 'اعطني فرص' },
+      {
+        role: 'assistant',
+        content:
+          'إليك أحدث الفرص: [تنظيف الشاطئ](/ar/opportunities/beach-cleanup)، [غرس الأشجار](/ar/opportunities/tree-planting)، و[دروس عن بعد](/ar/opportunities/remote-tutoring).',
+      },
+    ];
+
+    const ORGANIZATION_HISTORY: AiAgentChatMessage[] = [
+      { role: 'user', content: 'هل تعرف جمعية نور' },
+      { role: 'assistant', content: 'سأتحقق من معلومات جمعية نور لك.' },
+    ];
+
+    it.each([
+      ['هل هي مفتوحة', ['beach-cleanup', 'tree-planting', 'remote-tutoring']],
+      ['وما شروطها', ['beach-cleanup', 'tree-planting', 'remote-tutoring']],
+      ['أين تقع', ['beach-cleanup', 'tree-planting', 'remote-tutoring']],
+      ['الأولى', ['beach-cleanup']],
+      ['الثانية', ['tree-planting']],
+      [
+        'are they still open',
+        ['beach-cleanup', 'tree-planting', 'remote-tutoring'],
+      ],
+      ['is it open', ['beach-cleanup', 'tree-planting', 'remote-tutoring']],
+      ['tell me about the second', ['tree-planting']],
+      ['the first one', ['beach-cleanup']],
+    ] as const)(
+      'resolves %s over the focused opportunity slugs',
+      (message, expectedSlugs) => {
+        const router = makeRouter(new StubKnowledgeSearch());
+        const focus = deriveConversationFocus(OPPORTUNITY_HISTORY);
+
+        const decision = router.route(
+          message,
+          'ar',
+          OPPORTUNITY_HISTORY,
+          focus,
+        );
+
+        expect(decision.intent).toBe('live_data');
+        expect(decision.action).toBe('answer');
+        expect(decision.reason).toBe('FOCUS_OPPORTUNITY_DETAIL');
+        expect(decision.toolIntents).toEqual(['opportunity_search']);
+        expect(decision.tools.map((tool) => tool.name)).toEqual([
+          'search_opportunities',
+        ]);
+        expect(decision.focusOpportunitySlugs).toEqual([...expectedSlugs]);
+      },
+    );
+
+    it.each([
+      ['هل هي مفتوحة', 'ar'],
+      ['tell me about the first one', 'en'],
+      ['is it open', 'en'],
+    ] as const)(
+      'asks which opportunity is meant for %s when no focus exists',
+      (message, locale) => {
+        const router = makeRouter(new StubKnowledgeSearch());
+
+        const decision = router.route(message, locale);
+
+        expect(decision.action).toBe('direct_reply');
+        expect(decision.intent).toBe('clarify');
+        expect(decision.reason).toBe('FOCUS_OPPORTUNITY_MISSING');
+        expect(decision.directReply).toBe(
+          locale === 'ar'
+            ? 'تقصد أي فرصة؟ يمكنك ذكر اسمها.'
+            : 'Which opportunity do you mean? You can tell me its name.',
+        );
+        expect(decision.tools).toEqual([]);
+      },
+    );
+
+    it.each(['هل تحققت', 'وماذا وجدت'])(
+      'reruns the focused organization lookup for %s',
+      (message) => {
+        const router = makeRouter(new StubKnowledgeSearch());
+        const focus = deriveConversationFocus(ORGANIZATION_HISTORY);
+
+        const decision = router.route(
+          message,
+          'ar',
+          ORGANIZATION_HISTORY,
+          focus,
+        );
+
+        expect(decision.intent).toBe('live_data');
+        expect(decision.reason).toBe('FOCUS_ORGANIZATION_FOLLOW_UP');
+        expect(decision.toolIntents).toEqual(['organization_search']);
+        expect(decision.focusOrganizationName).toBe('نور');
+      },
+    );
+
+    it.each(['did you check', 'what did you find'])(
+      'reruns the focused lookup for %s',
+      (message) => {
+        const router = makeRouter(new StubKnowledgeSearch());
+        const history: AiAgentChatMessage[] = [
+          { role: 'user', content: 'show me opportunities' },
+          {
+            role: 'assistant',
+            content: '[Beach cleanup](/en/opportunities/beach-cleanup)',
+          },
+        ];
+        const focus = deriveConversationFocus(history);
+
+        const decision = router.route(message, 'en', history, focus);
+
+        expect(decision.intent).toBe('live_data');
+        expect(decision.reason).toBe('FOCUS_OPPORTUNITY_FOLLOW_UP');
+        expect(decision.focusOpportunitySlugs).toEqual(['beach-cleanup']);
+      },
+    );
+
+    it.each([
+      'هل تعرف جمعية نور',
+      'هل تعرفون جمعية نور',
+      'ما هي جمعية نور',
+      'أخبرني عن جمعية نور',
+      'ابحث عن جمعية نور',
+      'do you know Nour association',
+      'tell me about Nour association',
+      'search for Nour association',
+    ] as const)(
+      'routes the named-organization phrasing %s to the organization tool',
+      (message) => {
+        const router = makeRouter(new StubKnowledgeSearch());
+
+        const decision = router.route(
+          message,
+          message.includes('جمعية') ? 'ar' : 'en',
+        );
+
+        expect(decision.action).toBe('answer');
+        expect(decision.intent).toBe('live_data');
+        expect(decision.toolIntents).toContain('organization_search');
+        expect(decision.tools.map((tool) => tool.name)).toContain(
+          'search_organizations',
+        );
+      },
+    );
+
+    it('answers a lookup confirmation with no focused entity as not-found, not clarify', () => {
+      const router = makeRouter(new StubKnowledgeSearch());
+
+      const decision = router.route('هل تحققت', 'ar');
+
+      expect(decision.action).toBe('direct_reply');
+      expect(decision.intent).toBe('clarify');
+      expect(decision.reason).toBe('FOCUS_LOOKUP_MISSING');
+      expect(decision.directReply).toBe(
+        'لا أملك معلومات مؤكدة عن هذا. يمكنك تصفح الفرص والمنظمات في المنصة.',
+      );
     });
   });
 });

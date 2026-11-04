@@ -113,6 +113,12 @@ describe('answer-policy private-data guard and refusal', () => {
       'لا توجد فرص منشورة في هذه الولاية حالياً. يمكنك تصفح صفحة الفرص لرؤية بقية المناطق.',
     ],
     [
+      'organizationNotFound',
+      'en',
+      "I couldn't find an organization with that name on the platform.",
+    ],
+    ['organizationNotFound', 'ar', 'لم أجد جمعية بهذا الاسم في المنصة.'],
+    [
       'ungrounded',
       'en',
       "I couldn't confirm that answer. Could you rephrase your question?",

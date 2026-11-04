@@ -8,6 +8,7 @@ import type { RetrievalResult, RetrievedChunk } from '../knowledge/retriever';
 import type { ToolDescriptor, ToolExecutionResult } from '../tools/tool.types';
 import { PromptBuilder } from './prompt-builder';
 import type { BuiltPrompt, PromptBuildInput } from './prompt.types';
+import { deriveConversationFocus } from '../conversation-focus';
 import {
   AI_AGENT_FEW_SHOT_EXAMPLES,
   AI_AGENT_SYSTEM_PROMPT,
@@ -123,7 +124,7 @@ describe('PromptBuilder', () => {
     const prompt = buildOk(makeBuilder(), baseInput({ message: 'Hello?' }));
 
     expect(prompt.version).toBe(AI_AGENT_SYSTEM_PROMPT_VERSION);
-    expect(prompt.version).toBe('8');
+    expect(prompt.version).toBe('9');
     expect(prompt.system).toBe(AI_AGENT_SYSTEM_PROMPT);
     expect(prompt.system).toContain('You are Basma');
     expect(prompt.system).toContain('Do not repeat your name in every answer');
@@ -287,7 +288,7 @@ describe('PromptBuilder', () => {
     expect(en.text).not.toContain('/ar/opportunities');
 
     const ar = buildOk(
-      makeBuilder(),
+      makeBuilder({ maxInputTokens: 3600 }),
       baseInput({ locale: 'ar', responseLanguage: 'ar' }),
     );
     expect(ar.text).toContain('<link_rules locale="ar">');
@@ -361,6 +362,40 @@ describe('PromptBuilder', () => {
     expect(prompt.text).toContain('</history>');
     expect(prompt.text).toContain('</examples>');
     expect(prompt.text).toContain('</user_message>');
+  });
+
+  it('renders the server-derived conversation focus before history', () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'show me opportunities' },
+      {
+        role: 'assistant',
+        content:
+          '[Beach cleanup](/en/opportunities/beach-cleanup) and [Tree planting](/en/opportunities/tree-planting)',
+      },
+      { role: 'user', content: 'is it open' },
+    ];
+    const focus = deriveConversationFocus(history);
+    const prompt = buildOk(
+      makeBuilder({ maxInputTokens: 3600 }),
+      baseInput({ history, focus }),
+    );
+
+    expect(prompt.sections).toEqual([
+      'system_rules',
+      'response_style',
+      'style_examples',
+      'link_rules',
+      'conversation_focus',
+      'history',
+      'user_message',
+    ]);
+    expect(prompt.text).toContain('<conversation_focus>');
+    expect(prompt.text).toContain(
+      'Previously shown opportunities: Beach cleanup (beach-cleanup); Tree planting (tree-planting)',
+    );
+    expect(prompt.text.indexOf('<conversation_focus>\n')).toBeLessThan(
+      prompt.text.indexOf('<history>\n'),
+    );
   });
 
   it('assigns stable citation IDs in rank and input order', () => {
@@ -777,7 +812,7 @@ describe('PromptBuilder', () => {
 
   it('uses the requested response style independently of the transport locale', () => {
     const prompt = buildOk(
-      makeBuilder(),
+      makeBuilder({ maxInputTokens: 3600 }),
       baseInput({
         message: 'ما هو بصمتك؟',
         locale: 'ar',

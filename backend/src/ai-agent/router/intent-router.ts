@@ -2,6 +2,11 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { AI_AGENT_CONFIG } from '../ai-agent.constants';
 import type { AiAgentChatMessage, AiAgentLocale } from '../ai-agent.types';
 import {
+  focusedOpportunityIndex,
+  selectFocusedOpportunitySlugs,
+  type ConversationFocus,
+} from '../conversation-focus';
+import {
   DEFAULT_ROUTER_MIN_SCORE,
   MAX_ROUTER_MIN_SCORE,
   MIN_ROUTER_MIN_SCORE,
@@ -9,6 +14,7 @@ import {
 } from '../config/ai-agent.config';
 import { KnowledgeService } from '../knowledge/knowledge.service';
 import { isGenericOpportunityBrowse } from '../opportunity-query';
+import { extractOrganizationName } from '../organization-query';
 import type { KnowledgeLocale } from '../knowledge/knowledge.types';
 import {
   KnowledgeNormalizer,
@@ -87,12 +93,22 @@ export interface RouterDecision {
   topScore: number;
   /** Stable diagnostic code. Never contains user text. */
   reason: string;
+  /** Resolved focused opportunity slugs for a contextual follow-up. */
+  focusOpportunitySlugs?: string[];
+  /** Resolved organization name for a contextual lookup follow-up. */
+  focusOrganizationName?: string;
 }
 
 export const ROUTER_TOP_K = 2;
 
 type DirectReplyKind =
-  'greeting' | 'thanks' | 'capability' | 'clarify' | 'off_topic';
+  | 'greeting'
+  | 'thanks'
+  | 'capability'
+  | 'clarify'
+  | 'clarifyOpportunity'
+  | 'notFound'
+  | 'off_topic';
 
 const ARABIC_SCRIPT = /[\u0600-\u06FF]/;
 const FRENCH_DIACRITICS = /[àâäçéèêëîïôöùûüÿœæ]/i;
@@ -427,6 +443,60 @@ export function buildFollowUpQuery(
     .filter((part) => part !== '')
     .join(' ')
     .slice(0, 900);
+}
+
+// --- Focused follow-ups -----------------------------------------------------
+
+/**
+ * Questions that refer to previously listed opportunities rather than naming
+ * one. They are answered from the focused slugs, never by sending the sentence
+ * itself to the search tool.
+ */
+const OPPORTUNITY_ANAPHORA_PATTERNS: readonly RegExp[] = [
+  /^هل\s+(?:هي|هم|هما|هذه|هذا|الفرص|الفرصه)\s+(?:ما\s+)?(?:مفتوحه|متاحه|مغلقه)(?:\s+(?:الان|حاليا|للتقديم))?$/u,
+  /^(?:هل\s+)?(?:هي|هم|الفرص)\s+(?:مفتوحه|متاحه)$/u,
+  /^(?:و)?\s*ما\s+(?:هي\s+)?(?:شروط(?:ها|هم)|متطلبات(?:ها|هم)|تفاصيل(?:ها|هم))$/u,
+  /^(?:و)?\s*ما\s+شروط\s+التقديم(?:\s+عليها)?$/u,
+  /^(?:هل\s+)?(?:استطيع|يمكنني|اقدر)\s+(?:التقديم|التسجيل|المشاركه)(?:\s+(?:عليها|فيها|بها))?$/u,
+  /^(?:اين|وين)\s+(?:تقع|هي|يوجد|توجد|يقعون)$/u,
+  /^(?:متى|ما)\s+(?:هو\s+)?(?:اخر|الاخير)\s+(?:موعد|يوم)\s+(?:للتقديم|للتسجيل)$/u,
+  /^(?:متى|ما)\s+(?:هو\s+)?(?:الموعد\s+النهائي|الموعد\s+الاخير)$/u,
+  /^كم\s+(?:عدد\s+)?(?:المناصب|منصب|مقعد|مقاعد)(?:\s+(?:المتاحه|الشاغره|المفتوحه))?$/u,
+  /^(?:is|are)\s+(?:it|they|these|those)\s+(?:still\s+)?(?:open|available|closed)(?:\s+(?:now|for\s+applications?))?$/u,
+  /^(?:what\s+(?:are|is)\s+)?(?:the\s+)?(?:requirements?|conditions?|details?|deadline|application\s+deadline)(?:\s+(?:for\s+(?:it|them|this|these)))?$/u,
+  /^where\s+(?:is|are)\s+(?:it|they)(?:\s+located)?$/u,
+  /^(?:can|could)\s+i\s+apply(?:\s+(?:to|for)\s+(?:it|them|this|these))?$/u,
+  /^when\s+is\s+the\s+(?:application\s+)?deadline$/u,
+  /^how\s+many\s+(?:open\s+)?(?:positions?|spots?|places?)(?:\s+are\s+there)?$/u,
+  /^tell\s+me\s+about\s+(?:the\s+)?(?:first|second|third)(?:\s+one)?$/u,
+];
+
+/** Short confirmations that ask about the lookup promised or started before. */
+const LOOKUP_FOLLOW_UP_PATTERNS: readonly RegExp[] = [
+  /^(?:و)?(?:هل\s+)?(?:تحققت|تاكدت)(?:\s+من\s+(?:ذلك|الامر|المعلومه))?$/u,
+  /^(?:و)?ماذا\s+(?:وجدت|عرفت|تحققت)$/u,
+  /^(?:و)?هل\s+وجدت(?:\s+(?:شيئا|شيا|معلومه|معلومات))?$/u,
+  /^(?:what|anything)\s+did\s+you\s+find(?:\s+out)?$/u,
+  /^(?:did|have)\s+you\s+(?:check|checked|verify|verified|look|looked|find|found)(?:\s+(?:it|that|this|them))?$/u,
+];
+
+export function isOpportunityAnaphora(message: string): boolean {
+  const normalized = normalizeText(
+    typeof message === 'string' ? message.trim() : '',
+  );
+  if (normalized === '') return false;
+  if (focusedOpportunityIndex(normalized) !== undefined) return true;
+  return OPPORTUNITY_ANAPHORA_PATTERNS.some((pattern) =>
+    pattern.test(normalized),
+  );
+}
+
+export function isLookupFollowUp(message: string): boolean {
+  const normalized = normalizeText(
+    typeof message === 'string' ? message.trim() : '',
+  );
+  if (normalized === '') return false;
+  return LOOKUP_FOLLOW_UP_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
 // --- Keyword rules ---------------------------------------------------------
@@ -950,6 +1020,10 @@ export const DIRECT_REPLIES: Readonly<
     capability:
       "I'm Basma, the Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
     clarify: 'Could you tell me a bit more about what you need?',
+    clarifyOpportunity:
+      'Which opportunity do you mean? You can tell me its name.',
+    notFound:
+      "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
     off_topic:
       "That's outside what I can help with, but I'd be glad to help you find a volunteering opportunity.",
   }),
@@ -959,6 +1033,9 @@ export const DIRECT_REPLIES: Readonly<
     capability:
       'أنا بصمة، مساعدتك في منصة بصمتك. أشرح لك كيف تعمل المنصة، وأساعدك في العثور على الفرص والمنظمات.',
     clarify: 'ممكن توضح لي أكثر ماذا تريد؟',
+    clarifyOpportunity: 'تقصد أي فرصة؟ يمكنك ذكر اسمها.',
+    notFound:
+      'لا أملك معلومات مؤكدة عن هذا. يمكنك تصفح الفرص والمنظمات في المنصة.',
     off_topic:
       'هذا خارج ما أستطيع مساعدتك فيه، لكن يسعدني أن أساعدك في إيجاد فرصة تطوعية.',
   }),
@@ -991,6 +1068,7 @@ export class IntentRouter {
     message: string,
     locale: AiAgentLocale,
     history: readonly AiAgentChatMessage[] = [],
+    focus?: ConversationFocus,
   ): RouterDecision {
     const text = typeof message === 'string' ? message : '';
     const trimmed = text.trim();
@@ -999,6 +1077,77 @@ export class IntentRouter {
 
     if (normalized === '') {
       return this.directDecision('clarify', language, trimmed, 'EMPTY_MESSAGE');
+    }
+
+    // A lookup confirmation such as "هل تحققت" continues the previous
+    // organization or opportunity lookup. It must rerun that lookup from the
+    // focused entity instead of falling into the generic clarification.
+    if (isLookupFollowUp(trimmed)) {
+      const organizationName =
+        focus?.organizationName ??
+        (focus?.organizations.length
+          ? focus.organizations[0]?.title
+          : undefined);
+      const prefersOrganization =
+        focus?.topic === 'organization_lookup' ||
+        (focus?.organizations.length ?? 0) > 0;
+
+      if (prefersOrganization && organizationName !== undefined) {
+        return this.answerDecision(
+          'live_data',
+          language,
+          trimmed,
+          0,
+          ['organization_search'],
+          'FOCUS_ORGANIZATION_FOLLOW_UP',
+          { organizationName },
+        );
+      }
+
+      const focusedSlugs = selectFocusedOpportunitySlugs(trimmed, focus);
+      if (focusedSlugs !== undefined && focusedSlugs.length > 0) {
+        return this.answerDecision(
+          'live_data',
+          language,
+          trimmed,
+          0,
+          ['opportunity_search'],
+          'FOCUS_OPPORTUNITY_FOLLOW_UP',
+          { opportunitySlugs: focusedSlugs },
+        );
+      }
+
+      return this.directDecision(
+        'notFound',
+        language,
+        trimmed,
+        'FOCUS_LOOKUP_MISSING',
+      );
+    }
+
+    // Anaphora such as "هل هي مفتوحة", "أين تقع", or "tell me about the
+    // second" is resolved over the focused slugs. Without a focus there is
+    // nothing to resolve, so ask exactly which opportunity the user means.
+    if (isOpportunityAnaphora(trimmed)) {
+      const focusedSlugs = selectFocusedOpportunitySlugs(trimmed, focus);
+      if (focusedSlugs !== undefined && focusedSlugs.length > 0) {
+        return this.answerDecision(
+          'live_data',
+          language,
+          trimmed,
+          0,
+          ['opportunity_search'],
+          'FOCUS_OPPORTUNITY_DETAIL',
+          { opportunitySlugs: focusedSlugs },
+        );
+      }
+
+      return this.directDecision(
+        'clarifyOpportunity',
+        language,
+        trimmed,
+        'FOCUS_OPPORTUNITY_MISSING',
+      );
     }
 
     // A short follow-up is a continuation, never a fresh greeting or an
@@ -1051,11 +1200,18 @@ export class IntentRouter {
       );
     }
 
+    // Naming an organization ("هل تعرف جمعية نور", "tell me about Nour
+    // organization") is a live lookup even when the sentence has no other
+    // live-data keyword. Generic listings still return `undefined` here.
+    const namedOrganization =
+      topics.organization && extractOrganizationName(trimmed) !== undefined;
+
     const liveSignal =
       !isContinuation &&
       (genericOpportunityBrowse ||
         asksForStats ||
         topics.listRequest ||
+        namedOrganization ||
         hasKeyword(normalized, STRONG_LIVE_KEYWORDS) ||
         hasAnyPhrase(normalized, LIVE_PHRASES) ||
         (hasDomainTopic && hasKeyword(normalized, TOPIC_LIVE_KEYWORDS)) ||
@@ -1239,6 +1395,10 @@ export class IntentRouter {
     topScore: number,
     requestedIntents: readonly ToolIntent[],
     reason: string,
+    focus?: {
+      opportunitySlugs?: string[];
+      organizationName?: string;
+    },
   ): RouterDecision {
     const { tools, toolIntents } = this.resolveTools(requestedIntents);
     return {
@@ -1250,6 +1410,12 @@ export class IntentRouter {
       knowledgeQuery,
       topScore,
       reason,
+      ...(focus?.opportunitySlugs !== undefined
+        ? { focusOpportunitySlugs: focus.opportunitySlugs }
+        : {}),
+      ...(focus?.organizationName !== undefined
+        ? { focusOrganizationName: focus.organizationName }
+        : {}),
     };
   }
 
@@ -1263,7 +1429,9 @@ export class IntentRouter {
     const intent: RouterIntent =
       kind === 'greeting' || kind === 'thanks' || kind === 'capability'
         ? 'greeting'
-        : kind;
+        : kind === 'clarifyOpportunity' || kind === 'notFound'
+          ? 'clarify'
+          : kind;
 
     return {
       intent,

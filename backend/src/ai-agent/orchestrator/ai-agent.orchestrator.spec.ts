@@ -136,9 +136,38 @@ const OPPORTUNITY_TOOL: ToolDescriptor = {
         minLength: 1,
         maxLength: 100,
       },
+      compact: {
+        type: 'boolean',
+        description: 'Return only slug and title.',
+      },
     },
   },
   allowedIntents: ['opportunity_search'],
+  readOnly: true,
+};
+
+const ORGANIZATION_TOOL: ToolDescriptor = {
+  name: 'search_organizations',
+  description: 'Search public organizations.',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      limit: {
+        type: 'integer',
+        description: 'Maximum rows.',
+        minimum: 1,
+        maximum: 8,
+      },
+      name: {
+        type: 'string',
+        description: 'Organization name.',
+        minLength: 1,
+        maxLength: 120,
+      },
+    },
+  },
+  allowedIntents: ['organization_search'],
   readOnly: true,
 };
 
@@ -197,7 +226,14 @@ function createConfig(
     enabled: true,
     provider: 'mock',
     ...overrides,
-    limits: { ...base.limits, ...(overrides.limits ?? {}) },
+    limits: {
+      ...base.limits,
+      // The strict tool schema used by these tests pushes the rendered prompt
+      // just past the production default. Keep the quota unchanged in
+      // production and give the fake provider enough room in tests.
+      maxInputTokens: 6000,
+      ...(overrides.limits ?? {}),
+    },
   };
 }
 
@@ -255,6 +291,17 @@ function liveDataDecision(
     reason: 'TEST_LIVE',
     ...overrides,
   };
+}
+
+function organizationDecision(
+  overrides: Partial<RouterDecision> = {},
+): RouterDecision {
+  return liveDataDecision({
+    tools: [ORGANIZATION_TOOL],
+    toolIntents: ['organization_search'],
+    knowledgeQuery: 'organization',
+    ...overrides,
+  });
 }
 
 interface Harness {
@@ -466,12 +513,297 @@ describe('AiAgentOrchestrator', () => {
       'explain more',
       'en',
       history,
+      undefined,
     );
     const input = queueProvider(harness).requests[0]?.input;
     expect(typeof input).toBe('string');
     expect(input as string).toContain('How does verification work?');
     expect(input as string).toContain(
       'The organization reviews the evidence before verifying.',
+    );
+  });
+
+  it('answers a focused opportunity follow-up from linked slugs without the provider', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'اعطني فرص' },
+      {
+        role: 'assistant',
+        content:
+          'إليك الفرص: [تنظيف الشاطئ](/ar/opportunities/beach-cleanup) و[غرس الأشجار](/ar/opportunities/tree-planting).',
+      },
+    ];
+    const harness = createHarness({
+      decision: liveDataDecision({
+        language: 'ar',
+        reason: 'FOCUS_OPPORTUNITY_DETAIL',
+        focusOpportunitySlugs: ['beach-cleanup'],
+      }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              {
+                slug: 'beach-cleanup',
+                title: 'تنظيف الشاطئ',
+                status: 'published',
+                applicationDeadline: '2026-10-30T00:00:00.000Z',
+                openPositions: 2,
+                location: { wilaya: '16', municipality: '1601' },
+                locationNames: {
+                  wilaya: { ar: 'الجزائر', fr: 'Algiers' },
+                  municipality: {
+                    ar: 'باب الوادي',
+                    fr: 'Bab El Oued',
+                  },
+                },
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هي مفتوحة',
+      'normal',
+      new AbortController().signal,
+      history,
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_opportunities',
+        arguments: { slugs: ['beach-cleanup'], limit: 1 },
+      },
+    ]);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toContain('[تنظيف الشاطئ](/ar/opportunities/beach-cleanup)');
+    expect(answer).toContain('مفتوحة للتقديم');
+    expect(answer).toContain('آخر موعد 30 أكتوبر 2026');
+    expect(answer).toContain('المناصب المتاحة 2');
+    expect(answer).toContain('الموقع باب الوادي، الجزائر');
+  });
+
+  it('resolves an ordinal follow-up to the focused slug when the decision has none', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'show me opportunities' },
+      {
+        role: 'assistant',
+        content:
+          '[Beach cleanup](/en/opportunities/beach-cleanup) and [Tree planting](/en/opportunities/tree-planting)',
+      },
+    ];
+    const harness = createHarness({
+      decision: liveDataDecision({
+        reason: 'FOCUS_OPPORTUNITY_DETAIL',
+      }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              {
+                slug: 'tree-planting',
+                title: 'Tree planting',
+                status: 'published',
+                applicationDeadline: '2026-12-01T00:00:00.000Z',
+                openPositions: 0,
+                location: null,
+                locationNames: null,
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    await runOrchestrator(
+      harness,
+      'tell me about the second',
+      'normal',
+      new AbortController().signal,
+      history,
+      'en',
+    );
+
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_opportunities',
+        arguments: { slugs: ['tree-planting'], limit: 1 },
+      },
+    ]);
+  });
+
+  it('reruns a focused organization lookup for a lookup confirmation', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'هل تعرف جمعية نور' },
+      { role: 'assistant', content: 'سأتحقق من معلومات جمعية نور لك.' },
+    ];
+    const harness = createHarness({
+      decision: organizationDecision({
+        language: 'ar',
+        reason: 'FOCUS_ORGANIZATION_FOLLOW_UP',
+        focusOrganizationName: 'نور',
+      }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'هل تحققت',
+      'normal',
+      new AbortController().signal,
+      history,
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_organizations',
+        arguments: { name: 'نور', limit: 8 },
+      },
+    ]);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [جمعية نور للتضامن](/ar/orgs/dev-org-nour)؟',
+    );
+  });
+
+  it('replaces a promise with the deterministic organization lookup', async () => {
+    const harness = createHarness({
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+    queueProvider(harness).queueTurn({
+      text: ['سأتحقق من معلومات جمعية نور لك.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل تعرف جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(1);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_organizations',
+        arguments: { name: 'نور', limit: 8 },
+      },
+    ]);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [جمعية نور للتضامن](/ar/orgs/dev-org-nour)؟',
+    );
+    expect(answer).not.toContain('سأتحقق');
+  });
+
+  it('replaces a promise with not-found when no entity can be resolved', async () => {
+    const harness = createHarness({
+      decision: knowledgeOnlyDecision({ language: 'en' }),
+    });
+    queueProvider(harness).queueTurn({
+      text: ["I'll check and get back to you."],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'did you check',
+      'normal',
+    );
+
+    expect(result.refusal).toBe(true);
+    expect(harness.toolExecutor.executeMany).not.toHaveBeenCalled();
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('notFound', 'en'));
+    expect(answer).not.toContain("I'll check");
+  });
+
+  it('passes the derived focus to the router and the prompt', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'show me opportunities' },
+      {
+        role: 'assistant',
+        content: '[Beach cleanup](/en/opportunities/beach-cleanup)',
+      },
+    ];
+    const harness = createHarness({ decision: liveDataDecision() });
+    queueProvider(harness).queueTurn({
+      text: ['It is open for applications.'],
+    });
+
+    await runOrchestrator(
+      harness,
+      'are they still open',
+      'normal',
+      new AbortController().signal,
+      history,
+    );
+
+    const focus = (harness.router.route as jest.Mock).mock.calls[0]?.[3] as
+      { opportunities: Array<{ slug: string }>; topic: string } | undefined;
+    expect(focus?.topic).toBe('opportunity_search');
+    expect(focus?.opportunities.map((item) => item.slug)).toEqual([
+      'beach-cleanup',
+    ]);
+    const input = queueProvider(harness).requests[0]?.input;
+    expect(input as string).toContain('<conversation_focus>');
+    expect(input as string).toContain(
+      'Previously shown opportunities: Beach cleanup (beach-cleanup)',
     );
   });
 
@@ -687,6 +1019,7 @@ describe('AiAgentOrchestrator', () => {
           text: 'البرمجه',
           limit: 3,
           sort: 'newest',
+          compact: true,
         },
       },
     ]);
@@ -762,7 +1095,7 @@ describe('AiAgentOrchestrator', () => {
     expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
       {
         name: 'search_opportunities',
-        arguments: { limit: 3, sort: 'newest' },
+        arguments: { limit: 3, sort: 'newest', compact: true },
       },
     ]);
     expect(result).toMatchObject({
@@ -815,6 +1148,328 @@ describe('AiAgentOrchestrator', () => {
     );
   });
 
+  it('answers an Arabic browse in Arabic while links follow the English UI locale', async () => {
+    const harness = createHarness({
+      decision: liveDataDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              { slug: 'alpha', title: 'Alpha' },
+              { slug: 'beta', title: 'Beta' },
+              { slug: 'gamma', title: 'Gamma' },
+              { slug: 'delta', title: 'Delta' },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'ما هي الفرص المتوفرة',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'إليك أحدث الفرص المنشورة: [Alpha](/en/opportunities/alpha)، [Beta](/en/opportunities/beta)، و[Gamma](/en/opportunities/gamma) — يمكنك تصفح المزيد في [صفحة الفرص](/en/opportunities).',
+    );
+    expect(answer).not.toContain('Delta');
+    expect(answer).not.toMatch(/https?:\/\//u);
+  });
+
+  it('looks up a full organization name deterministically in the message language', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور للتضامن',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_organizations',
+        arguments: { name: 'نور للتضامن', limit: 8 },
+      },
+    ]);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'وجدت هذه الجمعية: [جمعية نور للتضامن](/en/orgs/dev-org-nour).',
+    );
+    expect(answer).not.toMatch(/https?:\/\//u);
+  });
+
+  it('suggests the single close Arabic organization match instead of not-found', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [جمعية نور للتضامن](/en/orgs/dev-org-nour)؟',
+    );
+    expect(frames.some((frame) => frame.event === 'error')).toBe(false);
+  });
+
+  it('answers an English association-name question in English with Arabic UI links', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'en' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'green-earth',
+                nameAr: 'الأرض الخضراء',
+                nameFr: 'Green Earth',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'Is there an association named Green Earth?',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'I found this organization: [Green Earth](/ar/orgs/green-earth).',
+    );
+  });
+
+  it('suggests the single close English organization match instead of not-found', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'en' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'Is there an association named Nour?',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      "I couldn't find that exact name. Did you mean [Association Nour de Solidarité](/en/orgs/dev-org-nour)?",
+    );
+    expect(frames.some((frame) => frame.event === 'error')).toBe(false);
+  });
+
+  it('keeps the exact Arabic organization-not-found text when no whole-word match exists', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'hope',
+                nameAr: 'جمعية الأمل',
+                nameFr: 'Association de l’Espoir',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result.refusal).toBe(true);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('organizationNotFound', 'ar'));
+  });
+
+  it('does not guess when more than one whole-word organization match exists', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'nour-solidarity',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+              {
+                slug: 'nour-hope',
+                nameAr: 'جمعية نور للأمل',
+                nameFr: 'Association Nour de l’Espoir',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result.refusal).toBe(true);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('organizationNotFound', 'ar'));
+  });
+
+  it('answers an organization tool failure with the unavailable policy, not an internal error', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () => {
+        throw new Error('organization query failed');
+      }),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور للتضامن',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: true,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    expect(result.errorCode).toBeUndefined();
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('toolUnavailable', 'ar'));
+    expect(frames.some((frame) => frame.event === 'error')).toBe(false);
+  });
+
   it.each([
     ['English', 'show me opportunities', 'en'],
     ['Arabic', 'ما هي الفرص المتوفرة', 'ar'],
@@ -841,7 +1496,7 @@ describe('AiAgentOrchestrator', () => {
       expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
         {
           name: 'search_opportunities',
-          arguments: { limit: 3, sort: 'newest' },
+          arguments: { limit: 3, sort: 'newest', compact: true },
         },
       ]);
       expect(result).toMatchObject({
@@ -912,7 +1567,12 @@ describe('AiAgentOrchestrator', () => {
     expect(executeMany).toHaveBeenNthCalledWith(2, [
       {
         name: 'search_opportunities',
-        arguments: { text: 'programming', limit: 3, sort: 'newest' },
+        arguments: {
+          text: 'programming',
+          limit: 3,
+          sort: 'newest',
+          compact: true,
+        },
       },
     ]);
     expect(result).toMatchObject({
@@ -926,7 +1586,7 @@ describe('AiAgentOrchestrator', () => {
       .map((frame) => (frame.data as { delta: string }).delta)
       .join('');
     expect(answer).toBe(
-      'I found this opportunity for you: [Coding club](/en/opportunities/coding-club).',
+      'I found this opportunity for you: [Coding club](/en/opportunities/coding-club) — you can browse more on the [Opportunities page](/en/opportunities).',
     );
   });
 

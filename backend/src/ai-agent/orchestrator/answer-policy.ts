@@ -22,6 +22,7 @@ export const POLICY_MESSAGE_KEYS = [
   'knowledgeOnlyLive',
   'noOpportunities',
   'noOpportunitiesInArea',
+  'organizationNotFound',
   'notFound',
   'toolUnavailable',
   'ungrounded',
@@ -67,6 +68,10 @@ const MESSAGES: Readonly<
   noOpportunitiesInArea: Object.freeze({
     en: 'There are no published opportunities in that area right now. You can browse the Opportunities page for other areas.',
     ar: 'لا توجد فرص منشورة في هذه الولاية حالياً. يمكنك تصفح صفحة الفرص لرؤية بقية المناطق.',
+  }),
+  organizationNotFound: Object.freeze({
+    en: "I couldn't find an organization with that name on the platform.",
+    ar: 'لم أجد جمعية بهذا الاسم في المنصة.',
   }),
   notFound: Object.freeze({
     en: "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",

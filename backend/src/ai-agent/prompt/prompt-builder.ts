@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AI_AGENT_CONFIG } from '../ai-agent.constants';
 import type { AiAgentChatMessage, AiAgentLocale } from '../ai-agent.types';
 import { estimateTokens } from '../budget/token-estimator';
+import { formatConversationFocus } from '../conversation-focus';
 import type { AiAgentConfig } from '../config/ai-agent.config';
 import type { RetrievedChunk } from '../knowledge/retriever';
 import type { ToolDescriptor, ToolExecutionResult } from '../tools/tool.types';
@@ -28,7 +29,8 @@ import {
  *
  * Section order (stable):
  *   system_rules -> response_style -> style_examples -> link_rules -> tools
- *   -> knowledge -> tool_results -> history -> examples -> user_message
+ *   -> knowledge -> tool_results -> conversation_focus -> history -> examples
+ *   -> user_message
  *
  * Optional content is trimmed in this exact order until the final prompt fits
  * `limits.maxInputTokens`:
@@ -84,6 +86,7 @@ interface RenderInput {
   tools: readonly ToolDescriptor[];
   knowledge: readonly PreparedKnowledge[];
   toolResults: readonly PreparedToolResult[];
+  focus?: string;
   history: readonly PreparedHistory[];
   examples: readonly PreparedExample[];
   message: string;
@@ -176,6 +179,8 @@ export class PromptBuilder {
     const style = buildResponseStyle(language);
     const linkRules = buildLinkRules(input.locale);
     const tools = this.prepareTools(input.tools);
+    const focus =
+      input.focus !== undefined ? formatConversationFocus(input.focus) : '';
 
     const dropped: PromptDropped = {
       historyMessages: 0,
@@ -194,6 +199,7 @@ export class PromptBuilder {
       tools,
       knowledge: [],
       toolResults: [],
+      focus,
       history: [],
       examples: [],
       message,
@@ -226,6 +232,7 @@ export class PromptBuilder {
       tools,
       knowledge,
       toolResults,
+      focus,
       history,
       examples,
       message,
@@ -270,6 +277,7 @@ export class PromptBuilder {
         tools,
         knowledge,
         toolResults,
+        focus,
         history,
         examples,
         message,
@@ -625,6 +633,13 @@ export class PromptBuilder {
       });
       lines.push('</tool_results>');
       parts.push(lines.join('\n'));
+    }
+
+    if (input.focus !== undefined && input.focus !== '') {
+      sections.push('conversation_focus');
+      parts.push(
+        `<conversation_focus>\n${escapeText(input.focus)}\n</conversation_focus>`,
+      );
     }
 
     if (input.history.length > 0) {

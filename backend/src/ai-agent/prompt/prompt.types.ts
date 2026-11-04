@@ -3,6 +3,7 @@ import type {
   AiAgentLocale,
   AiAgentMode,
 } from '../ai-agent.types';
+import type { ConversationFocus } from '../conversation-focus';
 import type { RetrievalResult } from '../knowledge/retriever';
 import type { RouterIntent } from '../router/intent-router';
 import type { ToolDescriptor, ToolExecutionResult } from '../tools/tool.types';
@@ -27,6 +28,7 @@ export type PromptSectionName =
   | 'tools'
   | 'knowledge'
   | 'tool_results'
+  | 'conversation_focus'
   | 'history'
   | 'examples'
   | 'user_message';
@@ -72,6 +74,8 @@ export interface PromptBuildInput {
   /** Language detected by the router or supplied by the caller. */
   responseLanguage: PromptLanguage;
   history?: AiAgentChatMessage[];
+  /** Server-derived entities and topic from the previous turns. */
+  focus?: ConversationFocus;
   knowledge?: RetrievalResult;
   toolResults?: ToolExecutionResult[];
   /** Metadata-only descriptors. Handlers are never accepted or rendered. */

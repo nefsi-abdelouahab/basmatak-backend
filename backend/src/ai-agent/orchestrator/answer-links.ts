@@ -1,4 +1,5 @@
 import type { AiAgentLocale } from '../ai-agent.types';
+import type { PromptLanguage } from '../prompt/prompt.types';
 import type { ToolExecutionResult } from '../tools/tool.types';
 import type { CitableToolResult } from './citations';
 
@@ -85,15 +86,20 @@ function opportunityLinks(
 function organizationLinks(
   result: ToolExecutionResult,
   locale: AiAgentLocale,
+  language: PromptLanguage,
   links: AnswerLink[],
 ): void {
+  const titleFields =
+    language === 'ar'
+      ? ['nameAr', 'nameFr', 'name', 'slug']
+      : ['nameFr', 'nameAr', 'name', 'slug'];
   for (const row of itemRows(result)) {
     const slug = safeSegment(row.slug);
     if (slug === undefined) continue;
     pushLink(links, {
       kind: 'organization',
       href: `/${locale}/orgs/${slug}`,
-      title: rowTitle(row, ['nameFr', 'nameAr', 'name', 'slug'], slug),
+      title: rowTitle(row, titleFields, slug),
     });
   }
 }
@@ -121,6 +127,7 @@ function volunteerLinks(
 export function buildAnswerLinks(
   results: readonly CitableToolResult[],
   locale: AiAgentLocale,
+  language: PromptLanguage = 'en',
 ): AnswerLink[] {
   const links: AnswerLink[] = [];
   for (const item of results) {
@@ -129,7 +136,7 @@ export function buildAnswerLinks(
         opportunityLinks(item.result, locale, links);
         break;
       case 'search_organizations':
-        organizationLinks(item.result, locale, links);
+        organizationLinks(item.result, locale, language, links);
         break;
       default:
         if (/(?:volunteer|talent)/i.test(item.result.tool) && item.result.ok) {
