@@ -81,7 +81,7 @@ export interface AiAgentConfig {
 export function defaultAiAgentLimits(): AiAgentLimits {
   return {
     maxInputTokens: 10000,
-    maxOutputTokens: 400,
+    maxOutputTokens: 1000,
     maxHistoryMessages: 6,
     maxHistoryChars: 4000,
     maxKnowledgeChunks: 4,
@@ -207,9 +207,9 @@ export function loadAiAgentConfig(
     maxOutputTokens: readInteger(
       read,
       'AI_AGENT_MAX_OUTPUT_TOKENS',
-      400,
+      1000,
       1,
-      800,
+      1200,
     ),
     maxHistoryMessages: readInteger(
       read,

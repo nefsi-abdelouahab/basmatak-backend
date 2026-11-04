@@ -67,7 +67,7 @@ const HARD_MAX_KNOWLEDGE_CHUNKS = 6;
 const HARD_MAX_KNOWLEDGE_CHARS = 8000;
 const HARD_MAX_TOOL_RESULTS = 8;
 const HARD_MAX_TOOL_RESULT_CHARS = 3000;
-const HARD_MAX_OUTPUT_TOKENS = 800;
+const HARD_MAX_OUTPUT_TOKENS = 1200;
 
 interface PreparedHistory {
   role: 'user' | 'assistant';
