@@ -18,12 +18,14 @@ function turn(
   scriptAnswer: string,
   expect: RegressionTurn['expect'],
   scriptToolCalls?: RegressionTurn['scriptToolCalls'],
+  modelFirst?: RegressionTurn['modelFirst'],
 ): RegressionTurn {
   return {
     message,
     scriptAnswer,
     expect,
     ...(scriptToolCalls !== undefined ? { scriptToolCalls } : {}),
+    ...(modelFirst !== undefined ? { modelFirst } : {}),
   };
 }
 
@@ -57,6 +59,23 @@ const BROWSE_SLUGS = [
 const EN_BROWSE_LINKS = BROWSE_SLUGS.map((slug) => `/en/opportunities/${slug}`);
 const AR_BROWSE_LINKS = BROWSE_SLUGS.map((slug) => `/ar/opportunities/${slug}`);
 
+const EN_BROWSE_ANSWER =
+  'Here are the latest published opportunities: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), and [Remote tutoring](/en/opportunities/remote-tutoring).';
+const AR_BROWSE_ANSWER =
+  'إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).';
+const BROWSE_SCRIPT = [
+  {
+    name: 'search_opportunities',
+    arguments: { limit: 3, sort: 'newest', compact: true },
+  },
+] as const;
+const ALL_SLUGS_SCRIPT = [
+  {
+    name: 'search_opportunities',
+    arguments: { slugs: [...BROWSE_SLUGS] },
+  },
+] as const;
+
 export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
   family(
     'greeting',
@@ -85,22 +104,30 @@ export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
     'capability',
     'Capability',
     [
-      turn('What can you do?', '', {
-        routerAction: 'direct_reply',
-        routerIntent: 'greeting',
-        expectedTools: [],
-        toolArgs: { kind: 'none' },
-        keyFacts: ['opportunities', 'organizations'],
-      }),
+      turn(
+        'What can you do?',
+        "I'm Basma. I can help you find opportunities and organizations and explain how the platform works.",
+        {
+          routerAction: 'direct_reply',
+          routerIntent: 'greeting',
+          expectedTools: [],
+          toolArgs: { kind: 'none' },
+          keyFacts: ['opportunities', 'organizations'],
+        },
+      ),
     ],
     [
-      turn('ما الذي يمكنك فعله؟', '', {
-        routerAction: 'direct_reply',
-        routerIntent: 'greeting',
-        expectedTools: [],
-        toolArgs: { kind: 'none' },
-        keyFacts: ['الفرص', 'المنظمات'],
-      }),
+      turn(
+        'ما الذي يمكنك فعله؟',
+        'أنا بصمة. أساعدك في العثور على الفرص والمنظمات وأشرح لك كيف تعمل المنصة.',
+        {
+          routerAction: 'direct_reply',
+          routerIntent: 'greeting',
+          expectedTools: [],
+          toolArgs: { kind: 'none' },
+          keyFacts: ['الفرص', 'المنظمات'],
+        },
+      ),
     ],
   ),
 
@@ -368,32 +395,42 @@ export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
     'opportunity-browse',
     'Opportunity browse',
     [
-      turn('Show me opportunities', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: {
-          kind: 'exact',
-          expected: { limit: 3, sort: 'newest', compact: true },
+      turn(
+        'Show me opportunities',
+        EN_BROWSE_ANSWER,
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: {
+            kind: 'exact',
+            expected: { limit: 3, sort: 'newest', compact: true },
+          },
+          keyFacts: ['latest published opportunities', 'Beach cleanup'],
+          expectedLinks: EN_BROWSE_LINKS,
+          maxLinks: 4,
         },
-        keyFacts: ['latest published opportunities', 'Beach cleanup'],
-        expectedLinks: EN_BROWSE_LINKS,
-        maxLinks: 4,
-      }),
+        [...BROWSE_SCRIPT],
+      ),
     ],
     [
-      turn('اعرض لي الفرص', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: {
-          kind: 'exact',
-          expected: { limit: 3, sort: 'newest', compact: true },
+      turn(
+        'اعرض لي الفرص',
+        AR_BROWSE_ANSWER,
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: {
+            kind: 'exact',
+            expected: { limit: 3, sort: 'newest', compact: true },
+          },
+          keyFacts: ['أحدث الفرص المنشورة'],
+          expectedLinks: AR_BROWSE_LINKS,
+          maxLinks: 4,
         },
-        keyFacts: ['أحدث الفرص المنشورة'],
-        expectedLinks: AR_BROWSE_LINKS,
-        maxLinks: 4,
-      }),
+        [...BROWSE_SCRIPT],
+      ),
     ],
   ),
 
@@ -448,68 +485,143 @@ export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
     'opportunity-detail',
     'Opportunity detail follow-up',
     [
-      turn('Show me opportunities', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: {
-          kind: 'exact',
-          expected: { limit: 3, sort: 'newest', compact: true },
+      turn(
+        'Show me opportunities',
+        EN_BROWSE_ANSWER,
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: {
+            kind: 'exact',
+            expected: { limit: 3, sort: 'newest', compact: true },
+          },
+          keyFacts: ['Beach cleanup'],
+          expectedLinks: EN_BROWSE_LINKS,
+          maxLinks: 4,
         },
-        keyFacts: ['Beach cleanup'],
-        expectedLinks: EN_BROWSE_LINKS,
-        maxLinks: 4,
-      }),
-      turn('Tell me about the first one', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: { kind: 'slugs', slugs: ['beach-cleanup'] },
-        keyFacts: ['Beach cleanup', 'open for applications'],
-        expectedLinks: ['/en/opportunities/beach-cleanup'],
-        maxLinks: 1,
-      }),
-      turn('When is the deadline?', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: { kind: 'slugs', slugs: [...BROWSE_SLUGS] },
-        keyFacts: ['Beach cleanup', 'deadline'],
-        expectedLinks: EN_BROWSE_LINKS,
-        maxLinks: 3,
-      }),
+        [...BROWSE_SCRIPT],
+      ),
+      turn(
+        'Tell me about the first one',
+        'Beach cleanup is open for applications with five positions in Oran.',
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: { kind: 'slugs', slugs: ['beach-cleanup'] },
+          keyFacts: ['Beach cleanup', 'open for applications'],
+          expectedLinks: ['/en/opportunities/beach-cleanup'],
+          maxLinks: 1,
+        },
+        [
+          {
+            name: 'search_opportunities',
+            arguments: { slugs: ['beach-cleanup'] },
+          },
+        ],
+        {
+          scriptToolCalls: [
+            {
+              name: 'get_opportunity_details',
+              arguments: { slug: 'beach-cleanup' },
+            },
+          ],
+          scriptAnswer:
+            'Beach cleanup is open for applications with five positions in Oran: [Beach cleanup](/en/opportunities/beach-cleanup).',
+          expect: {
+            expectedTools: ['get_opportunity_details'],
+            toolArgs: {
+              kind: 'exact',
+              expected: { slug: 'beach-cleanup' },
+            },
+            keyFacts: ['Beach cleanup', 'open for applications'],
+            expectedLinks: ['/en/opportunities/beach-cleanup'],
+            maxLinks: 1,
+          },
+        },
+      ),
+      turn(
+        'When is the deadline?',
+        'The deadline for [Beach cleanup](/en/opportunities/beach-cleanup) is 31 December 2026.',
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: { kind: 'slugs', slugs: [...BROWSE_SLUGS] },
+          keyFacts: ['Beach cleanup', 'deadline'],
+          expectedLinks: EN_BROWSE_LINKS,
+          maxLinks: 3,
+        },
+        [...ALL_SLUGS_SCRIPT],
+        {
+          scriptToolCalls: [
+            {
+              name: 'get_opportunity_details',
+              arguments: { slug: 'beach-cleanup' },
+            },
+          ],
+          scriptAnswer:
+            'The deadline for [Beach cleanup](/en/opportunities/beach-cleanup) is 31 December 2026.',
+          expect: {
+            expectedTools: ['get_opportunity_details'],
+            toolArgs: {
+              kind: 'exact',
+              expected: { slug: 'beach-cleanup' },
+            },
+            keyFacts: ['Beach cleanup', 'deadline'],
+            expectedLinks: ['/en/opportunities/beach-cleanup'],
+            maxLinks: 1,
+          },
+        },
+      ),
     ],
     [
-      turn('اعرض لي الفرص', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: {
-          kind: 'exact',
-          expected: { limit: 3, sort: 'newest', compact: true },
+      turn(
+        'اعرض لي الفرص',
+        AR_BROWSE_ANSWER,
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: {
+            kind: 'exact',
+            expected: { limit: 3, sort: 'newest', compact: true },
+          },
+          keyFacts: ['أحدث الفرص المنشورة'],
+          expectedLinks: AR_BROWSE_LINKS,
+          maxLinks: 4,
         },
-        keyFacts: ['أحدث الفرص المنشورة'],
-        expectedLinks: AR_BROWSE_LINKS,
-        maxLinks: 4,
-      }),
-      turn('ما هي شروطها؟', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: { kind: 'slugs', slugs: [...BROWSE_SLUGS] },
-        keyFacts: ['مفتوحة للتقديم', 'المناصب المتاحة'],
-        expectedLinks: AR_BROWSE_LINKS,
-        maxLinks: 3,
-      }),
-      turn('هل هي مفتوحة؟', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_opportunities'],
-        toolArgs: { kind: 'slugs', slugs: [...BROWSE_SLUGS] },
-        keyFacts: ['مفتوحة للتقديم'],
-        expectedLinks: AR_BROWSE_LINKS,
-        maxLinks: 3,
-      }),
+        [...BROWSE_SCRIPT],
+      ),
+      turn(
+        'ما هي شروطها؟',
+        'هذه الفرص الثلاث مفتوحة للتقديم، ويمكنك معرفة المناصب المتاحة في كل صفحة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).',
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: { kind: 'slugs', slugs: [...BROWSE_SLUGS] },
+          keyFacts: ['مفتوحة للتقديم', 'المناصب المتاحة'],
+          expectedLinks: AR_BROWSE_LINKS,
+          maxLinks: 3,
+        },
+        [...ALL_SLUGS_SCRIPT],
+      ),
+      turn(
+        'هل هي مفتوحة؟',
+        'نعم، الفرص الثلاث مفتوحة للتقديم: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).',
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_opportunities'],
+          toolArgs: { kind: 'slugs', slugs: [...BROWSE_SLUGS] },
+          keyFacts: ['مفتوحة للتقديم'],
+          expectedLinks: AR_BROWSE_LINKS,
+          maxLinks: 3,
+        },
+        [...ALL_SLUGS_SCRIPT],
+      ),
     ],
   ),
 
@@ -517,26 +629,46 @@ export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
     'organization-lookup',
     'Organization exact lookup',
     [
-      turn('Do you know Nour association?', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_organizations'],
-        toolArgs: { kind: 'name', names: ['Nour'] },
-        keyFacts: ['I found this organization', 'Nour'],
-        expectedLinks: ['/en/orgs/nour-association'],
-        maxLinks: 1,
-      }),
+      turn(
+        'Do you know Nour association?',
+        'I found this organization: [Nour](/en/orgs/nour-association).',
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_organizations'],
+          toolArgs: { kind: 'name', names: ['Nour'] },
+          keyFacts: ['I found this organization', 'Nour'],
+          expectedLinks: ['/en/orgs/nour-association'],
+          maxLinks: 1,
+        },
+        [
+          {
+            name: 'search_organizations',
+            arguments: { name: 'Nour', limit: 8 },
+          },
+        ],
+      ),
     ],
     [
-      turn('هل تعرف جمعية نور', '', {
-        routerAction: 'answer',
-        routerIntent: 'live_data',
-        expectedTools: ['search_organizations'],
-        toolArgs: { kind: 'name', names: ['نور'] },
-        keyFacts: ['وجدت هذه الجمعية', 'نور'],
-        expectedLinks: ['/ar/orgs/nour-association'],
-        maxLinks: 1,
-      }),
+      turn(
+        'هل تعرف جمعية نور',
+        'وجدت هذه الجمعية: [نور](/ar/orgs/nour-association).',
+        {
+          routerAction: 'answer',
+          routerIntent: 'live_data',
+          expectedTools: ['search_organizations'],
+          toolArgs: { kind: 'name', names: ['نور'] },
+          keyFacts: ['وجدت هذه الجمعية', 'نور'],
+          expectedLinks: ['/ar/orgs/nour-association'],
+          maxLinks: 1,
+        },
+        [
+          {
+            name: 'search_organizations',
+            arguments: { name: 'نور', limit: 8 },
+          },
+        ],
+      ),
     ],
   ),
 
@@ -658,22 +790,30 @@ export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
     'off-topic',
     'Off-topic request',
     [
-      turn('Who won the football match?', '', {
-        routerAction: 'direct_reply',
-        routerIntent: 'off_topic',
-        expectedTools: [],
-        toolArgs: { kind: 'none' },
-        keyFacts: ['outside'],
-      }),
+      turn(
+        'Who won the football match?',
+        "That's outside what I can help with, but I'd be glad to help you find a volunteering opportunity.",
+        {
+          routerAction: 'direct_reply',
+          routerIntent: 'off_topic',
+          expectedTools: [],
+          toolArgs: { kind: 'none' },
+          keyFacts: ['outside'],
+        },
+      ),
     ],
     [
-      turn('من فاز في مباراة كرة القدم؟', '', {
-        routerAction: 'direct_reply',
-        routerIntent: 'off_topic',
-        expectedTools: [],
-        toolArgs: { kind: 'none' },
-        keyFacts: ['خارج'],
-      }),
+      turn(
+        'من فاز في مباراة كرة القدم؟',
+        'هذا خارج ما أستطيع مساعدتك فيه، لكن يسعدني أن أساعدك في إيجاد فرصة تطوعية.',
+        {
+          routerAction: 'direct_reply',
+          routerIntent: 'off_topic',
+          expectedTools: [],
+          toolArgs: { kind: 'none' },
+          keyFacts: ['خارج'],
+        },
+      ),
     ],
   ),
 
@@ -681,7 +821,7 @@ export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
     'ambiguous',
     'Ambiguous request',
     [
-      turn('asdfgh', '', {
+      turn('asdfgh', 'Could you tell me a bit more about what you need?', {
         routerAction: 'direct_reply',
         routerIntent: 'clarify',
         expectedTools: [],
@@ -690,7 +830,7 @@ export const REGRESSION_FAMILIES: readonly RegressionFamily[] = Object.freeze([
       }),
     ],
     [
-      turn('سسسس', '', {
+      turn('سسسس', 'ممكن توضح لي أكثر ماذا تريد؟', {
         routerAction: 'direct_reply',
         routerIntent: 'clarify',
         expectedTools: [],

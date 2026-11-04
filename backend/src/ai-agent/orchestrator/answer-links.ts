@@ -45,8 +45,9 @@ function safeSegment(value: unknown): string | undefined {
 function itemRows(result: ToolExecutionResult): Record<string, unknown>[] {
   if (!result.ok || !isRecord(result.data)) return [];
   const items = result.data.items;
-  if (!Array.isArray(items)) return [];
-  return items.filter(isRecord);
+  if (Array.isArray(items)) return items.filter(isRecord);
+  const item = result.data.item;
+  return isRecord(item) ? [item] : [];
 }
 
 function rowTitle(
@@ -133,9 +134,11 @@ export function buildAnswerLinks(
   for (const item of results) {
     switch (item.result.tool) {
       case 'search_opportunities':
+      case 'get_opportunity_details':
         opportunityLinks(item.result, locale, links);
         break;
       case 'search_organizations':
+      case 'get_organization_details':
         organizationLinks(item.result, locale, language, links);
         break;
       default:

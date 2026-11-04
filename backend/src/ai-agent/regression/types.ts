@@ -16,6 +16,23 @@ export const REGRESSION_BASELINE_DIR = ['test', 'ai-baseline'] as const;
 export const REGRESSION_BASELINE_JSON = 'router-first.json';
 export const REGRESSION_BASELINE_MD = 'router-first.md';
 
+export type RegressionCorpus = 'baseline' | 'generalization' | 'phase2';
+
+export interface RegressionMetrics {
+  dialogues: number;
+  turns: number;
+  avgInputTokens: number;
+  maxInputTokens: number;
+  avgOutputTokens: number;
+  maxOutputTokens: number;
+  avgProviderCalls: number;
+  maxProviderCalls: number;
+  avgToolCalls: number;
+  maxToolCalls: number;
+  avgLatencyMs: number;
+  maxLatencyMs: number;
+}
+
 export interface RegressionToolCallScript {
   name: string;
   arguments: Record<string, unknown>;
@@ -53,6 +70,15 @@ export interface RegressionTurnExpectation {
   privateData?: boolean;
 }
 
+export interface RegressionModelFirstOverride {
+  /** Tool calls the scripted provider should issue when they are declared. */
+  scriptToolCalls?: readonly RegressionToolCallScript[];
+  /** Deterministic answer used by the scripted provider. */
+  scriptAnswer?: string;
+  /** Replacement assertions for the model-first run of the same message. */
+  expect?: RegressionTurnExpectation;
+}
+
 export interface RegressionTurn {
   message: string;
   /** Tool calls the scripted provider should issue when they are declared. */
@@ -60,6 +86,12 @@ export interface RegressionTurn {
   /** Deterministic answer used by the scripted provider. */
   scriptAnswer: string;
   expect: RegressionTurnExpectation;
+  /**
+   * Optional model-first script/assertions for turns whose router-first path
+   * is deterministic (for example focused detail or browse turns). The user
+   * message is identical, so both modes remain comparable.
+   */
+  modelFirst?: RegressionModelFirstOverride;
 }
 
 export interface RegressionDialogue {
@@ -166,6 +198,8 @@ export interface RegressionTotals {
 
 export interface RegressionRunReport {
   change: string;
+  corpus: RegressionCorpus;
+  modelFirst: boolean;
   mode: RegressionMode;
   generatedAt: string;
   provider: string;
@@ -173,12 +207,27 @@ export interface RegressionRunReport {
   maxInputTokens: number;
   runsPerDialogue: number;
   totals: RegressionTotals;
+  metrics: RegressionMetrics;
   dialogues: RegressionDialogueRecord[];
 }
 
 export interface RegressionHarnessOptions {
   config?: AiAgentConfig;
   mode?: RegressionMode;
+  /** Dialogue set. Defaults to the original 20-family baseline corpus. */
+  corpus?: RegressionCorpus;
+  /** Override `AI_AGENT_MODEL_FIRST`; defaults to the loaded config value. */
+  modelFirst?: boolean;
   /** Live mode only: run each dialogue this many times. Defaults to 3. */
   runsPerDialogue?: number;
+  /**
+   * Optional subset of dialogue ids (`<family>-<locale>`) to run. Used by the
+   * paced Phase-2 live sample; unknown ids are rejected.
+   */
+  dialogueIds?: readonly string[];
+  /**
+   * Live mode only: retry a degraded turn (quota or silent zero tokens) this
+   * many times after waiting. Defaults to 2 in live mode and 0 otherwise.
+   */
+  turnRetries?: number;
 }

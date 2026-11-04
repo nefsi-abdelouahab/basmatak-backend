@@ -23,14 +23,18 @@ import type { RouterDecision } from '../router/intent-router';
 import { SseWriter } from '../sse/sse-writer';
 import type { SseStream } from '../sse/sse-writer';
 import { PlatformStatsTool } from '../tools/platform-stats.tool';
+import { SearchKnowledgeTool } from '../tools/search-knowledge.tool';
 import { SearchOpportunitiesTool } from '../tools/search-opportunities.tool';
 import { SearchOrganizationsTool } from '../tools/search-organizations.tool';
 import { SearchReferenceDataTool } from '../tools/search-reference-data.tool';
+import { GetOpportunityDetailsTool } from '../tools/get-opportunity-details.tool';
+import { GetOrganizationDetailsTool } from '../tools/get-organization-details.tool';
 import { ToolExecutor } from '../tools/tool-executor';
 import { ToolRegistry } from '../tools/tool-registry';
 import { AiAgentOrchestrator } from '../orchestrator/ai-agent.orchestrator';
 import { FixtureToolExecutor } from './fixtures';
 import { REGRESSION_FAMILIES } from './dialogues';
+import { GENERALIZATION_FAMILIES } from './generalization';
 import {
   ScriptedRegressionProvider,
   RecordingProvider,
@@ -38,14 +42,18 @@ import {
 import { scoreTurn } from './scoring';
 import type {
   RegressionCheck,
+  RegressionCorpus,
   RegressionDialogueRecord,
+  RegressionFamily,
   RegressionHarnessOptions,
+  RegressionMetrics,
   RegressionMode,
   RegressionRouterSnapshot,
   RegressionRunReport,
   RegressionTurn,
   RegressionTurnRecord,
 } from './types';
+import { REGRESSION_CHANGE_NAME } from './types';
 
 /**
  * Conversation-level regression harness.
@@ -203,8 +211,9 @@ function liveConfig(): AiAgentConfig {
   };
 }
 
-function buildRegistry(): ToolRegistry {
+function buildRegistry(knowledge: KnowledgeService): ToolRegistry {
   return new ToolRegistry([
+    new SearchKnowledgeTool(knowledge),
     new SearchOpportunitiesTool(
       {} as never,
       {} as never,
@@ -214,7 +223,33 @@ function buildRegistry(): ToolRegistry {
     new SearchOrganizationsTool({} as never),
     new SearchReferenceDataTool({} as never, {} as never),
     new PlatformStatsTool({} as never, {} as never, {} as never, {} as never),
+    new GetOpportunityDetailsTool({} as never, {} as never, {} as never),
+    new GetOrganizationDetailsTool({} as never),
   ]);
+}
+
+/** Pick the model-first script/expectations when the run has them. */
+export function effectiveRegressionTurn(
+  turn: RegressionTurn,
+  modelFirst: boolean,
+): RegressionTurn {
+  if (!modelFirst || turn.modelFirst === undefined) return turn;
+  return {
+    message: turn.message,
+    scriptToolCalls: turn.modelFirst.scriptToolCalls ?? turn.scriptToolCalls,
+    scriptAnswer: turn.modelFirst.scriptAnswer ?? turn.scriptAnswer,
+    expect: turn.modelFirst.expect ?? turn.expect,
+  };
+}
+
+export function familiesForCorpus(
+  corpus: RegressionCorpus,
+): readonly RegressionFamily[] {
+  if (corpus === 'generalization') return GENERALIZATION_FAMILIES;
+  if (corpus === 'phase2') {
+    return [...REGRESSION_FAMILIES, ...GENERALIZATION_FAMILIES];
+  }
+  return REGRESSION_FAMILIES;
 }
 
 export function regressionModeFromEnv(
@@ -225,6 +260,87 @@ export function regressionModeFromEnv(
 
 export function runsPerDialogueFor(mode: RegressionMode): number {
   return mode === 'live' ? 3 : 1;
+}
+
+export type RegressionTurnOutcome =
+  'provider_served' | 'quota' | 'silent_fallback' | 'deterministic';
+
+/**
+ * Classify one turn for live reporting. Provider-served turns are the only
+ * evidence of real model behavior; quota and silent zero-token degradations
+ * are tracked separately so they never inflate or deflate the quality rate.
+ */
+export function classifyRegressionTurn(
+  turn: RegressionTurnRecord,
+): RegressionTurnOutcome {
+  if (turn.errorCode === 'AI_AGENT_QUOTA_EXHAUSTED') return 'quota';
+  if (turn.inputTokens > 0) return 'provider_served';
+  if (turn.providerCalls > 0) return 'silent_fallback';
+  return 'deterministic';
+}
+
+/** Free-tier input-tokens-per-minute budget used when no override is set. */
+export const DEFAULT_INPUT_TOKENS_PER_MINUTE = 7_000;
+
+function positiveNumber(raw: string | undefined): number | undefined {
+  if (raw === undefined || raw.trim() === '') return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+/**
+ * Delay before the next live turn. `AI_REGRESSION_PACE_MS` pins a fixed wait;
+ * otherwise the wait is derived from the previous request's input tokens and
+ * `AI_REGRESSION_INPUT_TOKENS_PER_MINUTE` (default 7,000).
+ */
+export function paceDelayMs(
+  previousInputTokens: number,
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const fixed = positiveNumber(env.AI_REGRESSION_PACE_MS);
+  if (fixed !== undefined) return Math.trunc(fixed);
+  if (previousInputTokens <= 0) return 0;
+  const perMinute =
+    positiveNumber(env.AI_REGRESSION_INPUT_TOKENS_PER_MINUTE) ??
+    DEFAULT_INPUT_TOKENS_PER_MINUTE;
+  return Math.ceil((previousInputTokens / perMinute) * 60_000);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export const DEFAULT_LIVE_TURN_RETRIES = 2;
+
+/**
+ * Wait before retrying a degraded live turn. `AI_REGRESSION_RETRY_WAIT_MS`
+ * pins a fixed wait; otherwise the same input-token-derived pace is reused.
+ */
+export function retryWaitMs(
+  previousInputTokens: number,
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const fixed = positiveNumber(env.AI_REGRESSION_RETRY_WAIT_MS);
+  if (fixed !== undefined) return Math.trunc(fixed);
+  return paceDelayMs(previousInputTokens, env);
+}
+
+function isDegradedTurn(record: RegressionTurnRecord): boolean {
+  const outcome = classifyRegressionTurn(record);
+  return outcome === 'quota' || outcome === 'silent_fallback';
+}
+
+interface PacingState {
+  lastInputTokens: number;
+}
+
+async function paceBeforeTurn(
+  runtime: HarnessRuntime,
+  pacing: PacingState,
+): Promise<void> {
+  if (runtime.mode !== 'live') return;
+  const delay = paceDelayMs(pacing.lastInputTokens);
+  if (delay > 0) await sleep(delay);
 }
 
 function checkReasons(
@@ -244,6 +360,7 @@ interface HarnessRuntime {
   mode: RegressionMode;
   knowledge: KnowledgeService;
   router: RecordingRouter;
+  registry: ToolRegistry;
   providerRecorder: RecordingProvider;
   scriptedProvider: ScriptedRegressionProvider;
   toolExecutor: FixtureToolExecutor;
@@ -263,8 +380,9 @@ function buildRuntime(
   );
   knowledge.onModuleInit();
 
+  const registry = buildRegistry(knowledge);
   const router = new RecordingRouter(
-    new IntentRouter(knowledge, buildRegistry(), config),
+    new IntentRouter(knowledge, registry, config),
   );
   const scriptedProvider = new ScriptedRegressionProvider();
   const delegate =
@@ -280,6 +398,7 @@ function buildRuntime(
     new QuotaService(config),
     providerRecorder,
     SILENT_LOGGER,
+    registry,
   );
 
   return {
@@ -287,6 +406,7 @@ function buildRuntime(
     mode,
     knowledge,
     router,
+    registry,
     providerRecorder,
     scriptedProvider,
     toolExecutor,
@@ -296,10 +416,14 @@ function buildRuntime(
 
 async function runTurn(
   runtime: HarnessRuntime,
-  turn: RegressionTurn,
+  sourceTurn: RegressionTurn,
   locale: AiAgentLocale,
   history: readonly AiAgentChatMessage[],
+  modelFirst: boolean,
+  pacing: PacingState,
 ): Promise<RegressionTurnRecord> {
+  const turn = effectiveRegressionTurn(sourceTurn, modelFirst);
+  await paceBeforeTurn(runtime, pacing);
   runtime.router.reset();
   runtime.providerRecorder.reset();
   runtime.toolExecutor.reset();
@@ -327,6 +451,9 @@ async function runTurn(
   const finalText = tokenText(frames);
   const router = routerSnapshot(runtime.router.last());
   const providerCalls = runtime.providerRecorder.providerCalls;
+  if (result.inputTokens > 0) {
+    pacing.lastInputTokens = result.inputTokens;
+  }
   const declaredTools = [
     ...new Set([
       ...(router?.tools ?? []),
@@ -353,6 +480,7 @@ async function runTurn(
     executedToolCalls,
     refusal: result.refusal,
     providerCalls,
+    modelFirst,
   });
   const structuralPass = checks
     .filter((check) => check.structural)
@@ -394,6 +522,9 @@ async function runDialogue(
   locale: AiAgentLocale,
   turns: readonly RegressionTurn[],
   run: number,
+  modelFirst: boolean,
+  pacing: PacingState,
+  turnRetries: number,
 ): Promise<RegressionDialogueRecord> {
   const startedAt = Date.now();
   const history: AiAgentChatMessage[] = [];
@@ -401,7 +532,34 @@ async function runDialogue(
   const failedChecks: string[] = [];
 
   for (const [index, turn] of turns.entries()) {
-    const record = await runTurn(runtime, turn, locale, history);
+    let record = await runTurn(
+      runtime,
+      turn,
+      locale,
+      history,
+      modelFirst,
+      pacing,
+    );
+    for (
+      let retry = 0;
+      retry < turnRetries && isDegradedTurn(record);
+      retry += 1
+    ) {
+      const wait = retryWaitMs(
+        pacing.lastInputTokens > 0
+          ? pacing.lastInputTokens
+          : DEFAULT_INPUT_TOKENS_PER_MINUTE,
+      );
+      if (wait > 0) await sleep(wait);
+      record = await runTurn(
+        runtime,
+        turn,
+        locale,
+        history,
+        modelFirst,
+        pacing,
+      );
+    }
     record.index = index + 1;
     records.push(record);
     failedChecks.push(...checkReasons(record.index, record.checks));
@@ -428,19 +586,70 @@ async function runDialogue(
   };
 }
 
+function maxOf(values: readonly number[]): number {
+  return values.length === 0 ? 0 : Math.max(...values);
+}
+
+function avgOf(values: readonly number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+export function computeMetrics(
+  turns: readonly RegressionTurnRecord[],
+  dialogues = 0,
+): RegressionMetrics {
+  const inputTokens = turns.map((turn) => turn.inputTokens);
+  const outputTokens = turns.map((turn) => turn.outputTokens);
+  const providerCalls = turns.map((turn) => turn.providerCalls);
+  const toolCalls = turns.map((turn) => turn.executedToolCalls.length);
+  const latencyMs = turns.map((turn) => turn.latencyMs);
+  return {
+    dialogues,
+    turns: turns.length,
+    avgInputTokens: avgOf(inputTokens),
+    maxInputTokens: maxOf(inputTokens),
+    avgOutputTokens: avgOf(outputTokens),
+    maxOutputTokens: maxOf(outputTokens),
+    avgProviderCalls: avgOf(providerCalls),
+    maxProviderCalls: maxOf(providerCalls),
+    avgToolCalls: avgOf(toolCalls),
+    maxToolCalls: maxOf(toolCalls),
+    avgLatencyMs: avgOf(latencyMs),
+    maxLatencyMs: maxOf(latencyMs),
+  };
+}
+
 export async function runRegressionHarness(
   options: RegressionHarnessOptions = {},
 ): Promise<RegressionRunReport> {
   const mode = options.mode ?? regressionModeFromEnv();
-  const config =
+  const baseConfig =
     options.config ?? (mode === 'live' ? liveConfig() : scriptedConfig());
-  const runsPerDialogue = runsPerDialogueFor(mode);
+  const modelFirst = options.modelFirst ?? baseConfig.modelFirst;
+  const config: AiAgentConfig =
+    modelFirst === baseConfig.modelFirst
+      ? baseConfig
+      : { ...baseConfig, modelFirst };
+  const corpus = options.corpus ?? 'baseline';
+  const families = familiesForCorpus(corpus);
+  const runsPerDialogue = options.runsPerDialogue ?? runsPerDialogueFor(mode);
+  const turnRetries =
+    options.turnRetries ?? (mode === 'live' ? DEFAULT_LIVE_TURN_RETRIES : 0);
   const runtime = buildRuntime(config, mode);
   const records: RegressionDialogueRecord[] = [];
+  const pacing: PacingState = { lastInputTokens: 0 };
+  const wanted =
+    options.dialogueIds === undefined
+      ? undefined
+      : new Set(options.dialogueIds);
+  const found = new Set<string>();
 
-  for (const family of REGRESSION_FAMILIES) {
+  for (const family of families) {
     for (const locale of ['en', 'ar'] as const) {
       const dialogue = locale === 'en' ? family.en : family.ar;
+      if (wanted !== undefined && !wanted.has(dialogue.id)) continue;
+      found.add(dialogue.id);
       for (let run = 1; run <= runsPerDialogue; run += 1) {
         records.push(
           await runDialogue(
@@ -450,15 +659,27 @@ export async function runRegressionHarness(
             locale,
             dialogue.turns,
             run,
+            modelFirst,
+            pacing,
+            turnRetries,
           ),
         );
       }
     }
   }
 
+  if (wanted !== undefined) {
+    const unknown = [...wanted].filter((id) => !found.has(id));
+    if (unknown.length > 0) {
+      throw new Error(`Unknown dialogue ids: ${unknown.join(', ')}`);
+    }
+  }
+
   const turns = records.flatMap((record) => record.turns);
   return {
-    change: 'model-first-ai-intent-and-tools',
+    change: REGRESSION_CHANGE_NAME,
+    corpus,
+    modelFirst,
     mode,
     generatedAt: new Date().toISOString(),
     provider: config.provider,
@@ -466,7 +687,7 @@ export async function runRegressionHarness(
     maxInputTokens: config.limits.maxInputTokens,
     runsPerDialogue,
     totals: {
-      families: REGRESSION_FAMILIES.length,
+      families: new Set(records.map((record) => record.family)).size,
       dialogues: records.length,
       turns: turns.length,
       passedDialogues: records.filter((record) => record.qualityPass).length,
@@ -475,6 +696,7 @@ export async function runRegressionHarness(
       failedTurns: turns.filter((turn) => !turn.qualityPass).length,
       structuralFailures: turns.filter((turn) => !turn.structuralPass).length,
     },
+    metrics: computeMetrics(turns, records.length),
     dialogues: records,
   };
 }

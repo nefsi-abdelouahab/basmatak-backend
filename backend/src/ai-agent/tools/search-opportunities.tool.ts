@@ -404,8 +404,7 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
     }
     this.definition = defineReadOnlyTool({
       name: SEARCH_OPPORTUNITIES_TOOL_NAME,
-      description:
-        'Search published Basmatak volunteering opportunities by text, wilaya, municipality, mode, skill, category, and sort. Text accepts Arabic, French, or English terms and matches titles, descriptions, skill names, and category names; place names such as "وهران", "Oran", or "الجزائر العاصمة" are resolved to stored wilaya/municipality codes. Read-only; returns at most 8 public cards (default 5).',
+      description: 'Search published opportunities.',
       allowedIntents: ['opportunity_search'],
       inputSchema: {
         type: 'object',
@@ -415,64 +414,32 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
             type: 'string',
             minLength: 1,
             maxLength: 120,
-            description:
-              'Keyword, skill/category name, or place name in Arabic, French, or English. Place names resolve to wilaya/municipality filters; other terms match the opportunity title, description, skill names, and category names.',
+            description: 'Query.',
           },
           slugs: {
             type: 'array',
-            description:
-              'Exact opportunity slugs from an earlier result. Use this for a follow-up about items already shown; do not pass the user sentence as text.',
+            description: 'Slugs.',
             items: { type: 'string', minLength: 1, maxLength: 200 },
             minItems: 1,
             maxItems: TOOL_MAX_ROWS,
-          },
-          wilaya: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 40,
-            description: 'Wilaya code, for example "16".',
-          },
-          municipality: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 40,
-            description: 'Municipality code, for example "1601".',
-          },
-          mode: {
-            type: 'string',
-            enum: [...OPPORTUNITY_MODES],
-            description: 'Participation mode.',
-          },
-          skill: {
-            type: 'string',
-            minLength: 24,
-            maxLength: 24,
-            description: 'Required skill id from search_reference_data.',
-          },
-          category: {
-            type: 'string',
-            minLength: 24,
-            maxLength: 24,
-            description: 'Skill category id.',
           },
           sort: {
             type: 'string',
             enum: [...OPPORTUNITY_SORTS],
             default: 'newest',
-            description: 'Server-defined sort order.',
+            description: 'Order.',
           },
           limit: {
             type: 'integer',
             minimum: 1,
             maximum: TOOL_MAX_ROWS,
             default: TOOL_DEFAULT_ROWS,
-            description: 'Rows to return (1 to 8). Defaults to 5.',
+            description: 'Rows.',
           },
           compact: {
             type: 'boolean',
             default: false,
-            description:
-              'Return only slug and title for each row. Use for a general opportunity browse or a short list.',
+            description: 'Titles only.',
           },
         },
       },

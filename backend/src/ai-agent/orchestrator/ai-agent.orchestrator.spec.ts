@@ -30,12 +30,14 @@ import { MockProvider } from '../llm/mock.provider';
 import { PromptBuilder } from '../prompt/prompt-builder';
 import type { IntentRouter, RouterDecision } from '../router/intent-router';
 import { SseWriter } from '../sse/sse-writer';
+import type { ToolRegistry } from '../tools/tool-registry';
 import type {
   ToolBatchExecutionResult,
   ToolDescriptor,
   ToolExecutionResult,
 } from '../tools/tool.types';
 import { ToolExecutor } from '../tools/tool-executor';
+import { UsageMeterService } from '../usage/usage-meter.service';
 import {
   AI_AGENT_MAX_PROVIDER_CALLS,
   AiAgentOrchestrator,
@@ -171,6 +173,66 @@ const ORGANIZATION_TOOL: ToolDescriptor = {
   allowedIntents: ['organization_search'],
   readOnly: true,
 };
+
+const MODEL_FIRST_DESCRIPTORS: ToolDescriptor[] = [
+  OPPORTUNITY_TOOL,
+  ORGANIZATION_TOOL,
+  {
+    name: 'search_reference_data',
+    description: 'Search public reference data.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['reference_lookup'],
+    readOnly: true,
+  },
+  {
+    name: 'platform_stats',
+    description: 'Return public platform counts.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['platform_stats'],
+    readOnly: true,
+  },
+  {
+    name: 'search_knowledge',
+    description: 'Search the public knowledge base.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['knowledge_lookup'],
+    readOnly: true,
+  },
+  {
+    name: 'get_opportunity_details',
+    description: 'Return one public opportunity.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['opportunity_details'],
+    readOnly: true,
+  },
+  {
+    name: 'get_organization_details',
+    description: 'Return one public organization.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['organization_details'],
+    readOnly: true,
+  },
+];
 
 class QueueProvider extends MockProvider {
   readonly requests: LlmTurnRequest[] = [];
@@ -315,6 +377,7 @@ interface Harness {
   router: { route: jest.Mock };
   knowledge: { search: jest.Mock };
   toolExecutor: { executeMany: jest.Mock };
+  usageMeter?: UsageMeterService;
 }
 
 function createHarness(
@@ -325,6 +388,8 @@ function createHarness(
     retrieval?: RetrievalResult;
     executeMany?: jest.Mock;
     logger?: AppLogger;
+    tools?: ToolDescriptor[];
+    usageMeter?: UsageMeterService;
   } = {},
 ): Harness {
   const config = options.config ?? createConfig();
@@ -345,6 +410,10 @@ function createHarness(
       ),
   };
   const provider = options.provider ?? new QueueProvider(config);
+  const toolRegistry =
+    options.tools === undefined
+      ? undefined
+      : ({ list: () => options.tools } as unknown as ToolRegistry);
   const orchestrator = new AiAgentOrchestrator(
     config,
     router as unknown as IntentRouter,
@@ -354,6 +423,8 @@ function createHarness(
     quota,
     provider,
     options.logger,
+    toolRegistry,
+    options.usageMeter,
   );
 
   return {
@@ -366,6 +437,9 @@ function createHarness(
     router,
     knowledge,
     toolExecutor,
+    ...(options.usageMeter !== undefined
+      ? { usageMeter: options.usageMeter }
+      : {}),
   };
 }
 
@@ -882,6 +956,279 @@ describe('AiAgentOrchestrator', () => {
     expect((frames[0].data as { delta: string }).delta).toBe(
       'Hello! How can I help?',
     );
+  });
+
+  it('logs the router as a shadow signal and declares every tool on every model-first turn', async () => {
+    const logger = {
+      log: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger;
+    const harness = createHarness({
+      config: createConfig({
+        modelFirst: true,
+        limits: { maxInputTokens: 12_000 },
+      }),
+      decision: liveDataDecision(),
+      logger,
+      tools: MODEL_FIRST_DESCRIPTORS,
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [{ slug: 'beach-cleanup', title: 'Beach cleanup' }],
+          }),
+        ]),
+      ),
+    });
+    queueProvider(harness).queueTurn({
+      text: [],
+      toolCalls: [
+        {
+          callId: 'call-1',
+          name: 'search_opportunities',
+          arguments: { limit: 3 },
+        },
+      ],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Here is [Beach cleanup](/en/opportunities/beach-cleanup).'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'show me opportunities',
+    );
+
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+    expect(queueProvider(harness).calls).toBe(2);
+    const expectedNames = MODEL_FIRST_DESCRIPTORS.map(
+      (tool) => tool.name,
+    ).sort();
+    for (const request of queueProvider(harness).requests) {
+      expect((request.tools ?? []).map((tool) => tool.name).sort()).toEqual(
+        expectedNames,
+      );
+    }
+    expect(harness.router.route).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    const shadow = JSON.parse(
+      (logger.log as jest.Mock).mock.calls[0]?.[0] as string,
+    ) as Record<string, unknown>;
+    expect(shadow).toMatchObject({
+      event: 'ai_agent_router_shadow',
+      intent: 'live_data',
+      action: 'answer',
+      reason: 'TEST_LIVE',
+    });
+    expect(JSON.stringify(shadow)).not.toContain('show me opportunities');
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toContain(
+      '[Beach cleanup](/en/opportunities/beach-cleanup)',
+    );
+  });
+
+  it('short-circuits exact greetings but sends capability questions to the provider', async () => {
+    const greeting = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({
+        intent: 'greeting',
+        action: 'direct_reply',
+        directReply: 'Hello! How can I help?',
+        reason: 'GREETING',
+      }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+
+    const greetingResult = await runOrchestrator(greeting, 'Hello');
+
+    expect(queueProvider(greeting).calls).toBe(0);
+    expect(greeting.toolExecutor.executeMany).not.toHaveBeenCalled();
+    expect(greetingResult.frames).toEqual([
+      { event: 'token', data: { delta: 'Hello! How can I help?' } },
+    ]);
+
+    const capability = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({
+        intent: 'greeting',
+        action: 'direct_reply',
+        directReply: 'I can help with opportunities.',
+        reason: 'CAPABILITY',
+      }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(capability).queueTurn({
+      text: ['I can help you find opportunities and organizations.'],
+    });
+
+    const capabilityResult = await runOrchestrator(
+      capability,
+      'what can you do?',
+    );
+
+    expect(queueProvider(capability).calls).toBe(1);
+    expect(capabilityResult.result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+    });
+    expect(
+      capabilityResult.frames
+        .filter((frame) => frame.event === 'token')
+        .map((frame) => (frame.data as { delta: string }).delta)
+        .join(''),
+    ).toBe('I can help you find opportunities and organizations.');
+  });
+
+  it('retries once when the shadow router needs live data but the model calls no tool', async () => {
+    const harness = createHarness({
+      config: createConfig({
+        modelFirst: true,
+        limits: { maxInputTokens: 12_000 },
+      }),
+      decision: liveDataDecision(),
+      tools: MODEL_FIRST_DESCRIPTORS,
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [{ slug: 'beach-cleanup', title: 'Beach cleanup' }],
+          }),
+        ]),
+      ),
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Beach cleanup is available.'],
+    });
+    queueProvider(harness).queueTurn({
+      text: [],
+      toolCalls: [
+        {
+          callId: 'call-1',
+          name: 'search_opportunities',
+          arguments: { limit: 3 },
+        },
+      ],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Here is [Beach cleanup](/en/opportunities/beach-cleanup).'],
+    });
+
+    const { result } = await runOrchestrator(harness, 'show me opportunities');
+
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+    expect(queueProvider(harness).calls).toBe(3);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledTimes(1);
+    expect(queueProvider(harness).requests[1]?.input as string).toContain(
+      'This request needs current public platform data.',
+    );
+  });
+
+  it('retries an Arabic answer once and accepts the corrected language', async () => {
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a volunteering platform.'],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['بصمتك منصة للعمل التطوعي تربط المتطوعين بالفرص.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'ما هي بصمتك؟',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: false });
+    expect(queueProvider(harness).calls).toBe(2);
+    expect(queueProvider(harness).requests[1]?.systemInstruction).toContain(
+      'Strict language requirement',
+    );
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe('بصمتك منصة للعمل التطوعي تربط المتطوعين بالفرص.');
+  });
+
+  it('fails closed when the Arabic language retry is still not Arabic', async () => {
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a volunteering platform.'],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['This answer is still English.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'ما هي بصمتك؟',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: true });
+    expect(queueProvider(harness).calls).toBe(2);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('ungrounded', 'ar'));
+  });
+
+  it('flag-off ignores model-first tools and recent entity state', async () => {
+    const harness = createHarness({
+      config: createConfig({ modelFirst: false }),
+      decision: knowledgeOnlyDecision(),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+    });
+
+    const { result } = await runOrchestrator(
+      harness,
+      'What is Basmatak?',
+      'normal',
+      new AbortController().signal,
+      [
+        { role: 'user', content: 'Show me opportunities' },
+        {
+          role: 'assistant',
+          content: '[Beach cleanup](/en/opportunities/beach-cleanup)',
+        },
+      ],
+    );
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: false });
+    const request = queueProvider(harness).requests[0];
+    expect(request?.tools).toBeUndefined();
+    expect(request?.input as string).not.toContain('<recent_entities>');
+    expect(request?.systemInstruction).not.toContain('Choosing tools');
   });
 
   it('blocks private-data requests before routing or calling the provider', async () => {
@@ -2148,5 +2495,155 @@ describe('AiAgentOrchestrator', () => {
     expect((frames[frames.length - 1].data as { delta: string }).delta).toBe(
       policyMessage('knowledgeOnlyLive', 'en'),
     );
+  });
+});
+
+describe('model-first fallback counters', () => {
+  const BUDGET = {
+    dailyLimit: 150_000,
+    usedToday: 0,
+    remaining: 150_000,
+    mode: 'normal' as const,
+  };
+
+  function fallbackCounts(meter: UsageMeterService) {
+    return meter.getReport(BUDGET).fallbacks.today;
+  }
+
+  it('counts a quota fallback when the provider is disabled by mode', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision(),
+      usageMeter,
+    });
+
+    await runOrchestrator(harness, 'What is Basmatak?', 'retrieval_only');
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(fallbackCounts(usageMeter)).toEqual({
+      quota: 1,
+      provider_error: 0,
+      no_tool_retry_failed: 0,
+      language_retry_failed: 0,
+      total: 1,
+    });
+  });
+
+  it('counts a provider error when the provider is unavailable', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision(),
+      usageMeter,
+    });
+
+    const { result } = await runOrchestrator(harness, 'What is Basmatak?');
+
+    expect(result.errorCode).toBe('AI_AGENT_PROVIDER_UNAVAILABLE');
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      provider_error: 1,
+      total: 1,
+    });
+  });
+
+  it('counts a zero-token provider turn as a provider error', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision(),
+      usageMeter,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+      usage: { inputTokens: 0, outputTokens: 0 },
+    });
+
+    const { result } = await runOrchestrator(harness, 'What is Basmatak?');
+
+    expect(result).toMatchObject({ finishReason: 'stop', inputTokens: 0 });
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      provider_error: 1,
+      total: 1,
+    });
+  });
+
+  it('counts an empty final answer as a failed tool retry', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({
+        modelFirst: true,
+        limits: { maxInputTokens: 12_000 },
+      }),
+      decision: liveDataDecision(),
+      tools: MODEL_FIRST_DESCRIPTORS,
+      usageMeter,
+    });
+    queueProvider(harness).queueTurn({ text: [] });
+    queueProvider(harness).queueTurn({ text: [] });
+
+    const { result } = await runOrchestrator(harness, 'Show me opportunities');
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: true });
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      no_tool_retry_failed: 1,
+      total: 1,
+    });
+  });
+
+  it('counts a failed language retry separately', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      usageMeter,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+      usage: { inputTokens: 10, outputTokens: 4 },
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+      usage: { inputTokens: 10, outputTokens: 4 },
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'ما هو بصمتك؟',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(2);
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: true });
+    expect((frames[frames.length - 1].data as { delta: string }).delta).toBe(
+      policyMessage('ungrounded', 'ar'),
+    );
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      language_retry_failed: 1,
+      total: 1,
+    });
   });
 });

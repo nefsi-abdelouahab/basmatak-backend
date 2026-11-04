@@ -57,10 +57,13 @@ import {
 } from '../conversation-focus';
 import { PromptBuilder } from '../prompt/prompt-builder';
 import type { PromptBudgetError } from '../prompt/prompt.types';
+import { deriveRecentEntities } from '../recent-entities';
+import type { RecentEntities } from '../recent-entities';
 import { detectPromptLanguage, IntentRouter } from '../router/intent-router';
 import type { RouterDecision } from '../router/intent-router';
 import type { SseStream } from '../sse/sse-writer';
 import { ToolExecutor } from '../tools/tool-executor';
+import { ToolRegistry } from '../tools/tool-registry';
 import type {
   ToolDescriptor,
   ToolErrorCode,
@@ -90,6 +93,8 @@ import {
 } from './answer-sanitizer';
 import type { CitableToolResult } from './citations';
 import { containsUnbackedPromise } from './promise-guard';
+import type { AiAgentFallbackReason } from '../usage/usage-meter.service';
+import { UsageMeterService } from '../usage/usage-meter.service';
 
 /**
  * Session 9 answer pipeline.
@@ -113,6 +118,7 @@ import { containsUnbackedPromise } from './promise-guard';
 
 export const AI_AGENT_MAX_PROVIDER_CALLS = 3;
 export const AI_AGENT_MAX_TOOL_ROUNDS = 2;
+export const AI_AGENT_MODEL_FIRST_MAX_TOOL_ROUNDS = 2;
 export const AI_AGENT_TRANSIENT_RETRY_BACKOFF_MS = 250;
 export const AI_AGENT_TOTAL_TIMEOUT_MS = 45_000;
 
@@ -432,6 +438,85 @@ export function stripLeadingSystemSection(text: string): string {
   return source.slice(end + '</system_rules>'.length).replace(/^\s+/, '');
 }
 
+/** Only exact greeting/thanks replies may bypass the provider in model-first. */
+function isModelFirstDirectShortCircuit(decision: RouterDecision): boolean {
+  return (
+    decision.action === 'direct_reply' &&
+    (decision.reason === 'GREETING' || decision.reason === 'THANKS')
+  );
+}
+
+/**
+ * Arabic questions must receive an Arabic answer. Latin text is allowed for
+ * public slugs, names, and links, but Arabic letters must remain the main
+ * script. Only the Arabic direction is enforced; English answers may quote
+ * Arabic entity titles.
+ */
+export function answerMatchesQuestionLanguage(
+  answer: string,
+  language: 'ar' | 'en',
+): boolean {
+  if (language !== 'ar') return true;
+  // Links and public slugs are allowed to stay Latin. Remove the whole
+  // Markdown link and any bare URL so a valid Arabic answer with English
+  // entity names or URL segments is not mistaken for an English answer.
+  const prose = String(answer)
+    .replace(/\[[^\]\n]*\]\([^)]*\)/gu, ' ')
+    .replace(/https?:\/\/\S+/giu, ' ');
+  const arabic = (prose.match(/[\u0600-\u06FF]/gu) ?? []).length;
+  const latin = (prose.match(/[A-Za-z]/gu) ?? []).length;
+  if (arabic === 0) return false;
+  return arabic >= latin * 0.5;
+}
+
+/** Public links from recent entities, used only as sanitizer allowlist. */
+function buildRecentEntityLinks(
+  recent: RecentEntities | undefined,
+  locale: AiAgentLocale,
+): AnswerLink[] {
+  if (recent === undefined) return [];
+  const links: AnswerLink[] = [];
+  const push = (
+    kind: 'opportunity' | 'organization',
+    slug: string,
+    title: string,
+  ): void => {
+    const segment = String(slug).trim();
+    if (segment === '' || /[/\\?#\u0000-\u001f]/u.test(segment)) return;
+    const href =
+      kind === 'opportunity'
+        ? `/${locale}/opportunities/${encodeURIComponent(segment)}`
+        : `/${locale}/orgs/${encodeURIComponent(segment)}`;
+    if (links.some((link) => link.href === href)) return;
+    links.push({ kind, href, title: title.trim() || segment });
+  };
+
+  for (const entity of recent.opportunities) {
+    push('opportunity', entity.slug, entity.title);
+  }
+  for (const entity of recent.organizations) {
+    push('organization', entity.slug, entity.title);
+  }
+  return links;
+}
+
+/** Tools declared in model-first mode: every approved read-only tool. */
+function modelFirstTools(
+  registryTools: readonly ToolDescriptor[],
+  fallback: readonly ToolDescriptor[],
+): ToolDescriptor[] {
+  return registryTools.length > 0 ? [...registryTools] : [...fallback];
+}
+
+/** True when the shadow router says the turn needs current platform data. */
+function modelFirstNeedsLiveData(decision: RouterDecision): boolean {
+  return (
+    decision.toolIntents.length > 0 ||
+    decision.intent === 'live_data' ||
+    decision.intent === 'mixed'
+  );
+}
+
 function remainingMs(deadlineStartedAt: number): number {
   return Math.max(
     1,
@@ -581,6 +666,8 @@ export class AiAgentOrchestrator {
     private readonly quota: QuotaService,
     @Inject(LLM_PROVIDER) private readonly provider: LlmProvider,
     @Optional() logger?: AppLogger,
+    @Optional() private readonly toolRegistry?: ToolRegistry,
+    @Optional() private readonly usageMeter?: UsageMeterService,
   ) {
     this.logger = logger ?? new AppLogger('AiAgentOrchestrator');
   }
@@ -624,6 +711,26 @@ export class AiAgentOrchestrator {
         input.history,
         focus,
       );
+
+      if (this.config.modelFirst) {
+        this.logRouterShadow(decision, input);
+        if (isModelFirstDirectShortCircuit(decision)) {
+          return this.emitPolicyAnswer(
+            input,
+            decision.directReply ?? policyMessage('notFound', language),
+            false,
+          );
+        }
+        return await this.runModelFirstAnswer(
+          input,
+          decision,
+          caps,
+          language,
+          deadline,
+          deadlineStartedAt,
+          focus,
+        );
+      }
 
       // Greetings, thanks, capability questions, and clarifications are
       // deterministic and citation-exempt.
@@ -706,6 +813,730 @@ export class AiAgentOrchestrator {
       return this.handleUnexpectedFailure(input, language, deadline, error);
     } finally {
       deadline.dispose();
+    }
+  }
+
+  /**
+   * Model-first turn: the router is a shadow signal, the model receives every
+   * approved read-only tool, and at most two tool rounds are allowed. Safety
+   * short-circuits, quota modes, and deterministic degraded lookups remain
+   * outside the model path.
+   */
+  private async runModelFirstAnswer(
+    input: AiAgentOrchestratorInput,
+    decision: RouterDecision,
+    caps: AnswerCaps,
+    language: ReturnType<typeof detectPromptLanguage>,
+    deadline: ProviderDeadline,
+    deadlineStartedAt: number,
+    focus?: ConversationFocus,
+  ): Promise<AiAgentOrchestrationResult> {
+    const recentEntities = deriveRecentEntities(input.history, input.message);
+    const allTools = modelFirstTools(
+      this.toolRegistry?.list() ?? [],
+      decision.tools,
+    );
+    const toolsAllowed =
+      caps.toolsEnabled && caps.maxToolRounds > 0 && allTools.length > 0;
+
+    // Record each silent fallback at most once per turn so the log line and the
+    // cumulative usage counter stay meaningful even when several checks fire.
+    const recordedFallbacks = new Set<AiAgentFallbackReason>();
+    const recordFallback = (reason: AiAgentFallbackReason): void => {
+      if (recordedFallbacks.has(reason)) return;
+      recordedFallbacks.add(reason);
+      this.usageMeter?.recordFallback(reason);
+    };
+
+    // Quota modes never reach a provider. A clear local browse or exact
+    // organization lookup is still safe and useful; everything else falls back
+    // to retrieval-only or a fixed limitation.
+    if (!caps.providerEnabled) {
+      recordFallback('quota');
+      const deterministic = await this.runModelFirstDeterministicFallback({
+        input,
+        decision,
+        language,
+        totals: zeroUsage(),
+        recentEntities,
+        ...(focus !== undefined ? { focus } : {}),
+      });
+      if (deterministic !== undefined) return deterministic;
+      return this.runRetrievalOnly(input, decision, caps, language);
+    }
+
+    if (input.mode === 'knowledge_only') {
+      const deterministic = await this.runModelFirstDeterministicFallback({
+        input,
+        decision,
+        language,
+        totals: zeroUsage(),
+        recentEntities,
+        ...(focus !== undefined ? { focus } : {}),
+      });
+      if (deterministic !== undefined) return deterministic;
+    }
+
+    if (!this.writeStatus(input.stream, 'searching')) {
+      return this.abortedResult(input.mode, [], 0);
+    }
+
+    const retrieval = this.retrieveModelFirstKnowledge(
+      input.message,
+      caps,
+      language,
+    );
+    if (
+      input.mode === 'knowledge_only' &&
+      retrieval.chunks.length === 0 &&
+      modelFirstNeedsLiveData(decision)
+    ) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('knowledgeOnlyLive', language),
+        false,
+      );
+    }
+
+    const history =
+      caps.historyMessages > 0
+        ? input.history.slice(-caps.historyMessages)
+        : [];
+
+    const promptResult = this.promptBuilder.build({
+      message: input.message,
+      locale: input.locale,
+      responseLanguage: language,
+      history,
+      ...(focus !== undefined ? { focus } : {}),
+      ...(recentEntities !== undefined ? { recentEntities } : {}),
+      modelFirst: true,
+      knowledge: retrieval,
+      tools: toolsAllowed ? allTools : [],
+      mode: input.mode,
+    });
+
+    if (!promptResult.ok) {
+      this.logPromptBudgetExceeded(
+        promptResult.error,
+        input,
+        toolsAllowed ? allTools.length : 0,
+      );
+      this.emitError(
+        input.stream,
+        'AI_AGENT_INVALID_INPUT',
+        policyMessage('messageTooLong', language),
+      );
+      return this.makeResult({
+        mode: input.mode,
+        finishReason: 'error',
+        errorCode: 'AI_AGENT_INVALID_INPUT',
+      });
+    }
+
+    const prompt = promptResult.prompt;
+    const declarations: LlmToolDeclaration[] = toolsAllowed
+      ? allTools.map(toLlmToolDeclaration)
+      : [];
+    const declaredTools = new Map(
+      toolsAllowed ? allTools.map((tool) => [tool.name, tool]) : [],
+    );
+    const maxToolRounds =
+      input.mode === 'conservative'
+        ? Math.min(1, caps.maxToolRounds)
+        : AI_AGENT_MODEL_FIRST_MAX_TOOL_ROUNDS;
+
+    let currentInput: LlmTurnInput = stripLeadingSystemSection(prompt.text);
+    let estimatedInputTokens = prompt.estimatedInputTokens;
+    let interactionId: string | undefined;
+    let toolRounds = 0;
+    let toolCallCount = 0;
+    let liveDataRetryUsed = false;
+    const executedNames: string[] = [];
+    const citableResults: CitableToolResult[] = [];
+    const callState: ProviderCallState = { calls: 0, retried: false };
+    const totals: UsageTotals = {
+      inputTokens: 0,
+      outputTokens: 0,
+      estimated: false,
+    };
+    let finalTurn: ProviderTurnResult | undefined;
+    let exhaustedRounds = false;
+
+    try {
+      while (finalTurn === undefined) {
+        if (callState.calls >= AI_AGENT_MAX_PROVIDER_CALLS) {
+          exhaustedRounds = true;
+          break;
+        }
+        if (deadline.signal.aborted) {
+          throw deadlineError(deadline);
+        }
+
+        const request: LlmTurnRequest = {
+          systemInstruction: prompt.system,
+          input: currentInput,
+          // Model-first declares every approved read-only tool on every turn,
+          // including the final answer turn.
+          ...(declarations.length > 0 ? { tools: declarations } : {}),
+          ...(interactionId !== undefined
+            ? { previousInteractionId: interactionId }
+            : {}),
+          maxOutputTokens: caps.maxOutputTokens,
+          timeoutMs: remainingMs(deadlineStartedAt),
+          locale: input.locale,
+        };
+
+        const attempt: AttemptState = {
+          sawText: false,
+          sawToolCalls: false,
+        };
+        const turn = await this.callProviderWithRetry(
+          request,
+          deadline,
+          callState,
+          attempt,
+          input.signal,
+        );
+
+        if (turn.interactionId !== undefined) {
+          interactionId = turn.interactionId;
+        }
+        const inputTokensBeforeTurn = totals.inputTokens;
+        this.addTurnUsage(totals, turn, estimatedInputTokens);
+        // A provider turn that reports zero input tokens was not really served;
+        // surface it instead of letting it look like a normal answer.
+        if (
+          callState.calls > 0 &&
+          totals.inputTokens === inputTokensBeforeTurn
+        ) {
+          recordFallback('provider_error');
+        }
+
+        if (turn.finishReason === 'tool_calls' && turn.toolCalls.length > 0) {
+          if (
+            !toolsAllowed ||
+            toolRounds >= maxToolRounds ||
+            toolRounds >= AI_AGENT_MODEL_FIRST_MAX_TOOL_ROUNDS
+          ) {
+            exhaustedRounds = true;
+            break;
+          }
+
+          toolRounds += 1;
+          const round = await this.executeToolRound(
+            turn.toolCalls,
+            declaredTools,
+            caps,
+            input.stream,
+            citableResults.length,
+          );
+          if (round.aborted) {
+            return this.abortedResult(input.mode, executedNames, toolCallCount);
+          }
+
+          toolCallCount += round.toolCalls;
+          executedNames.push(...round.executedNames);
+          citableResults.push(...round.citationResults);
+
+          if (!round.usable) {
+            recordFallback('no_tool_retry_failed');
+            const empty = round.reason === 'empty';
+            const onlyEmptyOpportunitySearch =
+              empty &&
+              round.results.length > 0 &&
+              round.results.every(
+                (result) =>
+                  result.tool === 'search_opportunities' &&
+                  result.ok &&
+                  !hasUsableToolData(result.data),
+              );
+            const placeResolved =
+              onlyEmptyOpportunitySearch &&
+              round.results.some(
+                (result) => result.ok && hasResolvedPlace(result.data),
+              );
+            const emptyKey = onlyEmptyOpportunitySearch
+              ? placeResolved
+                ? 'noOpportunitiesInArea'
+                : 'noOpportunities'
+              : 'notFound';
+            return this.emitPolicyAnswer(
+              input,
+              policyMessage(empty ? emptyKey : 'toolUnavailable', language),
+              true,
+              {
+                toolCalls: toolCallCount,
+                toolNames: uniqueNames(executedNames),
+                usage: totals,
+              },
+            );
+          }
+
+          if (callState.calls >= AI_AGENT_MAX_PROVIDER_CALLS) {
+            exhaustedRounds = true;
+            break;
+          }
+
+          const canCallMoreTools =
+            toolRounds < maxToolRounds &&
+            callState.calls + 1 < AI_AGENT_MAX_PROVIDER_CALLS;
+          const instruction = this.buildFollowUpInstruction(
+            citableResults,
+            canCallMoreTools,
+            input.locale,
+          );
+          currentInput = [
+            ...round.functionResults,
+            { type: 'text', text: instruction },
+          ];
+          estimatedInputTokens = estimateTextTokens(
+            `${JSON.stringify(round.functionResults)}\n${instruction}`,
+          );
+          continue;
+        }
+
+        // One corrective provider turn when the shadow router says this is a
+        // live-data request but the model answered without using a tool.
+        if (
+          turn.finishReason !== 'tool_calls' &&
+          modelFirstNeedsLiveData(decision) &&
+          executedNames.length === 0 &&
+          !liveDataRetryUsed &&
+          callState.calls < AI_AGENT_MAX_PROVIDER_CALLS
+        ) {
+          liveDataRetryUsed = true;
+          currentInput = this.appendModelFirstInstruction(
+            currentInput,
+            'This request needs current public platform data. Call the appropriate declared tool now instead of answering from memory. Use at most two tool rounds, then write the final answer.',
+          );
+          continue;
+        }
+
+        finalTurn = turn;
+      }
+    } catch (error) {
+      recordFallback(isProviderQuotaError(error) ? 'quota' : 'provider_error');
+      // Provider unavailability and provider quota exhaustion degrade to a
+      // deterministic local browse or organization answer when one applies.
+      if (isLlmProviderUnavailableError(error) || isProviderQuotaError(error)) {
+        if (isProviderQuotaError(error)) {
+          this.quotaSafeMarkExhausted(error.window, error.retryAfterSeconds);
+        }
+        const deterministic = await this.runModelFirstDeterministicFallback({
+          input,
+          decision,
+          language,
+          totals,
+          priorToolCalls: toolCallCount,
+          priorToolNames: uniqueNames(executedNames),
+          recentEntities,
+          ...(focus !== undefined ? { focus } : {}),
+        });
+        if (deterministic !== undefined) return deterministic;
+      }
+
+      return this.handleProviderFailure({
+        error,
+        input,
+        language,
+        deadline,
+        callState,
+        executedNames,
+        toolCallCount,
+        totals,
+      });
+    }
+
+    if (finalTurn === undefined) {
+      recordFallback('no_tool_retry_failed');
+      const deterministic = await this.runModelFirstDeterministicFallback({
+        input,
+        decision,
+        language,
+        totals,
+        priorToolCalls: toolCallCount,
+        priorToolNames: uniqueNames(executedNames),
+        recentEntities,
+        ...(focus !== undefined ? { focus } : {}),
+      });
+      if (deterministic !== undefined) return deterministic;
+
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage(
+          exhaustedRounds ? 'toolUnavailable' : 'internalError',
+          language,
+        ),
+        true,
+        {
+          toolCalls: toolCallCount,
+          toolNames: uniqueNames(executedNames),
+          usage: totals,
+        },
+      );
+    }
+
+    let answerText = finalTurn.text.trim();
+
+    // A live-data answer with no tool execution after the corrective turn is
+    // replaced by the deterministic lookup rather than an unsupported claim.
+    if (
+      modelFirstNeedsLiveData(decision) &&
+      executedNames.length === 0 &&
+      answerText !== ''
+    ) {
+      recordFallback('no_tool_retry_failed');
+      const deterministic = await this.runModelFirstDeterministicFallback({
+        input,
+        decision,
+        language,
+        totals,
+        priorToolCalls: toolCallCount,
+        priorToolNames: uniqueNames(executedNames),
+        recentEntities,
+        ...(focus !== undefined ? { focus } : {}),
+      });
+      if (deterministic !== undefined) return deterministic;
+    }
+
+    if (answerText === '') {
+      recordFallback('no_tool_retry_failed');
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('toolUnavailable', language),
+        true,
+        {
+          toolCalls: toolCallCount,
+          toolNames: uniqueNames(executedNames),
+          usage: totals,
+        },
+      );
+    }
+
+    // A promise ("سأتحقق", "let me check") is not an answer. Replace it with
+    // the deterministic lookup it promised when one applies.
+    if (citableResults.length === 0 && containsUnbackedPromise(answerText)) {
+      recordFallback('no_tool_retry_failed');
+      const deterministic = await this.runModelFirstDeterministicFallback({
+        input,
+        decision,
+        language,
+        totals,
+        priorToolCalls: toolCallCount,
+        priorToolNames: uniqueNames(executedNames),
+        recentEntities,
+        ...(focus !== undefined ? { focus } : {}),
+      });
+      if (deterministic !== undefined) return deterministic;
+
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('notFound', language),
+        true,
+        {
+          toolCalls: toolCallCount,
+          toolNames: uniqueNames(executedNames),
+          usage: totals,
+        },
+      );
+    }
+
+    // Final language guard: an Arabic question must receive an Arabic answer.
+    // Retry once with a stricter instruction, then fail closed to a localized
+    // safe message rather than streaming the wrong language.
+    if (!answerMatchesQuestionLanguage(answerText, language)) {
+      const retried = await this.retryModelFirstAnswerForLanguage({
+        input,
+        promptSystem: prompt.system,
+        currentInput,
+        declarations,
+        interactionId,
+        caps,
+        language,
+        deadline,
+        deadlineStartedAt,
+        callState,
+        totals,
+        estimatedInputTokens,
+      });
+      if (
+        retried !== undefined &&
+        answerMatchesQuestionLanguage(retried, language)
+      ) {
+        answerText = retried;
+      } else {
+        recordFallback('language_retry_failed');
+        return this.emitPolicyAnswer(
+          input,
+          policyMessage('ungrounded', language),
+          true,
+          {
+            toolCalls: toolCallCount,
+            toolNames: uniqueNames(executedNames),
+            usage: totals,
+          },
+        );
+      }
+    }
+
+    const leaked = containsSystemInstructionLeak(answerText);
+    const recentLinks = buildRecentEntityLinks(recentEntities, input.locale);
+    const allowedLinks = [
+      ...recentLinks,
+      ...buildAnswerLinks(citableResults, input.locale),
+    ];
+    const sanitized = sanitizeAnswer(answerText, {
+      locale: input.locale,
+      allowedLinks,
+      allowBrowseLinks: allowsBrowseLinks(input.message),
+      allowLists: asksForList(input.message),
+    });
+
+    if (leaked || sanitized === '') {
+      recordFallback('no_tool_retry_failed');
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('ungrounded', language),
+        true,
+        {
+          toolCalls: toolCallCount,
+          toolNames: uniqueNames(executedNames),
+          usage: totals,
+        },
+      );
+    }
+
+    const truncated = finalTurn.finishReason === 'length';
+
+    return this.emitAnswer(
+      input,
+      sanitized,
+      input.mode,
+      totals,
+      {
+        refusal: false,
+        truncated,
+        toolCalls: toolCallCount,
+        toolNames: uniqueNames(executedNames),
+      },
+      {
+        finishReason: truncated ? 'length' : 'stop',
+      },
+    );
+  }
+
+  private retrieveModelFirstKnowledge(
+    message: string,
+    caps: AnswerCaps,
+    language: ReturnType<typeof detectPromptLanguage>,
+  ): RetrievalResult {
+    if (caps.knowledgeChunks <= 0) return emptyRetrieval();
+    const query = message.trim();
+    if (query === '') return emptyRetrieval();
+    try {
+      return this.knowledge.search(query, language, {
+        topK: caps.knowledgeChunks,
+      });
+    } catch (error) {
+      this.logFailure('ai_agent_retrieval_failure', error);
+      return emptyRetrieval();
+    }
+  }
+
+  private appendModelFirstInstruction(
+    current: LlmTurnInput,
+    instruction: string,
+  ): LlmTurnInput {
+    const text = `<instruction>${instruction}</instruction>`;
+    if (typeof current === 'string') {
+      return `${current}\n${text}`;
+    }
+    return [...current, { type: 'text', text }];
+  }
+
+  private async retryModelFirstAnswerForLanguage(context: {
+    input: AiAgentOrchestratorInput;
+    promptSystem: string;
+    currentInput: LlmTurnInput;
+    declarations: readonly LlmToolDeclaration[];
+    interactionId?: string;
+    caps: AnswerCaps;
+    language: 'ar' | 'en';
+    deadline: ProviderDeadline;
+    deadlineStartedAt: number;
+    callState: ProviderCallState;
+    totals: UsageTotals;
+    estimatedInputTokens: number;
+  }): Promise<string | undefined> {
+    if (context.callState.calls >= AI_AGENT_MAX_PROVIDER_CALLS) {
+      return undefined;
+    }
+    const strict =
+      context.language === 'ar'
+        ? 'Strict language requirement: the user wrote in Arabic. Write the entire final answer in Arabic only. Do not answer in English; Latin text is allowed only inside a public slug, name, or link.'
+        : 'Strict language requirement: write the entire final answer in English only.';
+
+    const attempt: AttemptState = { sawText: false, sawToolCalls: false };
+    try {
+      const turn = await this.callProviderWithRetry(
+        {
+          systemInstruction: `${context.promptSystem}\n\n${strict}`,
+          input: context.currentInput,
+          // Keep the declaration contract consistent on every provider turn.
+          ...(context.declarations.length > 0
+            ? { tools: context.declarations }
+            : {}),
+          ...(context.interactionId !== undefined
+            ? { previousInteractionId: context.interactionId }
+            : {}),
+          maxOutputTokens: context.caps.maxOutputTokens,
+          timeoutMs: remainingMs(context.deadlineStartedAt),
+          locale: context.input.locale,
+        },
+        context.deadline,
+        context.callState,
+        attempt,
+        context.input.signal,
+      );
+      this.addTurnUsage(context.totals, turn, context.estimatedInputTokens);
+      if (turn.finishReason === 'tool_calls' || turn.text.trim() === '') {
+        return undefined;
+      }
+      return turn.text.trim();
+    } catch (error) {
+      this.logFailure('ai_agent_language_retry_failure', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Deterministic fallback for model-first turns: a recent-entity reference, a
+   * named organization, an opportunity follow-up, or a clear opportunity
+   * browse. Returns `undefined` when no safe local lookup applies.
+   */
+  private async runModelFirstDeterministicFallback(context: {
+    input: AiAgentOrchestratorInput;
+    decision: RouterDecision;
+    language: ReturnType<typeof detectPromptLanguage>;
+    totals: UsageTotals;
+    recentEntities?: RecentEntities;
+    focus?: ConversationFocus;
+    priorToolCalls?: number;
+    priorToolNames?: readonly string[];
+  }): Promise<AiAgentOrchestrationResult | undefined> {
+    const { input, decision, language, totals, recentEntities, focus } =
+      context;
+    const priorToolCalls = context.priorToolCalls ?? 0;
+    const priorToolNames = context.priorToolNames ?? [];
+
+    if (
+      !modelFirstNeedsLiveData(decision) &&
+      decision.focusOpportunitySlugs === undefined &&
+      decision.focusOrganizationName === undefined &&
+      recentEntities?.resolvedReference === undefined
+    ) {
+      return undefined;
+    }
+
+    const resolved = recentEntities?.resolvedReference?.entities ?? [];
+    const resolvedOrganization = resolved.find(
+      (entity) => entity.kind === 'organization',
+    );
+    const resolvedOpportunities = resolved.filter(
+      (entity) => entity.kind === 'opportunity',
+    );
+
+    const organizationName =
+      resolvedOrganization?.title ??
+      decision.focusOrganizationName ??
+      (decision.toolIntents.includes('organization_search')
+        ? extractOrganizationName(input.message)
+        : undefined);
+    if (organizationName !== undefined && organizationName.trim() !== '') {
+      return await this.runOrganizationLookup(
+        input,
+        language,
+        organizationName,
+        totals,
+        priorToolCalls,
+        priorToolNames,
+      );
+    }
+
+    const slugs =
+      decision.focusOpportunitySlugs ??
+      (resolvedOpportunities.length > 0
+        ? resolvedOpportunities.map((entity) => entity.slug)
+        : selectFocusedOpportunitySlugs(input.message, focus));
+    if (slugs !== undefined && slugs.length > 0) {
+      return await this.runFocusedOpportunityDetail(
+        input,
+        language,
+        slugs.slice(0, 3),
+        totals,
+        priorToolCalls,
+        priorToolNames,
+      );
+    }
+
+    const namedOrganization = extractOrganizationName(input.message);
+    if (
+      namedOrganization !== undefined &&
+      (decision.toolIntents.includes('organization_search') ||
+        decision.intent === 'live_data')
+    ) {
+      return await this.runOrganizationLookup(
+        input,
+        language,
+        namedOrganization,
+        totals,
+        priorToolCalls,
+        priorToolNames,
+      );
+    }
+
+    if (decision.toolIntents.includes('opportunity_search')) {
+      return isGenericOpportunityBrowse(input.message, true)
+        ? await this.runOpportunityBrowse(
+            input,
+            language,
+            totals,
+            priorToolCalls,
+            priorToolNames,
+          )
+        : await this.runOpportunityFallback(
+            input,
+            language,
+            totals,
+            priorToolCalls,
+            priorToolNames,
+          );
+    }
+
+    return undefined;
+  }
+
+  private logRouterShadow(
+    decision: RouterDecision,
+    input: AiAgentOrchestratorInput,
+  ): void {
+    try {
+      this.logger.log(
+        JSON.stringify({
+          event: 'ai_agent_router_shadow',
+          intent: decision.intent,
+          action: decision.action,
+          reason: decision.reason,
+          toolIntents: decision.toolIntents,
+          toolCount: decision.tools.length,
+          topScore: decision.topScore,
+          mode: input.mode,
+          historyMessages: input.history.length,
+        }),
+      );
+    } catch {
+      // Shadow logging must never break the turn.
     }
   }
 

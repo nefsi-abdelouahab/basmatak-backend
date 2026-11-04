@@ -38,6 +38,8 @@ import { AiAgentOrchestrator } from './orchestrator/ai-agent.orchestrator';
 import { PromptBuilder } from './prompt/prompt-builder';
 import { IntentRouter } from './router/intent-router';
 import { SseWriter } from './sse/sse-writer';
+import { GetOpportunityDetailsTool } from './tools/get-opportunity-details.tool';
+import { GetOrganizationDetailsTool } from './tools/get-organization-details.tool';
 import { PlatformStatsTool } from './tools/platform-stats.tool';
 import { SearchKnowledgeTool } from './tools/search-knowledge.tool';
 import { SearchOpportunitiesTool } from './tools/search-opportunities.tool';
@@ -174,6 +176,8 @@ import { UsageMeterService } from './usage/usage-meter.service';
     SearchOrganizationsTool,
     SearchReferenceDataTool,
     PlatformStatsTool,
+    GetOpportunityDetailsTool,
+    GetOrganizationDetailsTool,
     {
       provide: TOOL_CLOCK,
       useValue: SYSTEM_TOOL_CLOCK,
@@ -185,22 +189,31 @@ import { UsageMeterService } from './usage/usage-meter.service';
     {
       provide: ToolRegistry,
       inject: [
+        SearchKnowledgeTool,
         SearchOpportunitiesTool,
         SearchOrganizationsTool,
         SearchReferenceDataTool,
         PlatformStatsTool,
+        GetOpportunityDetailsTool,
+        GetOrganizationDetailsTool,
       ],
       useFactory: (
+        knowledge: SearchKnowledgeTool,
         opportunities: SearchOpportunitiesTool,
         organizations: SearchOrganizationsTool,
         referenceData: SearchReferenceDataTool,
         stats: PlatformStatsTool,
+        opportunityDetails: GetOpportunityDetailsTool,
+        organizationDetails: GetOrganizationDetailsTool,
       ): ToolRegistry =>
         new ToolRegistry([
+          knowledge,
           opportunities,
           organizations,
           referenceData,
           stats,
+          opportunityDetails,
+          organizationDetails,
         ] satisfies ReadOnlyTool[]),
     },
     ToolExecutor,
@@ -228,6 +241,8 @@ import { UsageMeterService } from './usage/usage-meter.service';
     SearchOrganizationsTool,
     SearchReferenceDataTool,
     PlatformStatsTool,
+    GetOpportunityDetailsTool,
+    GetOrganizationDetailsTool,
     ToolRegistry,
     ToolExecutor,
     AiAgentOrchestrator,

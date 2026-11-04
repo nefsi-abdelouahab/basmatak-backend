@@ -64,6 +64,37 @@ export const ORGANIZATION_NOUR = Object.freeze({
   type: 'association',
 });
 
+export const ORGANIZATION_NOUR_DETAIL = Object.freeze({
+  id: 'org-nour',
+  slug: 'nour-association',
+  nameAr: 'نور',
+  nameFr: 'Nour',
+  type: 'association',
+  description:
+    'Nour is a verified association that organizes community volunteering.',
+  location: null,
+  website: null,
+  foundedYear: 2018,
+});
+
+export const KNOWLEDGE_FIXTURE = Object.freeze({
+  chunks: [
+    {
+      id: 'faq/en.md#1',
+      source: 'faq/en.md',
+      title: 'Basmatak FAQ',
+      locale: 'en',
+      headingTrail: ['Verification'],
+      text: 'Organizations submit evidence and the platform reviews it.',
+      charCount: 59,
+      score: 8,
+    },
+  ],
+  totalChars: 59,
+  estimatedTokens: 15,
+  truncated: false,
+});
+
 export const REFERENCE_FIXTURE = Object.freeze({
   skills: [
     {
@@ -155,6 +186,28 @@ function organizationRows(args: Record<string, unknown>): readonly unknown[] {
   return [];
 }
 
+function opportunityDetail(args: Record<string, unknown>): unknown {
+  const slug = typeof args.slug === 'string' ? args.slug.trim() : '';
+  const item = OPPORTUNITY_FIXTURES.find((row) => row.slug === slug) ?? null;
+  return { item };
+}
+
+function organizationDetail(args: Record<string, unknown>): unknown {
+  const slug = typeof args.slug === 'string' ? args.slug.trim() : '';
+  if (slug !== '') {
+    return {
+      item: slug === ORGANIZATION_NOUR.slug ? ORGANIZATION_NOUR_DETAIL : null,
+    };
+  }
+  const name = normalized(args.name);
+  const matches =
+    name !== '' &&
+    (name === normalizeText(ORGANIZATION_NOUR.nameAr) ||
+      name === normalizeText(ORGANIZATION_NOUR.nameFr) ||
+      name === normalizeText(ORGANIZATION_NOUR.slug));
+  return { item: matches ? ORGANIZATION_NOUR_DETAIL : null };
+}
+
 function resultFor(call: RecordedToolCall): ToolExecutionResult {
   switch (call.name) {
     case 'search_opportunities':
@@ -165,6 +218,12 @@ function resultFor(call: RecordedToolCall): ToolExecutionResult {
       return success(call.name, REFERENCE_FIXTURE);
     case 'platform_stats':
       return success(call.name, STATS_FIXTURE);
+    case 'search_knowledge':
+      return success(call.name, KNOWLEDGE_FIXTURE);
+    case 'get_opportunity_details':
+      return success(call.name, opportunityDetail(call.arguments));
+    case 'get_organization_details':
+      return success(call.name, organizationDetail(call.arguments));
     default:
       return failure(
         call.name,

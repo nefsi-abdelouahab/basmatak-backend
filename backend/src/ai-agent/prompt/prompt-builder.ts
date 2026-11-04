@@ -3,6 +3,7 @@ import { AI_AGENT_CONFIG } from '../ai-agent.constants';
 import type { AiAgentChatMessage, AiAgentLocale } from '../ai-agent.types';
 import { estimateTokens } from '../budget/token-estimator';
 import { formatConversationFocus } from '../conversation-focus';
+import { formatRecentEntities } from '../recent-entities';
 import type { AiAgentConfig } from '../config/ai-agent.config';
 import type { RetrievedChunk } from '../knowledge/retriever';
 import { toLlmToolDeclaration } from '../llm/provider.types';
@@ -19,10 +20,16 @@ import type {
 } from './prompt.types';
 import {
   AI_AGENT_FEW_SHOT_EXAMPLES,
+  AI_AGENT_MODEL_FIRST_FEW_SHOT_EXAMPLES,
+  AI_AGENT_MODEL_FIRST_SYSTEM_PROMPT,
+  AI_AGENT_MODEL_FIRST_SYSTEM_PROMPT_VERSION,
   AI_AGENT_SYSTEM_PROMPT,
   AI_AGENT_SYSTEM_PROMPT_VERSION,
   buildLinkRules,
+  buildModelFirstLinkRules,
+  buildModelFirstResponseStyle,
   buildResponseStyle,
+  type PromptStyleExample,
 } from './system-prompt';
 
 /**
@@ -30,8 +37,8 @@ import {
  *
  * Section order (stable):
  *   system_rules -> response_style -> style_examples -> link_rules -> tools
- *   -> knowledge -> tool_results -> conversation_focus -> history -> examples
- *   -> user_message
+ *   -> knowledge -> tool_results -> recent_entities -> conversation_focus
+ *   -> history -> examples -> user_message
  *
  * Optional content is trimmed in this exact order until the final prompt fits
  * `limits.maxInputTokens`:
@@ -55,6 +62,7 @@ import {
 
 const HARD_MAX_HISTORY_MESSAGES = 8;
 const HARD_MAX_HISTORY_CHARS = 6000;
+const MODEL_FIRST_MAX_HISTORY_MESSAGES = 4;
 const HARD_MAX_KNOWLEDGE_CHUNKS = 6;
 const HARD_MAX_KNOWLEDGE_CHARS = 8000;
 const HARD_MAX_TOOL_RESULTS = 8;
@@ -85,12 +93,14 @@ interface PreparedExample {
 interface RenderInput {
   system: string;
   style: string;
+  styleExamples: readonly PromptStyleExample[];
   linkRules: string;
   locale: AiAgentLocale;
   language: PromptLanguage;
   tools: readonly ToolDescriptor[];
   knowledge: readonly PreparedKnowledge[];
   toolResults: readonly PreparedToolResult[];
+  recentEntities?: string;
   focus?: string;
   history: readonly PreparedHistory[];
   examples: readonly PreparedExample[];
@@ -147,6 +157,37 @@ function estimatePromptTokens(text: string): number {
   return estimateTokens(text, { overheadTokens: 0 }).tokens;
 }
 
+const MARKDOWN_LINK_PATTERN = /\[([^\]\n]{1,300})\]\([^()\s]{1,600}\)/gu;
+
+/** Keep only the first sentence of a long assistant turn. */
+function firstSentence(value: string): string {
+  const text = value.replace(/\s+/gu, ' ').trim();
+  if (text === '') return '';
+  const match = /^(.+?[.!?؟])(?:\s|$)/su.exec(text);
+  return (match?.[1] ?? text).trim();
+}
+
+/**
+ * Compact an older assistant turn to its first sentence plus any entity titles
+ * it linked, so ordinals and pronouns still resolve without carrying the whole
+ * answer forward.
+ */
+function compactAssistantHistory(content: string): string {
+  const titles: string[] = [];
+  for (const match of content.matchAll(MARKDOWN_LINK_PATTERN)) {
+    const title = (match[1] ?? '').replace(/\s+/gu, ' ').trim();
+    if (title !== '' && !titles.includes(title)) titles.push(title);
+  }
+  const plain = content
+    .replace(MARKDOWN_LINK_PATTERN, '$1')
+    .replace(/\s+/gu, ' ')
+    .trim();
+  const sentence = firstSentence(plain);
+  const missing = titles.filter((title) => !sentence.includes(title));
+  if (missing.length === 0) return sentence;
+  return `${sentence} Entity titles: ${missing.join('; ')}.`.trim();
+}
+
 function isToolExecutionResult(value: unknown): value is ToolExecutionResult {
   if (value === null || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
@@ -180,13 +221,30 @@ export class PromptBuilder {
     const language: PromptLanguage =
       input.responseLanguage === 'ar' ? 'ar' : 'en';
     const message = typeof input.message === 'string' ? input.message : '';
-    const system = AI_AGENT_SYSTEM_PROMPT;
-    const style = buildResponseStyle(language);
-    const linkRules = buildLinkRules(input.locale);
+    const modelFirst = input.modelFirst === true;
+    const system = modelFirst
+      ? AI_AGENT_MODEL_FIRST_SYSTEM_PROMPT
+      : AI_AGENT_SYSTEM_PROMPT;
+    const version = modelFirst
+      ? AI_AGENT_MODEL_FIRST_SYSTEM_PROMPT_VERSION
+      : AI_AGENT_SYSTEM_PROMPT_VERSION;
+    const style = modelFirst
+      ? buildModelFirstResponseStyle(language)
+      : buildResponseStyle(language);
+    const styleExamples = modelFirst
+      ? AI_AGENT_MODEL_FIRST_FEW_SHOT_EXAMPLES
+      : AI_AGENT_FEW_SHOT_EXAMPLES;
+    const linkRules = modelFirst
+      ? buildModelFirstLinkRules(input.locale)
+      : buildLinkRules(input.locale);
     const tools = this.prepareTools(input.tools);
     const declarationTokens = this.estimateToolDeclarationTokens(tools);
     const focus =
       input.focus !== undefined ? formatConversationFocus(input.focus) : '';
+    const recentEntities =
+      modelFirst && input.recentEntities !== undefined
+        ? formatRecentEntities(input.recentEntities)
+        : undefined;
 
     const dropped: PromptDropped = {
       historyMessages: 0,
@@ -199,12 +257,14 @@ export class PromptBuilder {
     const required = this.render({
       system,
       style,
+      styleExamples,
       linkRules,
       locale: input.locale,
       language,
       tools,
       knowledge: [],
       toolResults: [],
+      recentEntities,
       focus,
       history: [],
       examples: [],
@@ -225,7 +285,7 @@ export class PromptBuilder {
       };
     }
 
-    const history = this.prepareHistory(input.history, dropped);
+    const history = this.prepareHistory(input.history, dropped, modelFirst);
     const knowledge = this.prepareKnowledge(input.knowledge, dropped);
     const toolResults = this.prepareToolResults(input.toolResults, dropped);
     const examples = this.prepareExamples(input.examples, dropped);
@@ -233,12 +293,14 @@ export class PromptBuilder {
     let rendered = this.render({
       system,
       style,
+      styleExamples,
       linkRules,
       locale: input.locale,
       language,
       tools,
       knowledge,
       toolResults,
+      recentEntities,
       focus,
       history,
       examples,
@@ -278,12 +340,14 @@ export class PromptBuilder {
       rendered = this.render({
         system,
         style,
+        styleExamples,
         linkRules,
         locale: input.locale,
         language,
         tools,
         knowledge,
         toolResults,
+        recentEntities,
         focus,
         history,
         examples,
@@ -331,7 +395,7 @@ export class PromptBuilder {
       toolResults.some((item) => item.truncated);
 
     const prompt: BuiltPrompt = {
-      version: AI_AGENT_SYSTEM_PROMPT_VERSION,
+      version,
       system,
       text: rendered.text,
       language,
@@ -384,14 +448,18 @@ export class PromptBuilder {
   private prepareHistory(
     history: readonly AiAgentChatMessage[] | undefined,
     dropped: PromptDropped,
+    modelFirst: boolean,
   ): PreparedHistory[] {
     const raw = Array.isArray(history) ? history : [];
-    const maxMessages = clampInteger(
+    const configuredMaxMessages = clampInteger(
       this.config.limits.maxHistoryMessages,
       6,
       0,
       HARD_MAX_HISTORY_MESSAGES,
     );
+    const maxMessages = modelFirst
+      ? Math.min(configuredMaxMessages, MODEL_FIRST_MAX_HISTORY_MESSAGES)
+      : configuredMaxMessages;
     const maxChars = clampInteger(
       this.config.limits.maxHistoryChars,
       4000,
@@ -419,11 +487,22 @@ export class PromptBuilder {
       valid.push({ role, content: content.trim() });
     }
 
-    const kept =
+    const kept: PreparedHistory[] =
       maxMessages === 0
         ? []
         : valid.slice(Math.max(0, valid.length - maxMessages));
     dropped.historyMessages += valid.length - kept.length;
+
+    if (modelFirst) {
+      // Every history message predates the current user turn, so each assistant
+      // answer is compacted to its first sentence plus linked entity titles.
+      // `<recent_entities>` carries the full entity list for follow-ups.
+      for (const message of kept) {
+        if (message.role === 'assistant') {
+          message.content = compactAssistantHistory(message.content);
+        }
+      }
+    }
 
     let totalChars = kept.reduce(
       (total, message) => total + message.content.length,
@@ -578,7 +657,7 @@ export class PromptBuilder {
     ];
     const styleExamples = [
       '<style_examples>',
-      ...AI_AGENT_FEW_SHOT_EXAMPLES.flatMap((example) => [
+      ...input.styleExamples.flatMap((example) => [
         `<example language="${escapeAttribute(example.language)}">`,
         `<input>${escapeText(example.input)}</input>`,
         `<output>${escapeText(example.output)}</output>`,
@@ -647,6 +726,13 @@ export class PromptBuilder {
       });
       lines.push('</tool_results>');
       parts.push(lines.join('\n'));
+    }
+
+    if (input.recentEntities !== undefined && input.recentEntities !== '') {
+      sections.push('recent_entities');
+      parts.push(
+        `<recent_entities>\n${escapeText(input.recentEntities)}\n</recent_entities>`,
+      );
     }
 
     if (input.focus !== undefined && input.focus !== '') {

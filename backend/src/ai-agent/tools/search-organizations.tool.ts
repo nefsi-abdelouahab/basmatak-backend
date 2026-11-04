@@ -87,8 +87,7 @@ export class SearchOrganizationsTool implements ReadOnlyTool {
   ) {
     this.definition = defineReadOnlyTool({
       name: SEARCH_ORGANIZATIONS_TOOL_NAME,
-      description:
-        'Search verified, active Basmatak organizations by name, text, wilaya, or type. Read-only; returns at most 8 public organization cards (default 5).',
+      description: 'Search verified organizations.',
       allowedIntents: ['organization_search'],
       inputSchema: {
         type: 'object',
@@ -98,32 +97,14 @@ export class SearchOrganizationsTool implements ReadOnlyTool {
             type: 'string',
             minLength: 1,
             maxLength: 120,
-            description: 'Organization name or slug keyword.',
-          },
-          text: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 120,
-            description: 'Organization name or slug keyword (alias of name).',
-          },
-          wilaya: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 40,
-            description: 'Wilaya code, for example "16".',
-          },
-          type: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 80,
-            description: 'Organization type, matched case-insensitively.',
+            description: 'Name or slug.',
           },
           limit: {
             type: 'integer',
             minimum: 1,
             maximum: TOOL_MAX_ROWS,
             default: TOOL_DEFAULT_ROWS,
-            description: 'Rows to return (1 to 8). Defaults to 5.',
+            description: 'Rows.',
           },
         },
       },

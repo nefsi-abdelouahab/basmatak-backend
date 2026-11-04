@@ -30,6 +30,14 @@ import {
   SkillCategorySchema,
 } from '../../skills/schemas/skill-category.schema';
 import { KnowledgeNormalizer } from '../knowledge/normalizer';
+import {
+  GetOpportunityDetailsPayload,
+  GetOpportunityDetailsTool,
+} from './get-opportunity-details.tool';
+import {
+  GetOrganizationDetailsPayload,
+  GetOrganizationDetailsTool,
+} from './get-organization-details.tool';
 import { PlatformStatsPayload, PlatformStatsTool } from './platform-stats.tool';
 import {
   REFERENCE_CACHE_TTL_MS,
@@ -130,6 +138,8 @@ describe('Session 6 public tools', () => {
   let organizationsTool: SearchOrganizationsTool;
   let referenceTool: SearchReferenceDataTool;
   let statsTool: PlatformStatsTool;
+  let opportunityDetailsTool: GetOpportunityDetailsTool;
+  let organizationDetailsTool: GetOrganizationDetailsTool;
 
   let now: number;
   const clock = { now: () => now };
@@ -200,6 +210,12 @@ describe('Session 6 public tools', () => {
       skillModel,
       locationModel,
     );
+    opportunityDetailsTool = new GetOpportunityDetailsTool(
+      opportunityModel,
+      organizationModel,
+      skillModel,
+    );
+    organizationDetailsTool = new GetOrganizationDetailsTool(organizationModel);
   });
 
   async function seedReferenceData(): Promise<void> {
@@ -1090,6 +1106,252 @@ describe('Session 6 public tools', () => {
       expect(payload.items).toHaveLength(1);
       expect(payload.items[0].description?.length).toBeLessThanOrEqual(280);
       expect(payload.items[0].description?.endsWith('…')).toBe(true);
+    });
+  });
+
+  describe('compact public tool declarations', () => {
+    it('exposes one-sentence descriptions and only the compact arguments', () => {
+      const opportunity = opportunitiesTool.definition;
+      expect(Object.keys(opportunity.inputSchema.properties).sort()).toEqual([
+        'compact',
+        'limit',
+        'slugs',
+        'sort',
+        'text',
+      ]);
+      expect(opportunity.inputSchema.properties).not.toHaveProperty('wilaya');
+      expect(opportunity.inputSchema.properties).not.toHaveProperty(
+        'municipality',
+      );
+
+      const organization = organizationsTool.definition;
+      expect(Object.keys(organization.inputSchema.properties).sort()).toEqual([
+        'limit',
+        'name',
+      ]);
+
+      const reference = referenceTool.definition;
+      expect(Object.keys(reference.inputSchema.properties).sort()).toEqual([
+        'kind',
+        'text',
+      ]);
+
+      const opportunityDetails = opportunityDetailsTool.definition;
+      expect(
+        Object.keys(opportunityDetails.inputSchema.properties).sort(),
+      ).toEqual(['name', 'slug']);
+
+      const organizationDetails = organizationDetailsTool.definition;
+      expect(
+        Object.keys(organizationDetails.inputSchema.properties).sort(),
+      ).toEqual(['name', 'slug']);
+
+      expect(statsTool.definition.description.length).toBeLessThanOrEqual(110);
+      for (const definition of [
+        opportunity,
+        organization,
+        reference,
+        opportunityDetails,
+        organizationDetails,
+        statsTool.definition,
+      ]) {
+        expect(definition.description).toMatch(/^[^.]*\.$/u);
+        expect(definition.description.length).toBeLessThanOrEqual(110);
+      }
+    });
+  });
+
+  describe('get_opportunity_details', () => {
+    it('returns one public opportunity card by exact slug', async () => {
+      const payload = await run<GetOpportunityDetailsPayload>(
+        opportunityDetailsTool,
+        { slug: 'beach-cleanup' },
+      );
+
+      expect(payload.item).toMatchObject({
+        id: OPP_A_ID.toHexString(),
+        slug: 'beach-cleanup',
+        title: 'Beach cleanup',
+        status: 'published',
+        organization: {
+          slug: 'green-earth',
+          nameFr: 'Green Earth',
+        },
+        openPositions: 1,
+      });
+      expect(findForbiddenToolResultKey(payload)).toBeNull();
+      const serialized = JSON.stringify(payload);
+      for (const forbidden of [
+        'OPP-SECRET',
+        'REG-SECRET',
+        'userId',
+        'registryId',
+        'coverMediaId',
+        'coordinates',
+        'prerequisites',
+        'deliverables',
+        'secret-green@example.com',
+        'secret-blue@example.com',
+        '0550000001',
+        '0550000002',
+        'Secret street',
+      ]) {
+        expect(serialized).not.toContain(forbidden);
+      }
+    });
+
+    it('matches an exact public title and never a partial or regex title', async () => {
+      await expect(
+        run<GetOpportunityDetailsPayload>(opportunityDetailsTool, {
+          name: 'Beach cleanup',
+        }),
+      ).resolves.toMatchObject({ item: { slug: 'beach-cleanup' } });
+      await expect(
+        run<GetOpportunityDetailsPayload>(opportunityDetailsTool, {
+          name: 'beach cleanup',
+        }),
+      ).resolves.toMatchObject({ item: { slug: 'beach-cleanup' } });
+      await expect(
+        run<GetOpportunityDetailsPayload>(opportunityDetailsTool, {
+          name: 'Beach',
+        }),
+      ).resolves.toEqual({ item: null });
+      await expect(
+        run<GetOpportunityDetailsPayload>(opportunityDetailsTool, {
+          name: '.*',
+        }),
+      ).resolves.toEqual({ item: null });
+    });
+
+    it('returns null for missing drafts and malformed slugs', async () => {
+      await expect(
+        run<GetOpportunityDetailsPayload>(opportunityDetailsTool, {
+          slug: 'missing-opportunity',
+        }),
+      ).resolves.toEqual({ item: null });
+      await expect(
+        run<GetOpportunityDetailsPayload>(opportunityDetailsTool, {
+          slug: 'draft-opportunity',
+        }),
+      ).resolves.toEqual({ item: null });
+
+      for (const input of [
+        {},
+        { slug: '' },
+        { slug: '../beach-cleanup' },
+        { slug: 'beach-cleanup?draft=1' },
+        { slug: 'x'.repeat(201) },
+        { slug: 42 },
+        { slug: 'beach-cleanup', name: 'Beach cleanup' },
+        { name: '' },
+        { name: 'x'.repeat(201) },
+        { name: 42 },
+        { slug: 'beach-cleanup', limit: 1 },
+        { $where: 'this.slug' },
+      ]) {
+        await expect(run(opportunityDetailsTool, input)).rejects.toBeInstanceOf(
+          ToolInputError,
+        );
+      }
+    });
+  });
+
+  describe('get_organization_details', () => {
+    it('returns one verified active organization by exact slug', async () => {
+      const payload = await run<GetOrganizationDetailsPayload>(
+        organizationDetailsTool,
+        { slug: 'green-earth' },
+      );
+
+      expect(payload.item).toEqual({
+        id: ORG_ID.toHexString(),
+        slug: 'green-earth',
+        nameAr: 'الأرض الخضراء',
+        nameFr: 'Green Earth',
+        type: 'association',
+        description: 'Environmental volunteers in Algiers.',
+        location: { wilaya: '16', municipality: '1601' },
+        website: 'https://green.example',
+        foundedYear: 2010,
+      });
+      expect(findForbiddenToolResultKey(payload)).toBeNull();
+      const serialized = JSON.stringify(payload);
+      for (const forbidden of [
+        'ORG-SECRET',
+        'REG-SECRET',
+        'userId',
+        'registryId',
+        'registrationNumber',
+        'contact',
+        'email',
+        'phone',
+        'address',
+        'publicProfile',
+        'reliability',
+        'secret-green@example.com',
+        'secret-blue@example.com',
+        '0550000001',
+        '0550000002',
+        'Secret street',
+      ]) {
+        expect(serialized).not.toContain(forbidden);
+      }
+    });
+
+    it('matches an exact name with an optional type prefix, never a partial name', async () => {
+      await expect(
+        run<GetOrganizationDetailsPayload>(organizationDetailsTool, {
+          name: 'Green Earth',
+        }),
+      ).resolves.toMatchObject({ item: { slug: 'green-earth' } });
+      await expect(
+        run<GetOrganizationDetailsPayload>(organizationDetailsTool, {
+          name: 'جمعية الأرض الخضراء',
+        }),
+      ).resolves.toMatchObject({ item: { slug: 'green-earth' } });
+      await expect(
+        run<GetOrganizationDetailsPayload>(organizationDetailsTool, {
+          name: 'green',
+        }),
+      ).resolves.toEqual({ item: null });
+      await expect(
+        run<GetOrganizationDetailsPayload>(organizationDetailsTool, {
+          name: '.*',
+        }),
+      ).resolves.toEqual({ item: null });
+    });
+
+    it('returns null for pending, suspended, rejected, missing, or draft-like rows', async () => {
+      for (const slug of [
+        'pending-org',
+        'suspended-org',
+        'rejected-org',
+        'missing-org',
+      ]) {
+        await expect(
+          run<GetOrganizationDetailsPayload>(organizationDetailsTool, {
+            slug,
+          }),
+        ).resolves.toEqual({ item: null });
+      }
+    });
+
+    it('rejects malformed or ambiguous arguments', async () => {
+      for (const input of [
+        {},
+        { slug: '' },
+        { slug: 'green-earth', name: 'Green Earth' },
+        { slug: 'green-earth?admin=1' },
+        { slug: 'x'.repeat(201) },
+        { name: 'x'.repeat(121) },
+        { name: 42 },
+        { slug: 'green-earth', limit: 1 },
+        { $where: 'this.slug' },
+      ]) {
+        await expect(
+          run(organizationDetailsTool, input),
+        ).rejects.toBeInstanceOf(ToolInputError);
+      }
     });
   });
 

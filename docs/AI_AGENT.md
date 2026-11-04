@@ -1,8 +1,9 @@
 # Basma — operator and developer guide
 
-> **Status:** Session 13 documentation. The implementation is on
-> `ai-agent-session-2`; the last code commit before this document is
-> `3fa5de6` (security and quota hardening).
+> **Status:** Phase 1 documentation for `model-first-ai-intent-and-tools`.
+> Model-first tool selection is implemented behind `AI_AGENT_MODEL_FIRST`
+> (default `false`); the router-first behavior is unchanged until an operator
+> enables the flag.
 >
 > **Audience:** backend/frontend maintainers, content owners, and the person
 > operating the Render deployment.
@@ -22,8 +23,9 @@ answers only from two sources:
 
 1. the reviewed knowledge corpus committed under `backend/ai-agent/`; and
 2. read-only public database tools: published opportunities, verified active
-   public organization profiles, public reference data, and public platform
-   counts.
+   public organization profiles, public reference data, public platform counts,
+   exact public opportunity/organization details, and the public knowledge
+   index.
 
 Every substantive answer is grounded in exactly one of those two sources. The
 orchestrator strips internal citation markers from model text and renders only
@@ -57,11 +59,11 @@ off immediately with `AI_AGENT_ENABLED=false`.
 | Frontend | `frontend/src/lib/api/aiAgent.ts`, `sse.ts` | Typed status/chat client, POST streaming with `fetch`, SSE frame parser, error mapping, `Retry-After` fallback. |
 | Backend transport | `backend/src/ai-agent/ai-agent.controller.ts` | Validation boundary, kill switch, quota reservation/commit/release, SSE lifecycle, `meta` and `done`, request logging. |
 | Backend transport | `sse/sse-writer.ts` | Exact SSE headers, `event:`/`data:` framing, 15-second comment heartbeat, close detection. |
-| Backend engine | `orchestrator/ai-agent.orchestrator.ts` | Private-data guard, routing, retrieval, prompt, provider/tool rounds, marker stripping, link validation, refusals, degradation, 45-second deadline. |
-| Backend engine | `router/intent-router.ts` | Deterministic intent/language routing (knowledge, live data, mixed, direct reply, refusal). |
+| Backend engine | `orchestrator/ai-agent.orchestrator.ts` | Private-data guard, routing or model-first shadow routing, retrieval, prompt, provider/tool rounds, recent-entity resolution, marker stripping, link validation, language check, refusals, degradation, 45-second deadline. |
+| Backend engine | `router/intent-router.ts` | Deterministic intent/language routing (knowledge, live data, mixed, direct reply, refusal); shadow signal only when model-first is enabled. |
 | Backend engine | `knowledge/` | Boot-time safe loader, parsers, chunker, normalizer, BM25 index, bounded retrieval. |
-| Backend engine | `prompt/` | Versioned grounded prompt, untrusted-section escaping, input-token budget and trimming order. |
-| Backend engine | `tools/` | Four read-only public tools with explicit projections and a bounded executor. |
+| Backend engine | `prompt/` | Versioned grounded router-first and model-first prompts, recent-entity block, untrusted-section escaping, input-token budget and trimming order. |
+| Backend engine | `tools/` | Seven read-only public tools with explicit projections, strict schemas, and a bounded executor. |
 | Backend engine | `llm/` | Provider-neutral contract and `gemini`, `mock`, and `fake` adapters; normalized provider errors. |
 | Backend budget | `budget/quota.service.ts` | UTC minute/day windows per IP and globally, concurrency, token reservation, mode ladder, provider cooldowns. |
 | Backend budget | `usage/` | In-memory aggregates and the admin-only usage report; allowlisted structured log line. |
@@ -83,12 +85,16 @@ off immediately with `AI_AGENT_ENABLED=false`.
    `200 text/event-stream`, and `meta` is written first with a random
    `conversationId`, the requested locale, and the effective mode.
 5. **Answer policy.** The orchestrator refuses private-data requests before any
-   provider call, applies the mode caps, retrieves knowledge, routes live-data
-   questions to tools, and builds a grounded prompt.
+   provider call, applies the mode caps, retrieves knowledge, and builds a
+   grounded prompt. Router-first mode routes live-data questions to a
+   deterministic tool set. Model-first mode (when `AI_AGENT_MODEL_FIRST=true`)
+   treats the router as a shadow signal and declares every approved read-only
+   tool to the provider.
 6. **Provider and tools.** The selected provider may request at most three
-   provider calls in one turn (default one tool round). Tool calls are
-   allowlisted, schema-validated, bounded by rows/characters, and executed
-   read-only.
+   provider calls in one turn. Router-first mode uses the configured one tool
+   round; model-first normal mode allows up to two tool rounds, while
+   conservative mode keeps one. Tool calls are allowlisted,
+   schema-validated, bounded by rows/characters, and executed read-only.
 7. **Grounding and links.** Model output is buffered until the turn ends.
    Internal citation markers are stripped, and only validated locale-prefixed
    Markdown links to real public entities survive. A system-instruction leak
@@ -106,16 +112,56 @@ off immediately with `AI_AGENT_ENABLED=false`.
 
 - The assistant refuses requests for the caller's or another person's private
   data before routing or calling a provider.
-- Knowledge-only, mixed, and live-data questions are routed deterministically;
-  greetings and capability questions get marker-exempt direct replies.
+- In router-first mode, knowledge-only, mixed, and live-data questions are
+  routed deterministically; greetings and capability questions get
+  marker-exempt direct replies.
+- In model-first mode, only the kill switch, quotas, the private-data refusal,
+  exhausted replies, and exact greeting/thanks replies bypass the provider.
+  Capability, clarification, knowledge-only, and live-data turns reach the
+  provider. The router decision is logged as `ai_agent_router_shadow` and never
+  selects tools.
 - A tool result with no usable public rows is treated as “not found”; there is
   no speculative follow-up call.
 - An empty answer or a prompt-leak match is replaced by a complete refusal.
   Internal citation markers are removed from prose, and any link that is not an
   exact allowlisted locale link to a retrieved or public entity is removed.
   No `sources` event is emitted for any answer.
+- An Arabic question must receive an Arabic answer. Model-first mode retries
+  once with a stricter instruction and then fails closed rather than streaming
+  a non-Arabic answer; Latin slugs/names inside Markdown links or bare URLs are
+  allowed.
 - The provider never receives volunteer profiles, private organization fields,
   applications, submissions, account data, or the caller's IP.
+
+### 2.4 Model-first mode
+
+`AI_AGENT_MODEL_FIRST=true` changes intent selection without changing safety or
+quota rules:
+
+- **Tool set.** Every provider turn declares `search_opportunities`,
+  `search_organizations`, `search_reference_data`, `platform_stats`,
+  `search_knowledge`, `get_opportunity_details`, and
+  `get_organization_details`. The detail tools accept an exact public slug
+  (organizations also accept an exact name) and never return contact, email,
+  phone, registration, address, internal-id, or private fields.
+- **Follow-ups.** The server derives a required, non-trimmable
+  `<recent_entities>` block from the caller's history: up to three recent
+  opportunities and three organizations with title and slug, the last user
+  question, the last answer offer, and any pending confirmation. Ordinals,
+  short yes/no replies, pronouns, and raw slugs are resolved deterministically
+  before the provider is called. Titles and slugs are escaped as untrusted
+  data.
+- **Bounded loop.** Normal mode allows at most two tool rounds and three
+  provider calls. If the shadow router flags a live-data request but the model
+  answers without a tool, the orchestrator retries once with a corrective
+  instruction, then falls back to the deterministic browse or organization
+  lookup rather than accepting an unsupported claim.
+- **Degradation.** Provider unavailability and provider quota exhaustion use
+  the same deterministic browse/organization fallback, then the existing
+  retrieval-only or fixed limitation paths. Quotas and safety rules are
+  unchanged.
+- **Rollback.** Set `AI_AGENT_MODEL_FIRST=false` (or unset it) and restart.
+  Router-first behavior is byte-identical to the previous implementation.
 
 ## 3. HTTP surface
 
@@ -199,6 +245,7 @@ the feature.
 | Variable | Default | Hard maximum | Notes |
 |---|---|---|---|
 | `AI_AGENT_ENABLED` | `false` | — | Kill switch. Only literal `true` enables chat. |
+| `AI_AGENT_MODEL_FIRST` | `false` | — | Phase 1 rollout flag. `true` declares every approved read-only tool and makes the router shadow-only; `false` keeps router-first behavior byte-identical. Restart applies the change. |
 | `AI_AGENT_PROVIDER` | `gemini` | — | Case-insensitive `gemini`, `groq`, `mock`, or `fake`. Unknown values fail closed on the first turn. |
 | `AI_AGENT_MODEL` | `gemini-3.8-flash` | — | Provider-specific model id. Groq ids must be returned by `GET https://api.groq.com/openai/v1/models`. |
 | `GROQ_API_KEY` | unset | — | **Secret.** Required when `AI_AGENT_PROVIDER=groq`. Server-side only, read lazily; never commit, log, expose to the frontend, or put in SSE/errors. |
@@ -210,7 +257,7 @@ the feature.
 | `AI_AGENT_MAX_HISTORY_CHARS` | `4000` | `6000` | Prompt history character cap. The public DTO still accepts at most 4,000. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHUNKS` | `4` | `6` | BM25 chunks considered per turn. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHARS` | `6000` | `8000` | Retrieved knowledge characters in the prompt. |
-| `AI_AGENT_MAX_TOOL_ROUNDS` | `1` | `2` | Tool follow-up rounds per turn; the executor also caps total provider calls at 3. |
+| `AI_AGENT_MAX_TOOL_ROUNDS` | `1` | `2` | Router-first tool follow-up rounds per turn. Model-first normal mode enforces up to two rounds regardless of this value; conservative mode keeps one. The executor also caps total provider calls at 3. |
 | `AI_AGENT_MAX_TOOL_ROWS` | `5` | `8` | Rows per tool call. |
 | `AI_AGENT_MAX_TOOL_RESULT_CHARS` | `1200` | `3000` | Shared tool-context characters. |
 | `AI_AGENT_IP_RPM` | `4` | `1000` | Per-IP requests per UTC minute. |
@@ -223,8 +270,9 @@ the feature.
 | `AI_AGENT_FALLBACK_ENABLED` | `false` | — | Parsed for forward compatibility, but **no second adapter is selected in this build**. Leave `false`; do not rely on automatic fallback. |
 
 Fixed, non-environment limits: 45-second total turn deadline, three provider
-calls maximum, one 250 ms transient-5xx retry only before any text/tool call,
-no retry for 429/timeout/abort/invalid responses, and a 15-second SSE heartbeat.
+calls maximum, two model-first tool rounds in normal mode, one 250 ms
+transient-5xx retry only before any text/tool call, no retry for
+429/timeout/abort/invalid responses, and a 15-second SSE heartbeat.
 
 ### 5.2 Secrets and provider access
 
@@ -395,6 +443,8 @@ The full Render click-path and environment table are in
 ### 8.3 Rollback
 
 - **Feature rollback:** `AI_AGENT_ENABLED=false` + restart + verify disabled.
+- **Model-first rollback:** `AI_AGENT_MODEL_FIRST=false` (or unset) + restart.
+  This restores byte-identical router-first behavior without a code deploy.
 - **Code rollback:** deploy the previous commit. There is no database migration
   and no new collection; the knowledge folder ships with the code.
 - **Provider rollback:** switch `AI_AGENT_PROVIDER` back to the previous value,
@@ -410,6 +460,8 @@ For a provider-backed turn, the prompt sent to the provider contains:
 
 - the caller’s message and the recent history the caller chose to send;
 - reviewed public knowledge chunks and public tool results;
+- in model-first mode, server-derived recent public titles/slugs from that same
+  history and the resolved follow-up reference;
 - the system rules and tool declarations.
 
 It does **not** contain the caller’s account identity, email, IP, private
@@ -435,6 +487,11 @@ It does **not** contain message text, prompts, retrieved text, tool arguments or
 payloads, conversation ids tied to a person, emails, or IP addresses. The
 `conversationId` is a random per-request UUID. Provider error bodies and keys are
 discarded during normalization.
+
+The model-first shadow event `ai_agent_router_shadow` is also content-free. It
+contains only intent, action, reason, tool intents, tool/declaration count, top
+score, effective mode, and history-message count; it never contains message or
+answer text.
 
 The admin usage report contains aggregate today/7-day counters (requests,
 tokens, tool calls, refusals, rate-limited count, average latency) and the
@@ -482,6 +539,7 @@ the client chooses to include in a request.
 | `401`/`403` on usage | Missing/expired token or non-admin role | Use a valid admin Bearer token; this endpoint is not public. |
 | Widget shows “waking”/offline | Render free instance is cold or status timed out (10 s) | Wait for wake (about a minute), retry status; keep-alive helps; avoid rapid chat retries. |
 | User asks about a private account/contact | Expected privacy guard | The localized refusal is correct; do not add private data to tools or knowledge. |
+| Model-first answers look different or cost more | `AI_AGENT_MODEL_FIRST=true` | Expected rollout behavior. Review `backend/test/ai-baseline/model-first-*.md`, then keep the flag off if the comparison is not acceptable. |
 
 ## 11. Validation commands
 

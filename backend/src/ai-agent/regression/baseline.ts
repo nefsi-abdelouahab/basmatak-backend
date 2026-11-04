@@ -1,12 +1,9 @@
 import { mkdirSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { REGRESSION_FAMILIES } from './dialogues';
+import { GENERALIZATION_FAMILIES } from './generalization';
 import type { RegressionDialogueRecord, RegressionRunReport } from './types';
-import {
-  REGRESSION_BASELINE_DIR,
-  REGRESSION_BASELINE_JSON,
-  REGRESSION_BASELINE_MD,
-} from './types';
+import { REGRESSION_BASELINE_DIR } from './types';
 
 /**
  * Baseline artifacts are intentionally small and public: aggregate counts plus
@@ -33,11 +30,23 @@ function notes(records: readonly RegressionDialogueRecord[]): string {
   return reasons.join('; ').replace(/\|/gu, '\\|');
 }
 
+function percent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
 export function buildBaselineMarkdown(report: RegressionRunReport): string {
+  const families =
+    report.corpus === 'generalization'
+      ? GENERALIZATION_FAMILIES
+      : report.corpus === 'phase2'
+        ? [...REGRESSION_FAMILIES, ...GENERALIZATION_FAMILIES]
+        : REGRESSION_FAMILIES;
   const lines: string[] = [];
   lines.push('# AI conversation baseline');
   lines.push('');
   lines.push(`- Change: \`${report.change}\``);
+  lines.push(`- Corpus: \`${report.corpus}\``);
+  lines.push(`- Model-first: \`${report.modelFirst}\``);
   lines.push(`- Mode: \`${report.mode}\``);
   lines.push(`- Provider: \`${report.provider}\` / \`${report.model}\``);
   lines.push(`- Generated: ${report.generatedAt}`);
@@ -49,11 +58,25 @@ export function buildBaselineMarkdown(report: RegressionRunReport): string {
   lines.push(
     `- Passed dialogue runs: ${report.totals.passedDialogues}; failed: ${report.totals.failedDialogues}; structural failures: ${report.totals.structuralFailures}`,
   );
+  lines.push(
+    `- Dialogue pass rate: ${percent(
+      report.totals.dialogues === 0
+        ? 0
+        : report.totals.passedDialogues / report.totals.dialogues,
+    )}; turn pass rate: ${percent(
+      report.totals.turns === 0
+        ? 0
+        : report.totals.passedTurns / report.totals.turns,
+    )}`,
+  );
+  lines.push(
+    `- Per turn: input tokens avg ${report.metrics.avgInputTokens.toFixed(1)} / max ${report.metrics.maxInputTokens}; output tokens avg ${report.metrics.avgOutputTokens.toFixed(1)} / max ${report.metrics.maxOutputTokens}; provider calls avg ${report.metrics.avgProviderCalls.toFixed(2)} / max ${report.metrics.maxProviderCalls}; tool calls avg ${report.metrics.avgToolCalls.toFixed(2)} / max ${report.metrics.maxToolCalls}; latency avg ${report.metrics.avgLatencyMs.toFixed(1)} ms / max ${report.metrics.maxLatencyMs} ms`,
+  );
   lines.push('');
   lines.push('| Family | en | ar | Notes |');
   lines.push('| --- | --- | --- | --- |');
 
-  for (const family of REGRESSION_FAMILIES) {
+  for (const family of families) {
     const en = report.dialogues.filter(
       (record) => record.family === family.id && record.locale === 'en',
     );
@@ -91,14 +114,31 @@ export interface BaselinePaths {
   markdownPath: string;
 }
 
+/**
+ * Stable artifact names. The legacy `router-first.json` / `router-first.md`
+ * files from the Phase 0 baseline are left untouched so the before/after
+ * reports in this change sit next to them.
+ */
+export function baselineArtifactStem(report: RegressionRunReport): string {
+  const variant = report.modelFirst ? 'model-first' : 'router-first';
+  if (report.corpus === 'phase2') {
+    return `${variant}-phase2-${report.mode}`;
+  }
+  if (report.corpus === 'generalization') {
+    return `${variant}-generalization${report.mode === 'live' ? '-live' : ''}`;
+  }
+  return `${variant}-${report.mode}`;
+}
+
 export function writeBaseline(
   report: RegressionRunReport,
   baseDir: string = process.cwd(),
 ): BaselinePaths {
   const directory = path.join(baseDir, ...REGRESSION_BASELINE_DIR);
   mkdirSync(directory, { recursive: true });
-  const jsonPath = path.join(directory, REGRESSION_BASELINE_JSON);
-  const markdownPath = path.join(directory, REGRESSION_BASELINE_MD);
+  const stem = baselineArtifactStem(report);
+  const jsonPath = path.join(directory, `${stem}.json`);
+  const markdownPath = path.join(directory, `${stem}.md`);
   writeFileSync(jsonPath, buildBaselineJson(report), 'utf8');
   writeFileSync(markdownPath, buildBaselineMarkdown(report), 'utf8');
   return { jsonPath, markdownPath };

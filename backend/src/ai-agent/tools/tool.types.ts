@@ -20,6 +20,9 @@ export const TOOL_INTENTS = [
   'organization_search',
   'reference_lookup',
   'platform_stats',
+  'knowledge_lookup',
+  'opportunity_details',
+  'organization_details',
 ] as const;
 
 export type ToolIntent = (typeof TOOL_INTENTS)[number];

@@ -270,6 +270,7 @@ describe('AiAgent configuration', () => {
     expect(config.model).toBe('gemini-3.8-flash');
     expect(config.knowledgeDir).toBe(path.resolve(process.cwd(), 'ai-agent'));
     expect(config.mode).toBe('normal');
+    expect(config.modelFirst).toBe(false);
     expect(config.heartbeatIntervalMs).toBe(15_000);
     expect(config.limits).toEqual({
       maxInputTokens: 10000,
@@ -310,6 +311,24 @@ describe('AiAgent configuration', () => {
           key === 'AI_AGENT_ENABLED' ? value : undefined,
         ).enabled,
       ).toBe(false);
+    }
+  });
+
+  it('keeps model-first disabled by default and enables it only with true', () => {
+    expect(loadAiAgentConfig(() => undefined).modelFirst).toBe(false);
+    for (const value of ['false', '1', 'yes', 'on', '']) {
+      expect(
+        loadAiAgentConfig((key) =>
+          key === 'AI_AGENT_MODEL_FIRST' ? value : undefined,
+        ).modelFirst,
+      ).toBe(false);
+    }
+    for (const value of ['true', ' true ', 'TRUE']) {
+      expect(
+        loadAiAgentConfig((key) =>
+          key === 'AI_AGENT_MODEL_FIRST' ? value : undefined,
+        ).modelFirst,
+      ).toBe(true);
     }
   });
 

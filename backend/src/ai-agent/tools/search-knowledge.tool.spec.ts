@@ -2,7 +2,6 @@ import { KnowledgeService } from '../knowledge/knowledge.service';
 import { RetrievalResult, RetrievedChunk } from '../knowledge/retriever';
 import {
   SEARCH_KNOWLEDGE_DEFAULT_LIMIT,
-  SEARCH_KNOWLEDGE_MAX_LIMIT,
   SEARCH_KNOWLEDGE_QUERY_MAX_CHARS,
   SEARCH_KNOWLEDGE_TOOL_NAME,
   SearchKnowledgeTool,
@@ -61,17 +60,10 @@ describe('SearchKnowledgeTool', () => {
       minLength: 1,
       maxLength: SEARCH_KNOWLEDGE_QUERY_MAX_CHARS,
     });
-    expect(definition.inputSchema.properties.locale.enum).toEqual([
-      'en',
-      'ar',
-      'fr',
-    ]);
-    expect(definition.inputSchema.properties.limit).toMatchObject({
-      type: 'integer',
-      minimum: 1,
-      maximum: SEARCH_KNOWLEDGE_MAX_LIMIT,
-      default: SEARCH_KNOWLEDGE_DEFAULT_LIMIT,
-    });
+    // The exposed declaration stays minimal; the handler still accepts the
+    // optional locale and limit for internal callers.
+    expect(definition.inputSchema.properties.locale).toBeUndefined();
+    expect(definition.inputSchema.properties.limit).toBeUndefined();
   });
 
   it('trims the query, forwards locale and limit, and returns chunk metadata', () => {

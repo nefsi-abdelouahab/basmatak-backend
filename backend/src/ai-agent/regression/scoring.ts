@@ -467,12 +467,18 @@ export interface TurnScoringInput {
   executedToolCalls: readonly RecordedToolCall[];
   refusal: boolean;
   providerCalls: number;
+  /** The router is shadow-only in model-first mode, so its decision is not scored. */
+  modelFirst?: boolean;
 }
 
 export function scoreTurn(input: TurnScoringInput): RegressionCheck[] {
   const toolNames = input.executedToolCalls.map((call) => call.name);
+  const routerCheck =
+    input.modelFirst === true
+      ? []
+      : [scoreRouter(input.router, input.turn.expect)];
   return [
-    scoreRouter(input.router, input.turn.expect),
+    ...routerCheck,
     scoreToolChoice(toolNames, input.turn.expect),
     scoreToolArgs(
       input.executedToolCalls,

@@ -48,8 +48,7 @@ export class PlatformStatsTool implements ReadOnlyTool {
   ) {
     this.definition = defineReadOnlyTool({
       name: PLATFORM_STATS_TOOL_NAME,
-      description:
-        'Return public Basmatak platform counts: published opportunities, verified active organizations, active skills, and locations. Read-only; no private or user counts.',
+      description: 'Return public platform counts.',
       allowedIntents: ['platform_stats'],
       inputSchema: {
         type: 'object',

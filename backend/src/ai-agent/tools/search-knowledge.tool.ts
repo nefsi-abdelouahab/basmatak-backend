@@ -2,15 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { KnowledgeLocale } from '../knowledge/knowledge.types';
 import { KnowledgeService } from '../knowledge/knowledge.service';
 import { RetrievalReason } from '../knowledge/retriever';
+import { ReadOnlyTool, ToolDefinition, defineReadOnlyTool } from './tool.types';
 
 /**
  * Read-only knowledge lookup tool.
  *
- * This is deliberately not wired into the chat SSE/orchestrator yet. Session 5
- * exposes a small, JSON-serializable contract that a later prompt builder can
- * invoke: trimmed query (1..500 characters), optional en/ar/fr locale boost,
- * and an optional 1..6 result limit (default 4). Every retriever cap still
- * applies, and only chunk-sized excerpts are returned.
+ * The orchestrator declares it alongside the public-data tools in model-first
+ * mode. The contract stays deliberately small: trimmed query (1..500
+ * characters), optional en/ar/fr locale boost, and an optional 1..6 result
+ * limit (default 4). Every retriever cap still applies, and only chunk-sized
+ * excerpts are returned.
  */
 
 export const SEARCH_KNOWLEDGE_TOOL_NAME = 'search_knowledge';
@@ -65,12 +66,12 @@ export interface SearchKnowledgeToolDefinition {
         maxLength: number;
         description: string;
       };
-      locale: {
+      locale?: {
         type: 'string';
         enum: KnowledgeLocale[];
         description: string;
       };
-      limit: {
+      limit?: {
         type: 'integer';
         minimum: number;
         maximum: number;
@@ -113,10 +114,9 @@ function isKnowledgeLocale(value: unknown): value is KnowledgeLocale {
 }
 
 @Injectable()
-export class SearchKnowledgeTool {
+export class SearchKnowledgeTool implements ReadOnlyTool {
   readonly name = SEARCH_KNOWLEDGE_TOOL_NAME;
-  readonly description =
-    'Search the Basmatak knowledge base for relevant FAQ, policy, guide, glossary, or topic excerpts. Read-only.';
+  readonly description = 'Search public platform guidance (read-only).';
   readonly inputSchema: SearchKnowledgeToolDefinition['inputSchema'] = {
     type: 'object',
     additionalProperties: false,
@@ -126,27 +126,22 @@ export class SearchKnowledgeTool {
         type: 'string',
         minLength: 1,
         maxLength: SEARCH_KNOWLEDGE_QUERY_MAX_CHARS,
-        description:
-          'Natural-language search query, trimmed, 1 to 500 characters.',
-      },
-      locale: {
-        type: 'string',
-        enum: [...SUPPORTED_LOCALES],
-        description:
-          'Optional locale boost. Omit it to search without a locale preference.',
-      },
-      limit: {
-        type: 'integer',
-        minimum: 1,
-        maximum: SEARCH_KNOWLEDGE_MAX_LIMIT,
-        default: SEARCH_KNOWLEDGE_DEFAULT_LIMIT,
-        description:
-          'Maximum chunks to return (1 to 6). Defaults to 4; every retriever cap still applies.',
+        description: 'Query.',
       },
     },
   };
 
-  constructor(private readonly knowledge: KnowledgeService) {}
+  constructor(private readonly knowledge: KnowledgeService) {
+    this.definition = defineReadOnlyTool({
+      name: this.name,
+      description: this.description,
+      allowedIntents: ['knowledge_lookup'],
+      inputSchema: this.inputSchema,
+      handler: (input) => this.execute(input),
+    });
+  }
+
+  readonly definition: ToolDefinition;
 
   getDefinition(): SearchKnowledgeToolDefinition {
     return {
