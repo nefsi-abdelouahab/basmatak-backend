@@ -274,7 +274,7 @@ describe('AiAgent configuration', () => {
     expect(config.heartbeatIntervalMs).toBe(15_000);
     expect(config.limits).toEqual({
       maxInputTokens: 10000,
-      maxOutputTokens: 400,
+      maxOutputTokens: 1000,
       maxHistoryMessages: 6,
       maxHistoryChars: 4000,
       maxKnowledgeChunks: 4,
@@ -353,7 +353,7 @@ describe('AiAgent configuration', () => {
     expect(config.knowledgeDir).toBe(
       path.resolve(process.cwd(), 'custom-knowledge'),
     );
-    expect(config.limits.maxOutputTokens).toBe(800);
+    expect(config.limits.maxOutputTokens).toBe(1200);
     expect(config.limits.maxInputTokens).toBe(10000);
     expect(config.limits.maxHistoryMessages).toBe(1);
     expect(config.limits.maxToolRounds).toBe(2);

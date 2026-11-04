@@ -303,7 +303,7 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(provider.calls).toBe(1);
     expect(provider.requests[0].previousInteractionId).toBeUndefined();
     expect(provider.requests[0].tools).toBeUndefined();
-    expect(provider.requests[0].maxOutputTokens).toBe(400);
+    expect(provider.requests[0].maxOutputTokens).toBe(1000);
     expect(provider.requests[0].systemInstruction).toContain('You are Basma');
     expect(provider.requests[0].input as string).not.toContain(
       '<system_rules>',

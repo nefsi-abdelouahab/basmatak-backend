@@ -35,7 +35,7 @@ Primary artifacts:
 | `AI_AGENT_GLOBAL_RPD` | 80 | 1,000,000 | All users, UTC day. Deliberately conservative. |
 | `AI_AGENT_MAX_CONCURRENT` | 2 | 100 | Simultaneous provider turns; extra requests fail fast with `AI_AGENT_BUSY`. |
 | `AI_AGENT_DAILY_TOKEN_BUDGET` | 150,000 | 10,000,000 | Estimated input + output tokens per UTC day. |
-| `AI_AGENT_MAX_OUTPUT_TOKENS` | 400 | 800 | Per-turn output cap. Conservative mode lowers it to 300. |
+| `AI_AGENT_MAX_OUTPUT_TOKENS` | 1000 | 1200 | Per-turn output cap. Conservative mode lowers it to 300. |
 | `AI_AGENT_MAX_INPUT_TOKENS` | 3,000 | 100,000 | Estimated input cap before a provider call. |
 | `AI_AGENT_MAX_HISTORY_MESSAGES` | 6 | 8 | History messages included in the prompt. |
 | `AI_AGENT_MAX_HISTORY_CHARS` | 4,000 | 6,000 | Total history characters. |
@@ -83,9 +83,10 @@ starting values therefore stay well below the published ceiling:
 - **15 requests/day per IP** means one client can consume at most about 19% of
   the global daily request budget, leaving room for other users.
 - **150,000 tokens/day** is estimated input + output. At the default 3,000 input
-  and 400 output caps, one worst-case turn reserves 3,400 tokens, so the token
+  and 1,000 output caps, one worst-case turn reserves 4,000 tokens, so the token
   budget is the binding constraint before 80 full-size turns. Normal FAQ turns
-  are much smaller.
+  are much smaller. Raising the output cap from 400 to 1,000 adds 600 tokens to
+  every reservation.
 - The token reservation includes the maximum possible output, not just the
   prompt, so an in-flight turn cannot overspend the budget before it commits.
 

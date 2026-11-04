@@ -252,7 +252,7 @@ the feature.
 | `GEMINI_API_KEY` | unset | — | **Secret.** Required when `AI_AGENT_PROVIDER=gemini`. Server-side only, read lazily; never commit, log, expose to the frontend, or put in SSE/errors. |
 | `AI_AGENT_KNOWLEDGE_DIR` | unset → `<cwd>/ai-agent` | — | Override for local testing only; keep unset in production. |
 | `AI_AGENT_MAX_INPUT_TOKENS` | `10000` | `100000` | Estimated input cap (prompt text plus provider tool declarations); the prompt builder trims optional content to fit and fails closed if reserved content cannot fit. |
-| `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | `800` | Per-turn output cap; conservative mode lowers it to 300. |
+| `AI_AGENT_MAX_OUTPUT_TOKENS` | `1000` | `1200` | Per-turn output cap; conservative mode lowers it to 300. |
 | `AI_AGENT_MAX_HISTORY_MESSAGES` | `6` | `8` | Prompt history cap. The public DTO still accepts at most 6. |
 | `AI_AGENT_MAX_HISTORY_CHARS` | `4000` | `6000` | Prompt history character cap. The public DTO still accepts at most 4,000. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHUNKS` | `4` | `6` | BM25 chunks considered per turn. |
@@ -315,7 +315,7 @@ next reservation instead.
 
 | Mode | Knowledge chunks | History messages | Output tokens | Tool calls | Tool rounds | Tool rows | Provider |
 |---|---|---|---|---|---|---|---|
-| `normal` | configured (4) | configured (4) | configured (400) | 3 | configured (1) | configured (5) | yes |
+| `normal` | configured (4) | configured (4) | configured (1000) | 3 | configured (1) | configured (5) | yes |
 | `conservative` | min(3, configured) | min(2, configured) | min(300, configured) | 1 | min(1, configured) | min(3, configured) | yes |
 | `knowledge_only` | configured | configured | configured | 0 | 0 | 0 | yes |
 | `retrieval_only` | min(2, configured) | 0 | 0 | 0 | 0 | 0 | no |

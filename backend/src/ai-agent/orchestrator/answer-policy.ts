@@ -162,7 +162,7 @@ export function resolveAnswerCaps(
   const configuredRounds = clamp(limits.maxToolRounds, 1, 0, 2);
   const configuredChunks = clamp(limits.maxKnowledgeChunks, 4, 1, 6);
   const configuredRows = clamp(limits.maxToolRows, 5, 1, 8);
-  const configuredOutput = clamp(limits.maxOutputTokens, 400, 1, 800);
+  const configuredOutput = clamp(limits.maxOutputTokens, 1000, 1, 1200);
   const configuredHistory = clamp(limits.maxHistoryMessages, 6, 0, 8);
 
   switch (mode) {
