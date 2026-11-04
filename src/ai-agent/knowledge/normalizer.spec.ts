@@ -6,6 +6,7 @@ import {
   isStopword,
   loadSynonymGroups,
   normalizeText,
+  stripArabicClitic,
   tokenize,
 } from './normalizer';
 
@@ -24,6 +25,25 @@ describe('KnowledgeNormalizer', () => {
       expect(normalizeText('ٱلْعَرَبِيَّة')).toBe('العربيه');
     });
 
+    it('folds hamza carriers before NFD so tokens are not split', () => {
+      expect(normalizeText('مسؤول')).toBe('مسوول');
+      expect(normalizeText('مسئول')).toBe('مسيول');
+      expect(normalizeText('هيئة')).toBe('هييه');
+      expect(normalizeText('الجزائر')).toBe('الجزاير');
+      expect(normalizeText('الجزاير')).toBe('الجزاير');
+      expect(normalizeText('الأسئلة')).toBe('الاسيله');
+      // Standalone hamza is preserved and ta marbuta/alef maqsura still fold.
+      expect(normalizeText('شيء')).toBe('شيء');
+      expect(normalizeText('مدرسة')).toBe('مدرسه');
+      expect(normalizeText('مصطفى')).toBe('مصطفي');
+    });
+
+    it('maps Arabic-Indic and extended Arabic-Indic digits to ASCII', () => {
+      expect(normalizeText('٠١٢٣٤٥٦٧٨٩')).toBe('0123456789');
+      expect(normalizeText('۰۱۲۳۴۵۶۷۸۹')).toBe('0123456789');
+      expect(normalizeText('عام ٢٠٢٦')).toBe('عام 2026');
+    });
+
     it('strips French accents and ligatures and normalizes separators', () => {
       expect(normalizeText('ÉLÈVE')).toBe('eleve');
       expect(normalizeText('Café, crème!')).toBe('cafe creme');
@@ -38,6 +58,9 @@ describe('KnowledgeNormalizer', () => {
     it('is idempotent', () => {
       const once = normalizeText('أَهْلاً ÉLÈVE');
       expect(normalizeText(once)).toBe(once);
+
+      const arabic = normalizeText('مسؤول هيئة الجزائر ٢٠٢٦');
+      expect(normalizeText(arabic)).toBe(arabic);
     });
   });
 
@@ -67,6 +90,17 @@ describe('KnowledgeNormalizer', () => {
           unique: false,
         }),
       ).toEqual(['the', 'volunteer', 'and', 'the', 'volunteer']);
+    });
+
+    it('strips only known Arabic clitics when three letters remain', () => {
+      expect(stripArabicClitic('بالفرص')).toBe('فرص');
+      expect(stripArabicClitic('والتسجيل')).toBe('تسجيل');
+      expect(stripArabicClitic('للمتطوعين')).toBe('متطوعين');
+      expect(stripArabicClitic('الفرص')).toBe('فرص');
+      expect(stripArabicClitic('وفرص')).toBe('فرص');
+      expect(stripArabicClitic('فرص')).toBeNull();
+      expect(stripArabicClitic('الله')).toBeNull();
+      expect(stripArabicClitic('opportunity')).toBeNull();
     });
 
     it('recognizes normalized stopwords', () => {

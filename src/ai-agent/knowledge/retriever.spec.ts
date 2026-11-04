@@ -1,5 +1,6 @@
 import { BM25Index, BM25SearchResult } from './bm25';
 import { KnowledgeChunk } from './knowledge.types';
+import { KnowledgeNormalizer } from './normalizer';
 import {
   DEFAULT_CACHE_TTL_MS,
   DEFAULT_MAX_CHUNKS,
@@ -236,6 +237,34 @@ describe('KnowledgeRetriever', () => {
       reason: 'EMPTY_CORPUS',
     });
     expect(retriever.cacheSize).toBe(0);
+  });
+
+  it('retrieves Arabic hamza and Arabic-Indic digit variants', () => {
+    const index = new BM25Index([
+      makeChunk({
+        text: 'طُوّرت بصمتك تطوع في الجزائر عام 2026.',
+        source: 'about/hackathon-ar.md',
+        locale: 'ar',
+      }),
+      makeChunk({
+        text: 'الفرص المتاحة للتطوع في المنصة.',
+        source: 'pages/opportunities-ar.md',
+        locale: 'ar',
+      }),
+    ]);
+    const retriever = new KnowledgeRetriever(index, {
+      normalizer: new KnowledgeNormalizer(),
+    });
+
+    expect(
+      retriever.search('الجزاير', { locale: 'ar' }).chunks[0]?.source,
+    ).toBe('about/hackathon-ar.md');
+    expect(
+      retriever.search('٢٠٢٦', { locale: 'ar' }).chunks[0]?.source,
+    ).toBe('about/hackathon-ar.md');
+    expect(
+      retriever.search('بالفرص', { locale: 'ar' }).chunks[0]?.source,
+    ).toBe('pages/opportunities-ar.md');
   });
 
   it('returns only chunk excerpts, never a full document', () => {

@@ -13,8 +13,26 @@ const ARABIC_TATWEEL = /\u0640/g;
 const ALEF_VARIANTS = /[\u0623\u0625\u0622\u0671]/g;
 const YA_VARIANTS = /\u0649/g;
 const TA_MARBUTA = /\u0629/g;
+/**
+ * Hamza carriers are folded before NFD. Otherwise NFD splits U+0624/U+0626
+ * into a letter plus U+0654, which the Latin combining-mark pass does not
+ * remove and the token separator then turns into a space.
+ */
+const HAMZA_CARRIERS = /[\u0624\u0626]/g;
+const ARABIC_HAMZA_MARKS = /[\u0654\u0655]/g;
+const ARABIC_INDIC_DIGITS = /[\u0660-\u0669\u06F0-\u06F9]/g;
 const LATIN_COMBINING_MARKS = /[\u0300-\u036F]/g;
 const NON_TOKEN_CHARACTERS = /[^\p{L}\p{N}]+/gu;
+const ARABIC_LETTERS = /^[\u0621-\u064A]+$/;
+const ARABIC_CLITIC_PREFIXES = [
+  '\u0648\u0627\u0644', // وال
+  '\u0628\u0627\u0644', // بال
+  '\u0643\u0627\u0644', // كال
+  '\u0641\u0627\u0644', // فال
+  '\u0644\u0644', // لل
+  '\u0627\u0644', // ال
+  '\u0648', // و
+] as const;
 
 const ENGLISH_STOPWORDS = [
   'a',
@@ -330,8 +348,17 @@ export function normalizeText(text: string): string {
   value = value.replace(ARABIC_DIACRITICS, '');
   value = value.replace(ARABIC_TATWEEL, '');
   value = value.replace(ALEF_VARIANTS, '\u0627');
+  value = value.replace(HAMZA_CARRIERS, (carrier) =>
+    carrier === '\u0626' ? '\u064A' : '\u0648',
+  );
+  value = value.replace(ARABIC_HAMZA_MARKS, '');
   value = value.replace(YA_VARIANTS, '\u064A');
   value = value.replace(TA_MARBUTA, '\u0647');
+  value = value.replace(ARABIC_INDIC_DIGITS, (digit) => {
+    const code = digit.charCodeAt(0);
+    const zero = code >= 0x06f0 ? 0x06f0 : 0x0660;
+    return String.fromCharCode(0x30 + code - zero);
+  });
 
   value = value.normalize('NFD').replace(LATIN_COMBINING_MARKS, '');
   value = value.replace(/\u0153/g, 'oe').replace(/\u00E6/g, 'ae');
@@ -349,6 +376,20 @@ const STOPWORDS = new Set<string>([
   ...buildStopwordSet(ARABIC_STOPWORDS),
   ...buildStopwordSet(FRENCH_STOPWORDS),
 ]);
+
+/**
+ * Non-destructive Arabic clitic handling for BM25: strip a leading وال/بال/
+ * كال/فال/لل/ال/و only when at least three letters remain. The original token
+ * is always kept by the caller; this returns just the secondary variant.
+ */
+export function stripArabicClitic(token: string): string | null {
+  if (!ARABIC_LETTERS.test(token)) return null;
+  for (const prefix of ARABIC_CLITIC_PREFIXES) {
+    if (token.length - prefix.length < 3) continue;
+    if (token.startsWith(prefix)) return token.slice(prefix.length);
+  }
+  return null;
+}
 
 /** True when the normalized token is a built-in en/ar/fr stopword. */
 export function isStopword(token: string): boolean {

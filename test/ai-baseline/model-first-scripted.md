@@ -5,13 +5,13 @@
 - Model-first: `true`
 - Mode: `scripted`
 - Provider: `scripted` / `scripted`
-- Generated: 2026-11-04T12:51:44.205Z
+- Generated: 2026-11-04T22:33:49.647Z
 - Runs per dialogue: 1
 - maxInputTokens: 10000
 - Families: 20; dialogue runs: 40; turns: 50
 - Passed dialogue runs: 40; failed: 0; structural failures: 0
 - Dialogue pass rate: 100.0%; turn pass rate: 100.0%
-- Per turn: input tokens avg 4969.3 / max 6130; output tokens avg 25.6 / max 73; provider calls avg 1.28 / max 2; tool calls avg 0.40 / max 1; latency avg 4.6 ms / max 50 ms
+- Per turn: input tokens avg 2729.5 / max 3771; output tokens avg 25.6 / max 73; provider calls avg 1.28 / max 2; tool calls avg 0.40 / max 1; latency avg 2.3 ms / max 18 ms
 
 | Family | en | ar | Notes |
 | --- | --- | --- | --- |

@@ -1,5 +1,9 @@
 import { KnowledgeChunk, KnowledgeLocale } from './knowledge.types';
-import { KnowledgeNormalizer, SynonymGroups } from './normalizer';
+import {
+  KnowledgeNormalizer,
+  SynonymGroups,
+  stripArabicClitic,
+} from './normalizer';
 
 /**
  * Deterministic, framework-free BM25 index for knowledge chunks.
@@ -31,6 +35,11 @@ export const PRIORITY_STEP = 0.05;
 
 /** Weight for a synonym expansion that is not itself a query term. */
 export const SYNONYM_TERM_WEIGHT = 0.5;
+/**
+ * Weight for a clitic-stripped variant. The variant is secondary on both the
+ * index and query sides; the original token always stays primary.
+ */
+export const CLITIC_TERM_WEIGHT = 0.5;
 const ORIGINAL_TERM_WEIGHT = 1;
 
 export interface BM25IndexOptions {
@@ -114,6 +123,13 @@ function addWeightedTokens(
 ): void {
   for (const token of tokens) {
     frequencies.set(token, (frequencies.get(token) ?? 0) + weight);
+    const clitic = stripArabicClitic(token);
+    if (clitic !== null) {
+      frequencies.set(
+        clitic,
+        (frequencies.get(clitic) ?? 0) + weight * CLITIC_TERM_WEIGHT,
+      );
+    }
   }
 }
 
@@ -394,19 +410,26 @@ export class BM25Index {
 
     const expanded = this.normalizer.expandTokens(baseTokens);
     const original = new Set(baseTokens);
-    const seen = new Set<string>();
-    const terms: QueryTerm[] = [];
+    const weights = new Map<string, number>();
+
+    const addWeight = (term: string, weight: number): void => {
+      if (term === '') return;
+      weights.set(term, Math.max(weights.get(term) ?? 0, weight));
+    };
 
     for (const token of expanded) {
-      if (token === '' || seen.has(token)) continue;
-      seen.add(token);
-      terms.push({
-        term: token,
-        weight: original.has(token)
-          ? ORIGINAL_TERM_WEIGHT
-          : SYNONYM_TERM_WEIGHT,
-      });
+      const weight = original.has(token)
+        ? ORIGINAL_TERM_WEIGHT
+        : SYNONYM_TERM_WEIGHT;
+      addWeight(token, weight);
+      const clitic = stripArabicClitic(token);
+      if (clitic !== null) addWeight(clitic, weight * CLITIC_TERM_WEIGHT);
     }
+
+    const terms: QueryTerm[] = [...weights].map(([term, weight]) => ({
+      term,
+      weight,
+    }));
 
     return { terms, useRawIndex };
   }

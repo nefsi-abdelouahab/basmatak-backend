@@ -145,6 +145,39 @@ describe('KnowledgeService', () => {
     expect(ready).toMatchObject({ files: 1, chunks: 2 });
   });
 
+  it('matches Arabic hamza, clitic, and digit variants through search', () => {
+    const root = makeRoot();
+    writeFile(
+      root,
+      'faq/ar.md',
+      [
+        '---',
+        'title: أسئلة المنصة',
+        'locale: ar',
+        'priority: 1',
+        '---',
+        '',
+        '# أسئلة المنصة',
+        '',
+        '## الهاكاثون',
+        '',
+        'طُوّرت بصمتك تطوع في الجزائر عام 2026.',
+        '',
+        '## التسجيل',
+        '',
+        'التسجيل متاح للمتطوعين والمنظمات.',
+        '',
+      ].join('\n'),
+    );
+    const service = makeService(root, makeLogger());
+
+    service.onModuleInit();
+
+    expect(service.search('الجزاير', 'ar').chunks.length).toBeGreaterThan(0);
+    expect(service.search('٢٠٢٦', 'ar').chunks.length).toBeGreaterThan(0);
+    expect(service.search('والتسجيل', 'ar').chunks.length).toBeGreaterThan(0);
+  });
+
   it('keeps an empty safe index when the corpus is missing', () => {
     const root = path.join(makeRoot(), 'missing');
     const logger = makeLogger();
