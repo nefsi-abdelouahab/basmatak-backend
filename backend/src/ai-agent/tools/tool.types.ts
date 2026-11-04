@@ -25,13 +25,21 @@ export const TOOL_INTENTS = [
 export type ToolIntent = (typeof TOOL_INTENTS)[number];
 
 export interface ToolPropertySchema {
-  type: 'string' | 'integer' | 'boolean';
+  type: 'string' | 'integer' | 'boolean' | 'array';
   description: string;
   enum?: readonly string[];
   minimum?: number;
   maximum?: number;
   minLength?: number;
   maxLength?: number;
+  /** Item contract for `type: 'array'` (string lists only). */
+  items?: {
+    type: 'string';
+    minLength?: number;
+    maxLength?: number;
+  };
+  minItems?: number;
+  maxItems?: number;
   default?: string | number | boolean;
 }
 

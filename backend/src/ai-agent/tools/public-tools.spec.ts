@@ -37,6 +37,8 @@ import {
   SearchReferenceDataTool,
 } from './search-reference-data.tool';
 import {
+  CompactSearchOpportunitiesPayload,
+  FocusSearchOpportunitiesPayload,
   SearchOpportunitiesPayload,
   SearchOpportunitiesTool,
 } from './search-opportunities.tool';
@@ -555,6 +557,69 @@ describe('Session 6 public tools', () => {
       expect(findForbiddenToolResultKey(payload)).toBeNull();
     });
 
+    it('returns slim focus details for exact slugs in caller order', async () => {
+      const payload = await run<FocusSearchOpportunitiesPayload>(
+        opportunitiesTool,
+        { slugs: ['tree-planting', 'beach-cleanup'], limit: 2 },
+      );
+
+      expect(payload.items.map((item) => item.slug)).toEqual([
+        'tree-planting',
+        'beach-cleanup',
+      ]);
+      expect(payload.items[0]).toEqual({
+        slug: 'tree-planting',
+        title: 'Tree planting',
+        status: 'published',
+        applicationDeadline: '2026-12-01T00:00:00.000Z',
+        openPositions: 1,
+        location: { wilaya: '16', municipality: '1602' },
+        locationNames: {
+          wilaya: { ar: 'الجزائر', fr: 'Algiers' },
+          municipality: { ar: 'حسين داي', fr: 'Hussein Dey' },
+        },
+      });
+      expect(payload.items[1]).toMatchObject({
+        slug: 'beach-cleanup',
+        status: 'published',
+        openPositions: 1,
+        locationNames: {
+          wilaya: { ar: 'الجزائر', fr: 'Algiers' },
+          municipality: { ar: 'باب الوادي', fr: 'Bab El Oued' },
+        },
+      });
+      expect(payload.items[0]).not.toHaveProperty('description');
+      expect(payload.items[0]).not.toHaveProperty('skills');
+      expect(findForbiddenToolResultKey(payload)).toBeNull();
+    });
+
+    it('allows non-draft statuses for exact slug lookups but still hides drafts', async () => {
+      const payload = await run<FocusSearchOpportunitiesPayload>(
+        opportunitiesTool,
+        {
+          slugs: ['closed-opportunity', 'draft-opportunity'],
+          limit: 2,
+        },
+      );
+
+      expect(payload.items.map((item) => item.slug)).toEqual([
+        'closed-opportunity',
+      ]);
+      expect(payload.items[0]?.status).toBe('closed');
+    });
+
+    it('rejects malformed slug lists', async () => {
+      await expect(
+        run(opportunitiesTool, { slugs: 'beach-cleanup' }),
+      ).rejects.toThrow(ToolInputError);
+      await expect(
+        run(opportunitiesTool, { slugs: ['../beach-cleanup'] }),
+      ).rejects.toThrow(ToolInputError);
+      await expect(run(opportunitiesTool, { slugs: [''] })).rejects.toThrow(
+        ToolInputError,
+      );
+    });
+
     it('applies text, location, mode, skill, and category filters', async () => {
       expect(await opportunitySlugs({ text: 'beach' })).toEqual([
         'beach-cleanup',
@@ -767,6 +832,24 @@ describe('Session 6 public tools', () => {
       ).toEqual(['tree-planting', 'remote-tutoring', 'beach-cleanup']);
     });
 
+    it('returns only slug and title in compact browse mode', async () => {
+      const payload = await run<CompactSearchOpportunitiesPayload>(
+        opportunitiesTool,
+        {
+          limit: 3,
+          sort: 'newest',
+          compact: true,
+        },
+      );
+
+      expect(payload.items).toEqual([
+        { slug: 'tree-planting', title: 'Tree planting' },
+        { slug: 'remote-tutoring', title: 'Remote tutoring' },
+        { slug: 'beach-cleanup', title: 'Beach cleanup' },
+      ]);
+      expect(JSON.stringify(payload)).not.toContain('description');
+    });
+
     it('matches skill and category names in Arabic, French, and English', async () => {
       await Promise.all([
         handle.connection.collection(SkillsCollection).insertOne({
@@ -860,6 +943,7 @@ describe('Session 6 public tools', () => {
         { text: { $ne: null } },
         { skill: 'not-an-object-id' },
         { text: 'x'.repeat(121) },
+        { compact: 'yes' },
       ]) {
         await expect(run(opportunitiesTool, input)).rejects.toBeInstanceOf(
           ToolInputError,
@@ -1250,6 +1334,21 @@ describe('Session 6 public tools', () => {
           findForbiddenToolResultKey(result.ok ? result.data : null),
         ).toBeNull();
       }
+    });
+
+    it('keeps three compact browse rows under the per-result cap', async () => {
+      const executor = new ToolExecutor(buildRegistry());
+      const result = await executor.execute('search_opportunities', {
+        limit: 3,
+        sort: 'newest',
+        compact: true,
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('Expected a successful tool result.');
+      expect((result.data as { items: unknown[] }).items).toHaveLength(3);
+      expect(result.meta.charCount).toBeLessThanOrEqual(1200);
+      expect(result.meta.truncated).toBe(false);
     });
 
     it('shares the 3,000-character total budget across calls', async () => {

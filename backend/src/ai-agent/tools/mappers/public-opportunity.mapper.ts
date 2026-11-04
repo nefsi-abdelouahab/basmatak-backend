@@ -17,6 +17,7 @@ export interface PublicOpportunityCard {
   slug: string;
   title: string;
   description: string | null;
+  status: string | null;
   mode: string | null;
   location: {
     wilaya: string | null;
@@ -30,12 +31,42 @@ export interface PublicOpportunityCard {
   openPositions: number;
 }
 
+/** Bilingual location names used by a focused detail answer. */
+export interface PublicLocationNamePair {
+  ar: string | null;
+  fr: string | null;
+}
+
+export interface PublicOpportunityLocationNames {
+  wilaya: PublicLocationNamePair;
+  municipality: PublicLocationNamePair;
+}
+
+/**
+ * Slim detail projection for the exact slugs a user just referred to. It
+ * deliberately omits descriptions and skills so three rows always fit inside
+ * the tool-result character budget.
+ */
+export interface PublicOpportunityFocusCard {
+  slug: string;
+  title: string;
+  status: string | null;
+  applicationDeadline: string | null;
+  openPositions: number;
+  location: {
+    wilaya: string | null;
+    municipality: string | null;
+  } | null;
+  locationNames: PublicOpportunityLocationNames | null;
+}
+
 export interface PublicOpportunitySource {
   _id?: unknown;
   organizationId?: unknown;
   slug?: unknown;
   title?: unknown;
   description?: unknown;
+  status?: unknown;
   mode?: unknown;
   startDate?: unknown;
   endDate?: unknown;
@@ -73,6 +104,16 @@ function readPositions(value: unknown): Array<{
   });
 }
 
+export function countOpenPositions(source: PublicOpportunitySource): number {
+  const positions = readPositions(source.positions);
+  return positions.filter(
+    (position) =>
+      position.requiredCount !== null &&
+      position.filledCount !== null &&
+      position.filledCount < position.requiredCount,
+  ).length;
+}
+
 export function mapPublicOpportunity(
   source: PublicOpportunitySource,
   organization?: PublicOrganizationRef | null,
@@ -95,18 +136,12 @@ export function mapPublicOpportunity(
     return skill ? [skill] : [];
   });
 
-  const openPositions = positions.filter(
-    (position) =>
-      position.requiredCount !== null &&
-      position.filledCount !== null &&
-      position.filledCount < position.requiredCount,
-  ).length;
-
   return {
     id: toIdString(source._id) ?? '',
     slug: toText(source.slug) ?? '',
     title: toText(source.title) ?? '',
     description: toTruncatedText(source.description, DESCRIPTION_MAX_CHARS),
+    status: toText(source.status),
     mode: toText(source.mode),
     location: mapPublicLocationCodes(source.location),
     startDate: toIsoString(source.startDate),
@@ -114,6 +149,47 @@ export function mapPublicOpportunity(
     applicationDeadline: toIsoString(source.applicationDeadline),
     organization: organization ?? null,
     skills,
-    openPositions,
+    openPositions: countOpenPositions(source),
+  };
+}
+
+function locationName(
+  namesByCode: ReadonlyMap<string, PublicLocationNamePair> | undefined,
+  code: string | null,
+): PublicLocationNamePair {
+  if (namesByCode === undefined || code === null) {
+    return { ar: null, fr: null };
+  }
+  return namesByCode.get(code) ?? { ar: null, fr: null };
+}
+
+/**
+ * Map the focused detail projection. `namesByCode` is optional so existing
+ * callers keep the code-only location shape.
+ */
+export function mapPublicOpportunityFocus(
+  source: PublicOpportunitySource,
+  namesByCode?: ReadonlyMap<string, PublicLocationNamePair>,
+): PublicOpportunityFocusCard {
+  const location = mapPublicLocationCodes(source.location);
+  const wilaya = locationName(namesByCode, location?.wilaya ?? null);
+  const municipality = locationName(
+    namesByCode,
+    location?.municipality ?? null,
+  );
+  const hasNames =
+    wilaya.ar !== null ||
+    wilaya.fr !== null ||
+    municipality.ar !== null ||
+    municipality.fr !== null;
+
+  return {
+    slug: toText(source.slug) ?? '',
+    title: toText(source.title) ?? '',
+    status: toText(source.status),
+    applicationDeadline: toIsoString(source.applicationDeadline),
+    openPositions: countOpenPositions(source),
+    location,
+    locationNames: hasNames ? { wilaya, municipality } : null,
   };
 }
