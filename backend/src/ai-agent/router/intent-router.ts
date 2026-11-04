@@ -1,6 +1,6 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { AI_AGENT_CONFIG } from '../ai-agent.constants';
-import type { AiAgentLocale } from '../ai-agent.types';
+import type { AiAgentChatMessage, AiAgentLocale } from '../ai-agent.types';
 import {
   DEFAULT_ROUTER_MIN_SCORE,
   MAX_ROUTER_MIN_SCORE,
@@ -8,6 +8,7 @@ import {
   type AiAgentConfig,
 } from '../config/ai-agent.config';
 import { KnowledgeService } from '../knowledge/knowledge.service';
+import { isGenericOpportunityBrowse } from '../opportunity-query';
 import type { KnowledgeLocale } from '../knowledge/knowledge.types';
 import {
   KnowledgeNormalizer,
@@ -347,6 +348,85 @@ export function detectPromptLanguage(
   // Any French signal is answered in English, never in French.
   if (french > 0 || english > 0) return 'en';
   return locale === 'ar' ? 'ar' : 'en';
+}
+
+// --- Follow-up continuation -------------------------------------------------
+
+/**
+ * Messages that only make sense as a continuation of the previous turn. They
+ * must never be answered with a canned greeting, clarification, or off-topic
+ * refusal when the client supplied the prior turns.
+ */
+const FOLLOW_UP_PATTERNS: readonly RegExp[] = [
+  /^(?:please\s+)?(?:explain|elaborate)(?:\s+(?:more|further|that|this|it))?$/u,
+  /^(?:can|could|would)\s+you\s+(?:explain|elaborate)(?:\s+(?:more|further|that|this|it))?$/u,
+  /^(?:tell|show|give)\s+me\s+(?:more|more\s+details|more\s+info|more\s+information|an?\s+example|examples?)$/u,
+  /^(?:more|more\s+details|more\s+info|more\s+information|an?\s+example|example|examples|simpler|in\s+simpler\s+words|in\s+simpler\s+terms|what\s+do\s+you\s+mean|what\s+does\s+that\s+mean|why|how\s+so|continue|go\s+on)$/u,
+  /^(?:اشرح|اوضح|وضح|فسر|بسط)(?:\s+لي)?(?:\s+(?:اكثر|بتفصيل|ببساطه|بشكل\s+ابسط|مره\s+اخرى))?$/u,
+  /^(?:زد|زيد|زدني|اكمل|كمل|تابع)(?:\s+(?:اكثر|المزيد))?$/u,
+  /^(?:معلومات|تفاصيل|توضيح)(?:\s+(?:اكثر|اضافيه|عنها|عن\s+هذا|عن\s+ذلك|اكثر\s+عنها))?$/u,
+  /^(?:مثال|امثله|مثال\s+عملي|مثال\s+بسيط)(?:\s+اكثر)?$/u,
+  /^(?:ابسط|ببساطه|بكلمات\s+بسيطه|بشكل\s+ابسط)$/u,
+  /^(?:ماذا\s+تقصد|ماذا\s+تعني|كيف\s+يعني|لماذا|كيف\s+ذلك)$/u,
+  /^(?:المزيد|اكثر|والمزيد)$/u,
+];
+
+const FOLLOW_UP_MAX_CHARS = 160;
+
+/** True for a short request that can only be understood in context. */
+export function isShortFollowUp(message: string): boolean {
+  const trimmed = typeof message === 'string' ? message.trim() : '';
+  if (trimmed === '' || trimmed.length > FOLLOW_UP_MAX_CHARS) return false;
+  const normalized = normalizeText(trimmed);
+  if (normalized === '') return false;
+  return FOLLOW_UP_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function cleanFollowUpTopic(value: string, maxChars: number): string {
+  return String(value ?? '')
+    .replace(/\[([^\]\n]{1,200})\]\([^()\s]*\)/gu, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxChars);
+}
+
+/**
+ * Expand a short follow-up into a retrieval query using the previous user
+ * question and the previous assistant answer. Returns `undefined` when there is
+ * no usable prior turn, in which case normal routing applies.
+ */
+export function buildFollowUpQuery(
+  history: readonly AiAgentChatMessage[] | undefined,
+  message: string,
+): string | undefined {
+  if (!isShortFollowUp(message)) return undefined;
+  const messages = Array.isArray(history) ? history : [];
+
+  let userIndex = -1;
+  let previousUser = '';
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const item = messages[index];
+    if (item?.role !== 'user') continue;
+    const content = cleanFollowUpTopic(item.content, 500);
+    if (content === '') continue;
+    userIndex = index;
+    previousUser = content;
+    break;
+  }
+  if (userIndex === -1 || previousUser === '') return undefined;
+
+  let previousAnswer = '';
+  for (let index = userIndex + 1; index < messages.length; index += 1) {
+    const item = messages[index];
+    if (item?.role !== 'assistant') continue;
+    const content = cleanFollowUpTopic(item.content, 400);
+    if (content !== '') previousAnswer = content;
+  }
+
+  return [previousUser, previousAnswer, message.trim()]
+    .filter((part) => part !== '')
+    .join(' ')
+    .slice(0, 900);
 }
 
 // --- Keyword rules ---------------------------------------------------------
@@ -865,19 +945,19 @@ export const DIRECT_REPLIES: Readonly<
   Record<PromptLanguage, Readonly<Record<DirectReplyKind, string>>>
 > = Object.freeze({
   en: Object.freeze({
-    greeting: 'Hi! How can I help you with Basmatak?',
+    greeting: "Hi, I'm Basma. How can I help?",
     thanks: "You're welcome!",
     capability:
-      "I'm Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
+      "I'm Basma, the Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
     clarify: 'Could you tell me a bit more about what you need?',
     off_topic:
       "That's outside what I can help with, but I'd be glad to help you find a volunteering opportunity.",
   }),
   ar: Object.freeze({
-    greeting: 'مرحباً! كيف أقدر أساعدك في بصمتك؟',
+    greeting: 'مرحباً، أنا بصمة. كيف أساعدك؟',
     thanks: 'على الرحب والسعة!',
     capability:
-      'أنا مساعد بصمتك. أشرح لك كيف تعمل المنصة، وأساعدك في العثور على الفرص والمنظمات.',
+      'أنا بصمة، مساعدتك في منصة بصمتك. أشرح لك كيف تعمل المنصة، وأساعدك في العثور على الفرص والمنظمات.',
     clarify: 'ممكن توضح لي أكثر ماذا تريد؟',
     off_topic:
       'هذا خارج ما أستطيع مساعدتك فيه، لكن يسعدني أن أساعدك في إيجاد فرصة تطوعية.',
@@ -907,7 +987,11 @@ export class IntentRouter {
     this.normalizer = normalizer ?? new KnowledgeNormalizer();
   }
 
-  route(message: string, locale: AiAgentLocale): RouterDecision {
+  route(
+    message: string,
+    locale: AiAgentLocale,
+    history: readonly AiAgentChatMessage[] = [],
+  ): RouterDecision {
     const text = typeof message === 'string' ? message : '';
     const trimmed = text.trim();
     const language = detectPromptLanguage(trimmed, locale);
@@ -917,13 +1001,19 @@ export class IntentRouter {
       return this.directDecision('clarify', language, trimmed, 'EMPTY_MESSAGE');
     }
 
-    if (matchesAny(normalized, GREETING_PATTERNS)) {
+    // A short follow-up is a continuation, never a fresh greeting or an
+    // off-topic/clarify turn. Its retrieval query includes the prior question
+    // and answer so context is not lost on a two-word message.
+    const continuationQuery = buildFollowUpQuery(history, trimmed);
+    const isContinuation = continuationQuery !== undefined;
+
+    if (!isContinuation && matchesAny(normalized, GREETING_PATTERNS)) {
       return this.directDecision('greeting', language, trimmed, 'GREETING');
     }
-    if (matchesAny(normalized, THANKS_PATTERNS)) {
+    if (!isContinuation && matchesAny(normalized, THANKS_PATTERNS)) {
       return this.directDecision('thanks', language, trimmed, 'THANKS');
     }
-    if (matchesAny(normalized, CAPABILITY_PATTERNS)) {
+    if (!isContinuation && matchesAny(normalized, CAPABILITY_PATTERNS)) {
       return this.directDecision('capability', language, trimmed, 'CAPABILITY');
     }
 
@@ -934,6 +1024,11 @@ export class IntentRouter {
       topics.organization ||
       topics.reference ||
       asksForStats;
+    // A generic opportunity request ("فرص" / "available opportunities") has no
+    // topic left after browse-word stripping. It is live data even when the
+    // knowledge corpus contains a page about opportunities.
+    const genericOpportunityBrowse =
+      !asksForStats && isGenericOpportunityBrowse(trimmed, topics.opportunity);
 
     // Obvious off-topic questions are rejected before retrieval. A domain word
     // (for example "sports volunteering") or a platform-knowledge signal (for
@@ -943,6 +1038,7 @@ export class IntentRouter {
       PLATFORM_KNOWLEDGE_KEYWORDS,
     );
     if (
+      !isContinuation &&
       hasKeyword(normalized, OFF_TOPIC_KEYWORDS) &&
       !hasDomainTopic &&
       !asksAboutPlatformKnowledge
@@ -956,14 +1052,17 @@ export class IntentRouter {
     }
 
     const liveSignal =
-      asksForStats ||
-      topics.listRequest ||
-      hasKeyword(normalized, STRONG_LIVE_KEYWORDS) ||
-      hasAnyPhrase(normalized, LIVE_PHRASES) ||
-      (hasDomainTopic && hasKeyword(normalized, TOPIC_LIVE_KEYWORDS)) ||
-      hasLocationSignal(trimmed, hasDomainTopic);
+      !isContinuation &&
+      (genericOpportunityBrowse ||
+        asksForStats ||
+        topics.listRequest ||
+        hasKeyword(normalized, STRONG_LIVE_KEYWORDS) ||
+        hasAnyPhrase(normalized, LIVE_PHRASES) ||
+        (hasDomainTopic && hasKeyword(normalized, TOPIC_LIVE_KEYWORDS)) ||
+        hasLocationSignal(trimmed, hasDomainTopic));
 
-    const result = this.search(trimmed, language);
+    const retrievalQuery = continuationQuery ?? trimmed;
+    const result = this.search(retrievalQuery, language);
     const topScore = result.chunks.length > 0 ? result.chunks[0].score : 0;
     const minScore = this.minScore();
     const hasKnowledge =
@@ -971,10 +1070,26 @@ export class IntentRouter {
       Number.isFinite(topScore) &&
       topScore >= minScore;
 
+    // Follow-ups always reach the answer path with expanded context, even when
+    // BM25 is weak: the supplied history is the grounding for the turn. They
+    // must never fall back to the canned clarify/off-topic replies.
+    if (isContinuation) {
+      return this.answerDecision(
+        'knowledge_only',
+        language,
+        retrievalQuery,
+        topScore,
+        [],
+        hasKnowledge ? 'FOLLOW_UP_KNOWLEDGE' : 'FOLLOW_UP_CONTEXT',
+      );
+    }
+
     if (liveSignal) {
       const selectedIntents = this.selectToolIntents(topics, asksForStats);
       const mixed =
-        hasKnowledge && this.knowledgeCoverage(trimmed, result.chunks[0]) > 0.5;
+        !genericOpportunityBrowse &&
+        hasKnowledge &&
+        this.knowledgeCoverage(trimmed, result.chunks[0]) > 0.5;
       return this.answerDecision(
         mixed ? 'mixed' : 'live_data',
         language,

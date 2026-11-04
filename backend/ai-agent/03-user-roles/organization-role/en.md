@@ -12,7 +12,7 @@ An Organization is an association or organization that uses the platform to mana
 - Follow participation and remove a participant with a reason.
 - Review submitted contributions and verify or reject them. A rejection requires a reason, and verification can include notes.
 - Write a review of a volunteer's contribution: a rating from 1 to 5 and an optional comment.
-- Publish its own email and phone on its public profile.
+- Publish its own email on its public profile; its phone is visible only to signed-in users.
 - See its public reliability: response rate and median decision time.
 
 ## Publishing Limit

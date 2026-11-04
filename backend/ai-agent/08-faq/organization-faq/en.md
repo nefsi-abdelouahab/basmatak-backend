@@ -64,8 +64,8 @@ Yes. Account deletion is available and is a soft delete that ends all sessions.
 **How do I receive notifications?**
 Through the in-app notification center. Email is used only for account verification and password reset.
 
-**Can the AI assistant create an opportunity for me?**
-Not at the moment. The assistant explains the platform and can search public information, but it does not perform actions.
+**Can Basma create an opportunity for me?**
+Not at the moment. Basma explains the platform and can search public information, but it does not perform actions.
 
 ## Common Questions
 

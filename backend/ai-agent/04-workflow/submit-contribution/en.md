@@ -32,7 +32,7 @@ A submission can be edited only while it is a draft or after it is rejected. Edi
 
 ## Rejection Reason
 
-When the organization rejects a contribution, the volunteer sees the rejection reason written by the organization on the contribution page. The reason stays visible while the contribution is rejected or back in draft after editing. It disappears after the contribution is submitted again.
+When the organization rejects a contribution, the rejection reason appears on the Submit Contribution page, directly under the rejected contribution. The reason is written by the organization. It stays visible while the contribution is rejected or back in draft after editing, and it disappears after the contribution is submitted again.
 
 ## Tips for a Good Contribution
 
@@ -54,7 +54,7 @@ From the Submit Contribution page, after the organization accepts you and the pa
 Only while it is a draft or after it is rejected. Once submitted, it cannot be edited until the organization rejects it.
 
 **Why was my contribution rejected?**
-Open the contribution page and read the reason written by the organization. Edit the contribution and submit it again.
+Open the Submit Contribution page and look under the rejected contribution; the reason written by the organization appears there. Edit the contribution and submit it again.
 
 **Can I delete my contribution?**
 No.

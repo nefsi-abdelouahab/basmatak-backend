@@ -20,6 +20,8 @@ export const POLICY_MESSAGE_KEYS = [
   'quotaExhausted',
   'retrievalOnlyLive',
   'knowledgeOnlyLive',
+  'noOpportunities',
+  'noOpportunitiesInArea',
   'notFound',
   'toolUnavailable',
   'ungrounded',
@@ -39,16 +41,16 @@ const MESSAGES: Readonly<
     ar: 'لا أستطيع مشاركة بيانات خاصة بأي مستخدم.',
   }),
   rateLimited: Object.freeze({
-    en: 'Too many assistant requests. Please try again later.',
-    ar: 'طلبات كثيرة جداً، حاول مرة أخرى بعد قليل.',
+    en: 'Too many requests to Basma. Please try again later.',
+    ar: 'طلبات كثيرة جداً إلى بصمة، حاول مرة أخرى بعد قليل.',
   }),
   busy: Object.freeze({
-    en: 'The assistant is busy. Please retry shortly.',
-    ar: 'المساعد مشغول الآن، حاول بعد لحظات.',
+    en: 'Basma is busy. Please retry shortly.',
+    ar: 'بصمة مشغولة الآن، حاول بعد لحظات.',
   }),
   quotaExhausted: Object.freeze({
-    en: 'The assistant has reached its free usage limit, but you can still browse opportunities and organizations.',
-    ar: 'وصل المساعد إلى حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
+    en: 'Basma has reached the free usage limit, but you can still browse opportunities and organizations.',
+    ar: 'بلغت بصمة حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
   }),
   retrievalOnlyLive: Object.freeze({
     en: 'Live results are temporarily limited, but you can browse opportunities and organizations.',
@@ -57,6 +59,14 @@ const MESSAGES: Readonly<
   knowledgeOnlyLive: Object.freeze({
     en: "Live results aren't available right now, but you can browse opportunities and organizations.",
     ar: 'النتائج المباشرة غير متاحة الآن، لكن يمكنك تصفح الفرص والمنظمات.',
+  }),
+  noOpportunities: Object.freeze({
+    en: 'There are no published opportunities right now. You can check the Opportunities page later.',
+    ar: 'لا توجد فرص منشورة حالياً. يمكنك تصفح صفحة الفرص لاحقاً.',
+  }),
+  noOpportunitiesInArea: Object.freeze({
+    en: 'There are no published opportunities in that area right now. You can browse the Opportunities page for other areas.',
+    ar: 'لا توجد فرص منشورة في هذه الولاية حالياً. يمكنك تصفح صفحة الفرص لرؤية بقية المناطق.',
   }),
   notFound: Object.freeze({
     en: "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
@@ -71,16 +81,16 @@ const MESSAGES: Readonly<
     ar: 'لم أتمكن من تأكيد هذه الإجابة، ممكن تعيد صياغة سؤالك؟',
   }),
   timeout: Object.freeze({
-    en: 'The assistant took too long to answer, so please try again.',
-    ar: 'استغرق المساعد وقتًا طويلًا، يرجى المحاولة مرة أخرى.',
+    en: 'Basma took too long to answer, so please try again.',
+    ar: 'استغرقت بصمة وقتًا طويلًا، يرجى المحاولة مرة أخرى.',
   }),
   providerUnavailable: Object.freeze({
-    en: 'The assistant is temporarily unavailable, so please try again shortly.',
-    ar: 'المساعد غير متاح مؤقتًا، يرجى المحاولة مرة أخرى بعد قليل.',
+    en: 'Basma is temporarily unavailable, so please try again shortly.',
+    ar: 'بصمة غير متاحة مؤقتًا، يرجى المحاولة مرة أخرى بعد قليل.',
   }),
   internalError: Object.freeze({
-    en: 'The assistant could not complete the response, so please try again.',
-    ar: 'لم يتمكن المساعد من إكمال الرد، يرجى المحاولة مرة أخرى.',
+    en: 'Basma could not complete the response, so please try again.',
+    ar: 'لم تستطع بصمة إكمال الرد، يرجى المحاولة مرة أخرى.',
   }),
   messageTooLong: Object.freeze({
     en: 'That request is too large, so please shorten your message or start a new conversation.',
@@ -145,7 +155,7 @@ export function resolveAnswerCaps(
   const configuredChunks = clamp(limits.maxKnowledgeChunks, 4, 1, 6);
   const configuredRows = clamp(limits.maxToolRows, 5, 1, 8);
   const configuredOutput = clamp(limits.maxOutputTokens, 400, 1, 800);
-  const configuredHistory = clamp(limits.maxHistoryMessages, 4, 0, 8);
+  const configuredHistory = clamp(limits.maxHistoryMessages, 6, 0, 8);
 
   switch (mode) {
     case 'conservative':
@@ -350,6 +360,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function nonEmptyArray(value: unknown): boolean {
   return Array.isArray(value) && value.length > 0;
+}
+
+/**
+ * True when an opportunity tool payload recorded that a place phrase in the
+ * request resolved to a stored wilaya or municipality. This distinguishes
+ * "nothing in this area" from the generic empty result.
+ */
+export function hasResolvedPlace(data: unknown): boolean {
+  if (!isRecord(data) || !isRecord(data.resolvedPlace)) return false;
+  const place = data.resolvedPlace;
+  return (
+    (place.type === 'wilaya' || place.type === 'municipality') &&
+    typeof place.code === 'string' &&
+    place.code.trim() !== ''
+  );
 }
 
 /**

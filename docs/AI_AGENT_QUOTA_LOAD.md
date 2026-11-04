@@ -37,8 +37,8 @@ Primary artifacts:
 | `AI_AGENT_DAILY_TOKEN_BUDGET` | 150,000 | 10,000,000 | Estimated input + output tokens per UTC day. |
 | `AI_AGENT_MAX_OUTPUT_TOKENS` | 400 | 800 | Per-turn output cap. Conservative mode lowers it to 300. |
 | `AI_AGENT_MAX_INPUT_TOKENS` | 3,000 | 100,000 | Estimated input cap before a provider call. |
-| `AI_AGENT_MAX_HISTORY_MESSAGES` | 4 | 8 | History messages included in the prompt. |
-| `AI_AGENT_MAX_HISTORY_CHARS` | 2,400 | 6,000 | Total history characters. |
+| `AI_AGENT_MAX_HISTORY_MESSAGES` | 6 | 8 | History messages included in the prompt. |
+| `AI_AGENT_MAX_HISTORY_CHARS` | 4,000 | 6,000 | Total history characters. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHUNKS` | 4 | 6 | BM25 chunks per turn. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHARS` | 6,000 | 8,000 | Retrieved knowledge characters. |
 | `AI_AGENT_MAX_TOOL_ROUNDS` | 1 | 2 | Tool follow-up rounds per turn. |

@@ -354,13 +354,13 @@ export class PromptBuilder {
     const raw = Array.isArray(history) ? history : [];
     const maxMessages = clampInteger(
       this.config.limits.maxHistoryMessages,
-      4,
+      6,
       0,
       HARD_MAX_HISTORY_MESSAGES,
     );
     const maxChars = clampInteger(
       this.config.limits.maxHistoryChars,
-      2400,
+      4000,
       0,
       HARD_MAX_HISTORY_CHARS,
     );

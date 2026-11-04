@@ -142,6 +142,13 @@ describe('VolunteersService', () => {
 
     const orgExtras = new OrganizationRegistrationExtrasService(
       orgModel,
+      // Registration extras only read the account phone; a null account keeps
+      // these legacy assertions unchanged.
+      {
+        findById: () => ({
+          select: () => ({ lean: () => ({ exec: async () => null }) }),
+        }),
+      } as never,
       new InertRegistrationExtrasService(),
       { getNext: jest.fn().mockResolvedValue('ORG-000001') } as never,
     );
@@ -370,8 +377,16 @@ describe('VolunteersService', () => {
           banner: foreign,
         }),
       ).rejects.toMatchObject({ status: 404, code: 'MEDIA_NOT_FOUND' });
-      const updated = await service.updateProfile(volunteerId, { banner: doc });
-      expect(updated.banner!.toString()).toBe(doc);
+      await expect(
+        service.updateProfile(volunteerId, {
+          banner: doc,
+        }),
+      ).rejects.toMatchObject({ status: 409, code: 'MEDIA_PURPOSE_MISMATCH' });
+      const banner = await createMedia(volunteerId, 'volunteer_banner');
+      const updated = await service.updateProfile(volunteerId, {
+        banner,
+      });
+      expect(updated.banner!.toString()).toBe(banner);
     });
 
     it('updatePublicSettings flips only the given flags', async () => {
@@ -539,6 +554,26 @@ describe('VolunteersService', () => {
     it('completes 0% for a bare profile, 100% for a filled one', async () => {
       const bare = await service.getDashboard(volunteerId);
       expect(bare.completionPercent).toBe(0);
+      expect(bare.completion).toMatchObject({
+        percent: 0,
+        complete: false,
+      });
+      expect(bare.completion.missingFields).toEqual(
+        expect.arrayContaining([
+          'name',
+          'headline',
+          'bio',
+          'birthDate',
+          'location',
+          'avatar',
+          'banner',
+          'skills',
+          'availability',
+          'availabilityNote',
+          'preferredDomains',
+          'geographicBase',
+        ]),
+      );
       expect(bare.stats).toMatchObject({
         completedTasks: 0,
         verifiedExperiences: 0,
@@ -549,10 +584,15 @@ describe('VolunteersService', () => {
       await service.updateProfile(volunteerId, {
         firstName: 'Ali',
         lastName: 'Ben',
+        headline: 'Bénévole engagé',
         bio: 'Bénévole',
         birthDate: '1990-05-04',
         location: { wilayaId: '16', municipalityId: '1601' },
         avatar: await createMedia(volunteerId, 'avatar'),
+        banner: await createMedia(volunteerId, 'volunteer_banner'),
+        availabilityNote: 'Disponible le week-end',
+        preferredDomains: ['health'],
+        geographicBase: 'Alger',
       });
       await service.addSkill(volunteerId, {
         skillId: activeSkillId.toString(),
@@ -564,6 +604,11 @@ describe('VolunteersService', () => {
       });
       const full = await service.getDashboard(volunteerId);
       expect(full.completionPercent).toBe(100);
+      expect(full.completion).toEqual({
+        percent: 100,
+        missingFields: [],
+        complete: true,
+      });
     });
   });
 

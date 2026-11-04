@@ -123,8 +123,13 @@ describe('PromptBuilder', () => {
     const prompt = buildOk(makeBuilder(), baseInput({ message: 'Hello?' }));
 
     expect(prompt.version).toBe(AI_AGENT_SYSTEM_PROMPT_VERSION);
-    expect(prompt.version).toBe('4');
+    expect(prompt.version).toBe('8');
     expect(prompt.system).toBe(AI_AGENT_SYSTEM_PROMPT);
+    expect(prompt.system).toContain('You are Basma');
+    expect(prompt.system).toContain('Do not repeat your name in every answer');
+    expect(prompt.system).toContain(
+      'use feminine forms when referring to yourself',
+    );
     expect(prompt.text).toBe(
       [
         '<system_rules>',
@@ -158,10 +163,10 @@ describe('PromptBuilder', () => {
     ]);
   });
 
-  it('pins the four exact bilingual style examples', () => {
+  it('pins the seven exact bilingual style examples', () => {
     const prompt = buildOk(makeBuilder(), baseInput());
 
-    expect(AI_AGENT_FEW_SHOT_EXAMPLES).toHaveLength(4);
+    expect(AI_AGENT_FEW_SHOT_EXAMPLES).toHaveLength(7);
     expect(
       AI_AGENT_FEW_SHOT_EXAMPLES.map((example) => ({
         language: example.language,
@@ -173,7 +178,13 @@ describe('PromptBuilder', () => {
         language: 'ar',
         input: 'كيف أتواصل مع جمعية؟',
         output:
-          'تقدر تراسل الجمعية عبر البريد أو الهاتف المعروضين في ملفها العام، وإذا كنت مشاركاً في فرصة تجد رابط «راسل الجمعية» في صفحة إرسال المساهمة. المنصة لا تتضمن رسائل مباشرة.',
+          'افتح الملف العام للمنظمة للوصول إلى بيانات التواصل المتاحة لك؛ لا أستطيع عرض بريدها أو هاتفها. وإذا كنت مشاركاً في فرصة تجد رابط «راسل الجمعية» في صفحة إرسال المساهمة. المنصة لا تتضمن رسائل مباشرة.',
+      },
+      {
+        language: 'en',
+        input: 'Can you give me an organization phone number?',
+        output:
+          "I can't show an organization's email or phone. Open its public profile to see the contact details available to you.",
       },
       {
         language: 'en',
@@ -193,13 +204,25 @@ describe('PromptBuilder', () => {
         output:
           "That's outside what I can help with, but I'm happy to help you find volunteering opportunities.",
       },
+      {
+        language: 'ar',
+        input: 'كيف أتواصل مع الدعم التقني؟',
+        output:
+          'تواصل مع الدعم التقني عبر البريد a.nefsi@esi-sba.dz أو عبر واتساب على +213 696 946 808.',
+      },
+      {
+        language: 'en',
+        input: 'How do I contact technical support?',
+        output:
+          'Contact technical support at a.nefsi@esi-sba.dz or on WhatsApp at +213 696 946 808.',
+      },
     ]);
 
     expect(prompt.text).toContain('<style_examples>');
     expect(prompt.text).toContain('<example language="ar">');
     expect(prompt.text).toContain('<input>كيف أتواصل مع جمعية؟</input>');
     expect(prompt.text).toContain(
-      '<output>تقدر تراسل الجمعية عبر البريد أو الهاتف المعروضين في ملفها العام، وإذا كنت مشاركاً في فرصة تجد رابط «راسل الجمعية» في صفحة إرسال المساهمة. المنصة لا تتضمن رسائل مباشرة.</output>',
+      '<output>افتح الملف العام للمنظمة للوصول إلى بيانات التواصل المتاحة لك؛ لا أستطيع عرض بريدها أو هاتفها. وإذا كنت مشاركاً في فرصة تجد رابط «راسل الجمعية» في صفحة إرسال المساهمة. المنصة لا تتضمن رسائل مباشرة.</output>',
     );
     expect(prompt.text).toContain('<input>Can I upload a video?</input>');
     expect(prompt.text).toContain('<input>Bonjour</input>');
@@ -222,6 +245,26 @@ describe('PromptBuilder', () => {
     expect(AI_AGENT_SYSTEM_PROMPT).toContain(
       'For any other language, reply briefly in English',
     );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'never insert words or characters from another script',
+    );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'use simple, correct Modern Standard Arabic',
+    );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain('answer in 4-8 flowing sentences');
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain('Treat short follow-ups');
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'Never mention internal documents',
+    );
+    expect(AI_AGENT_SYSTEM_PROMPT).toContain(
+      'Refer only to real platform pages by their UI names',
+    );
+    expect(buildResponseStyle('en')).toContain('4-8 flowing sentences');
+    expect(buildResponseStyle('en')).toContain(
+      'Never mention internal documents',
+    );
+    expect(buildResponseStyle('en')).toContain('Treat short follow-ups');
+    expect(buildResponseStyle('ar')).toContain('أربع إلى ثماني جمل');
     expect(buildResponseStyle('en')).toContain(
       'Never mention knowledge, tools, a database, a server, retrieval, chunks, sources, technologies, or how you found the information.',
     );
@@ -542,8 +585,10 @@ describe('PromptBuilder', () => {
   });
 
   it('never exceeds maxInputTokens and includes the output reserve', () => {
+    // The reserved system/style/contact rules grew in Phase 2; keep the test
+    // tight but above the required baseline so trimming is still exercised.
     const prompt = buildOk(
-      makeBuilder({ maxInputTokens: 2600, maxOutputTokens: 150 }),
+      makeBuilder({ maxInputTokens: 2800, maxOutputTokens: 150 }),
       baseInput({
         message: 'What is Basmatak? '.repeat(20),
         history: [
@@ -565,7 +610,7 @@ describe('PromptBuilder', () => {
       }),
     );
 
-    expect(prompt.estimatedInputTokens).toBeLessThanOrEqual(2600);
+    expect(prompt.estimatedInputTokens).toBeLessThanOrEqual(2800);
     expect(prompt.estimatedOutputTokens).toBe(150);
     expect(prompt.estimatedTotalTokens).toBe(prompt.estimatedInputTokens + 150);
     expect(prompt.truncated).toBe(true);
@@ -574,7 +619,7 @@ describe('PromptBuilder', () => {
   it('keeps safety rules and the current message on every trimming path', () => {
     const message = 'What is Basmatak?';
     const prompt = buildOk(
-      makeBuilder({ maxInputTokens: 2600 }),
+      makeBuilder({ maxInputTokens: 2800 }),
       baseInput({
         message,
         history: [
@@ -597,7 +642,7 @@ describe('PromptBuilder', () => {
       'Answer only from the <knowledge> and <tool_results> supplied in this prompt.',
     );
     expect(prompt.text).toContain(
-      'Never output contact details, email addresses, phone numbers',
+      "Never output an organization's email or phone, private contact details",
     );
     expect(prompt.text).toContain(
       `<user_message>\n${message}\n</user_message>`,

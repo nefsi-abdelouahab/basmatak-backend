@@ -229,6 +229,26 @@ describe('BM25Index', () => {
     ]);
   });
 
+  it('retries stopword-only identity queries without removing stopwords', () => {
+    const index = new BM25Index([
+      makeChunk({
+        text: 'Who are you? I am Basma, the Basmatak Assistant.',
+        source: 'about-basma/en.md',
+        locale: 'en',
+      }),
+      makeChunk({
+        text: 'من أنت؟ أنا بصمة، مساعدتك في منصة بصمتك.',
+        source: 'about-basma/ar.md',
+        locale: 'ar',
+      }),
+    ]);
+
+    expect(index.search('who are you')[0].chunk.source).toBe(
+      'about-basma/en.md',
+    );
+    expect(index.search('من أنت')[0].chunk.source).toBe('about-basma/ar.md');
+  });
+
   it('returns no results for an empty index, blank query, or unknown terms', () => {
     const empty = new BM25Index([]);
     expect(empty.size).toBe(0);

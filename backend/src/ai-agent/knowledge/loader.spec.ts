@@ -279,7 +279,7 @@ describe('KnowledgeLoader', () => {
     }
   });
 
-  it('accepts the official contact details in the four allowlisted files', () => {
+  it('accepts both official contact sets in the four allowlisted files', () => {
     const root = makeTempRoot();
     const allowlisted = [
       '01-about/contact/en.md',
@@ -292,7 +292,7 @@ describe('KnowledgeLoader', () => {
       writeFixture(
         root,
         file,
-        `# Official contact ${index}\n\nEmail roeyatimimoun@gmail.com or call +213 663847105 or +213 663 847 105.`,
+        `# Official contact ${index}\n\nEmail roeyatimimoun@gmail.com or a.nefsi@esi-sba.dz; call +213 663847105, +213 663 847 105, +213 696 946 808, or +213696946808.`,
       );
     });
 
@@ -330,12 +330,12 @@ describe('KnowledgeLoader', () => {
     ).toHaveLength(4);
   });
 
-  it('rejects official contact details outside the allowlist', () => {
+  it('rejects both official contact sets outside the allowlist', () => {
     const root = makeTempRoot();
     writeFixture(
       root,
       '08-faq/contact-elsewhere/en.md',
-      '# Contact elsewhere\n\nEmail roeyatimimoun@gmail.com or call +213 663847105.',
+      '# Contact elsewhere\n\nEmail roeyatimimoun@gmail.com or a.nefsi@esi-sba.dz; call +213 663847105 or +213 696 946 808.',
     );
 
     const result = loadKnowledge(root);
@@ -412,7 +412,7 @@ describe('KnowledgeLoader', () => {
     const result = loadKnowledge(corpus);
 
     expect(result.issues).toEqual([]);
-    expect(result.documents).toHaveLength(138);
+    expect(result.documents).toHaveLength(140);
     expect(result.documents.map((document) => document.source)).toEqual(
       expect.arrayContaining([
         '01-about/contact/en.md',

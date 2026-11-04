@@ -32,7 +32,7 @@ A live application is pending, under review, or accepted. A volunteer can have o
 | Approved | Verified by the organization |
 | Rejected | Rejected with a reason; the volunteer can edit and resubmit |
 
-A participation has one submission. A rejected submission returns to draft when edited. A rejected submission shows the organization's rejection reason on the contribution page. The reason stays visible while the submission is rejected or in draft after editing, and it disappears when the submission is submitted again.
+A participation has one submission. A rejected submission returns to draft when edited. The Submit Contribution page shows the rejection reason under the rejected contribution, and the reason is written by the organization. The reason stays visible while the submission is rejected or in draft after editing, and it disappears when the submission is submitted again.
 
 ## Verification Outcomes
 
@@ -50,7 +50,7 @@ No. A rejected application is final, but the volunteer can send a new applicatio
 The organization ended the participation with a reason. Unlike withdrawal, removal does not free the seat.
 
 **Why was my contribution rejected?**
-Open the contribution page and read the reason written by the organization. Edit the submission and send it again.
+Open the Submit Contribution page and look under the rejected contribution; the reason written by the organization appears there. Edit the submission and send it again.
 
 **When does a submission become approved?**
 When the organization verifies the contribution.

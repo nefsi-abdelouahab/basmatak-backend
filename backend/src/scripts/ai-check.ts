@@ -93,9 +93,10 @@ const INTERNATIONAL_PHONE_CANDIDATE =
   /(?:^|[^\w])(\+\d[\d\s().-]{6,}\d)(?!\w)/g;
 
 /**
- * Public Roeya Association contact details may appear only in these four
- * files. Every other email or phone number is rejected everywhere, and these
- * files may contain only the official email and phone values.
+ * Official public contact details (the Roeya Association and platform
+ * technical support) may appear only in these four files. Every other email or
+ * phone number is rejected everywhere, and these files may contain only the
+ * allowlisted official values.
  */
 const CONTACT_GUARD_ALLOWLIST = new Set([
   '01-about/contact/ar.md',
@@ -103,8 +104,11 @@ const CONTACT_GUARD_ALLOWLIST = new Set([
   '08-faq/troubleshooting/ar.md',
   '08-faq/troubleshooting/en.md',
 ]);
-const OFFICIAL_CONTACT_EMAIL = 'roeyatimimoun@gmail.com';
-const OFFICIAL_CONTACT_PHONE_DIGITS = '213663847105';
+const OFFICIAL_CONTACT_EMAILS = new Set([
+  'roeyatimimoun@gmail.com',
+  'a.nefsi@esi-sba.dz',
+]);
+const OFFICIAL_CONTACT_PHONE_DIGITS = new Set(['213663847105', '213696946808']);
 
 interface FrontMatterValues {
   title?: string;
@@ -392,7 +396,7 @@ function checkCommonContent(file: string, text: string): ContentIssue[] {
   if (
     emails.some(
       (email) =>
-        !contactAllowed || email.toLowerCase() !== OFFICIAL_CONTACT_EMAIL,
+        !contactAllowed || !OFFICIAL_CONTACT_EMAILS.has(email.toLowerCase()),
     )
   ) {
     issues.push({
@@ -405,7 +409,8 @@ function checkCommonContent(file: string, text: string): ContentIssue[] {
   if (
     phones.some(
       (phone) =>
-        !contactAllowed || digitsOnly(phone) !== OFFICIAL_CONTACT_PHONE_DIGITS,
+        !contactAllowed ||
+        !OFFICIAL_CONTACT_PHONE_DIGITS.has(digitsOnly(phone)),
     )
   ) {
     issues.push({

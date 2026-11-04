@@ -1,4 +1,4 @@
-# Basmatak AI assistant — operator and developer guide
+# Basma — operator and developer guide
 
 > **Status:** Session 13 documentation. The implementation is on
 > `ai-agent-session-2`; the last code commit before this document is
@@ -15,10 +15,10 @@
 > corpus authoring rules are in
 > [`backend/ai-agent/README.md`](../backend/ai-agent/README.md).
 
-## 1. What the assistant is, and what it is not
+## 1. What Basma is, and what it is not
 
-The Basmatak assistant is an optional, public, bilingual chat widget. It answers
-only from two sources:
+Basma is the Basmatak assistant: an optional, public, bilingual chat widget. It
+answers only from two sources:
 
 1. the reviewed knowledge corpus committed under `backend/ai-agent/`; and
 2. read-only public database tools: published opportunities, verified active
@@ -70,7 +70,7 @@ off immediately with `AI_AGENT_ENABLED=false`.
 1. **Validation.** The global validation pipe rejects unknown fields, invalid
    JSON, oversized bodies, and DTO violations before the handler runs. The
    public contract is fixed: message 1–2,000 characters, locale `en`/`ar`,
-   optional history of at most 4 messages and 2,400 characters.
+   optional history of at most 6 messages and 4,000 characters.
 2. **Kill switch.** If `AI_AGENT_ENABLED` is not the literal trimmed `true`,
    the handler logs a disabled outcome and returns `503 AI_AGENT_DISABLED`
    before touching quota or SSE state.
@@ -126,7 +126,7 @@ is in [`API_ROUTES.md`](./API_ROUTES.md#ai-agent). The three routes are:
 | `GET /api/v1/ai-agent/usage` | admin Bearer | Aggregate today/7-day counters and the daily budget snapshot. Anonymous `401`, non-admin `403`. |
 
 The public limits do not change with environment variables:
-`messageChars=2000`, `historyMessages=4`, `historyChars=2400`.
+`messageChars=2000`, `historyMessages=6`, `historyChars=4000`.
 
 ## 4. Knowledge authoring and update workflow
 
@@ -203,8 +203,8 @@ the feature.
 | `AI_AGENT_KNOWLEDGE_DIR` | unset → `<cwd>/ai-agent` | — | Override for local testing only; keep unset in production. |
 | `AI_AGENT_MAX_INPUT_TOKENS` | `3000` | `100000` | Estimated input cap; the prompt builder trims optional content to fit and fails closed if reserved content cannot fit. |
 | `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | `800` | Per-turn output cap; conservative mode lowers it to 300. |
-| `AI_AGENT_MAX_HISTORY_MESSAGES` | `4` | `8` | Prompt history cap. The public DTO still accepts at most 4. |
-| `AI_AGENT_MAX_HISTORY_CHARS` | `2400` | `6000` | Prompt history character cap. The public DTO still accepts at most 2,400. |
+| `AI_AGENT_MAX_HISTORY_MESSAGES` | `6` | `8` | Prompt history cap. The public DTO still accepts at most 6. |
+| `AI_AGENT_MAX_HISTORY_CHARS` | `4000` | `6000` | Prompt history character cap. The public DTO still accepts at most 4,000. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHUNKS` | `4` | `6` | BM25 chunks considered per turn. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHARS` | `6000` | `8000` | Retrieved knowledge characters in the prompt. |
 | `AI_AGENT_MAX_TOOL_ROUNDS` | `1` | `2` | Tool follow-up rounds per turn; the executor also caps total provider calls at 3. |

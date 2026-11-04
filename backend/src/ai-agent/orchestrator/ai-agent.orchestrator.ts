@@ -41,6 +41,10 @@ import type {
   LlmUsage,
 } from '../llm/provider.types';
 import { toLlmToolDeclaration } from '../llm/provider.types';
+import {
+  buildOpportunitySearchText,
+  isGenericOpportunityBrowse,
+} from '../opportunity-query';
 import { PromptBuilder } from '../prompt/prompt-builder';
 import { detectPromptLanguage, IntentRouter } from '../router/intent-router';
 import type { RouterDecision } from '../router/intent-router';
@@ -54,6 +58,7 @@ import type {
 } from '../tools/tool.types';
 import {
   containsSystemInstructionLeak,
+  hasResolvedPlace,
   hasUsableToolData,
   isPrivateDataRequest,
   policyMessage,
@@ -61,7 +66,11 @@ import {
   splitAnswerIntoDeltas,
 } from './answer-policy';
 import type { AnswerCaps } from './answer-policy';
-import { buildAnswerLinks, allowsBrowseLinks } from './answer-links';
+import {
+  buildAnswerLinks,
+  buildBrowseLinks,
+  allowsBrowseLinks,
+} from './answer-links';
 import {
   asksForList,
   CITATION_MARKER_PATTERN,
@@ -371,7 +380,11 @@ export class AiAgentOrchestrator {
         );
       }
 
-      const decision = this.router.route(input.message, input.locale);
+      const decision = this.router.route(
+        input.message,
+        input.locale,
+        input.history,
+      );
 
       // Greetings, thanks, capability questions, and clarifications are
       // deterministic and citation-exempt.
@@ -450,6 +463,18 @@ export class AiAgentOrchestrator {
 
     const toolsAllowed =
       caps.toolsEnabled && caps.maxToolRounds > 0 && decision.tools.length > 0;
+
+    // A generic browse request has no search topic. Answer it deterministically
+    // with the newest published rows and an empty text filter instead of
+    // letting the model invent a filter or claim it has no information.
+    if (
+      toolsAllowed &&
+      decision.toolIntents.includes('opportunity_search') &&
+      isGenericOpportunityBrowse(input.message, true)
+    ) {
+      return await this.runOpportunityBrowse(input, language, zeroUsage());
+    }
+
     const history =
       caps.historyMessages > 0
         ? input.history.slice(-caps.historyMessages)
@@ -576,9 +601,30 @@ export class AiAgentOrchestrator {
             // No usable public data: answer "not found"/"unavailable" now.
             // There is deliberately no extra provider call and no retry.
             const empty = round.reason === 'empty';
+            // A successful opportunity search that returned zero rows is a
+            // real "no published opportunities" answer, not a generic miss.
+            const onlyEmptyOpportunitySearch =
+              empty &&
+              round.results.length > 0 &&
+              round.results.every(
+                (result) =>
+                  result.tool === 'search_opportunities' &&
+                  result.ok &&
+                  !hasUsableToolData(result.data),
+              );
+            const placeResolved =
+              onlyEmptyOpportunitySearch &&
+              round.results.some(
+                (result) => result.ok && hasResolvedPlace(result.data),
+              );
+            const emptyKey = onlyEmptyOpportunitySearch
+              ? placeResolved
+                ? 'noOpportunitiesInArea'
+                : 'noOpportunities'
+              : 'notFound';
             return this.emitPolicyAnswer(
               input,
-              policyMessage(empty ? 'notFound' : 'toolUnavailable', language),
+              policyMessage(empty ? emptyKey : 'toolUnavailable', language),
               true,
               {
                 toolCalls: toolCallCount,
@@ -658,15 +704,29 @@ export class AiAgentOrchestrator {
     const answerText = finalTurn.text.trim();
 
     // A clear opportunity search must never end as a generic "no details"
-    // answer when the model skipped the tool. This deterministic fallback
-    // executes the read-only search and builds the entity link itself.
+    // answer when the model made no opportunity tool call. This deterministic
+    // fallback executes the read-only search and builds the entity links
+    // itself. A generic browse request is answered with no text filter.
     if (
-      toolCallCount === 0 &&
       toolsAllowed &&
-      decision.toolIntents.length === 1 &&
-      decision.toolIntents[0] === 'opportunity_search'
+      decision.toolIntents.includes('opportunity_search') &&
+      !executedNames.includes('search_opportunities')
     ) {
-      return await this.runOpportunityFallback(input, language, totals);
+      return isGenericOpportunityBrowse(input.message, true)
+        ? await this.runOpportunityBrowse(
+            input,
+            language,
+            totals,
+            toolCallCount,
+            uniqueNames(executedNames),
+          )
+        : await this.runOpportunityFallback(
+            input,
+            language,
+            totals,
+            toolCallCount,
+            uniqueNames(executedNames),
+          );
     }
 
     if (answerText === '') {
@@ -725,23 +785,37 @@ export class AiAgentOrchestrator {
   }
 
   /**
-   * Deterministic last resort for a clear opportunity search where the model
-   * answered without calling the tool. It guarantees that a published
-   * opportunity returned by the tool becomes a valid entity link instead of a
-   * generic "no details" answer.
+   * Deterministic answer for a generic opportunity browse request. It always
+   * runs the read-only search with no text filter, so the newest published
+   * rows cannot be filtered out by the request sentence itself. The model is
+   * never called for this path.
    */
-  private async runOpportunityFallback(
+  private async runOpportunityBrowse(
     input: AiAgentOrchestratorInput,
     language: ReturnType<typeof detectPromptLanguage>,
     totals: UsageTotals,
+    priorToolCalls = 0,
+    priorToolNames: readonly string[] = [],
   ): Promise<AiAgentOrchestrationResult> {
     const toolName = 'search_opportunities';
-    const text = input.message.replace(/\s+/g, ' ').trim().slice(0, 120);
-    let result: ToolExecutionResult;
+    const toolNames = uniqueNames([...priorToolNames, toolName]);
+    const toolCalls = priorToolCalls + 1;
+    const extra = { toolCalls, toolNames, usage: totals };
 
+    if (!this.writeStatus(input.stream, 'tool', toolName)) {
+      return this.abortedResult(
+        input.mode,
+        [...priorToolNames],
+        priorToolCalls,
+      );
+    }
+
+    let result: ToolExecutionResult;
     try {
+      // No `text` key at all: the tool must return the newest published rows
+      // regardless of the browse wording in the user message.
       const batch = await this.toolExecutor.executeMany([
-        { name: toolName, arguments: { text, limit: 3 } },
+        { name: toolName, arguments: { limit: 3, sort: 'newest' } },
       ]);
       result =
         batch.results[0] ??
@@ -759,8 +833,125 @@ export class AiAgentOrchestrator {
       );
     }
 
-    const toolNames = [toolName];
-    const extra = { toolCalls: 1, toolNames, usage: totals };
+    if (!result.ok) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('toolUnavailable', language),
+        true,
+        extra,
+      );
+    }
+
+    const links = buildAnswerLinks(
+      [{ citationId: 'T1', result }],
+      input.locale,
+    ).slice(0, 3);
+    if (links.length === 0) {
+      return this.emitPolicyAnswer(
+        input,
+        policyMessage('noOpportunities', language),
+        true,
+        extra,
+      );
+    }
+
+    const browse = buildBrowseLinks(input.locale)[0];
+    const rendered = links.map((link) => `[${link.title}](${link.href})`);
+    const listed =
+      language === 'ar'
+        ? rendered.length === 1
+          ? rendered[0]
+          : `${rendered.slice(0, -1).join('، ')}، و${rendered[rendered.length - 1]}`
+        : rendered.length === 1
+          ? rendered[0]
+          : `${rendered.slice(0, -1).join(', ')}, and ${rendered[rendered.length - 1]}`;
+    const textAnswer =
+      browse === undefined
+        ? language === 'ar'
+          ? `إليك أحدث الفرص المنشورة: ${listed}.`
+          : `Here are the latest published opportunities: ${listed}.`
+        : language === 'ar'
+          ? `إليك أحدث الفرص المنشورة: ${listed} — يمكنك تصفح المزيد في [صفحة الفرص](${browse.href}).`
+          : `Here are the latest published opportunities: ${listed} — you can browse more on the [Opportunities page](${browse.href}).`;
+
+    const allowedLinks = browse === undefined ? links : [...links, browse];
+    const sanitized = sanitizeAnswer(textAnswer, {
+      locale: input.locale,
+      allowedLinks,
+      allowBrowseLinks: true,
+      allowLists: false,
+      maxLinks: 4,
+    });
+
+    return this.emitAnswer(
+      input,
+      sanitized === '' ? policyMessage('toolUnavailable', language) : sanitized,
+      input.mode,
+      totals,
+      {
+        refusal: sanitized === '',
+        truncated: false,
+        toolCalls,
+        toolNames,
+      },
+      { finishReason: 'stop' },
+    );
+  }
+
+  /**
+   * Deterministic last resort for a clear opportunity search where the model
+   * answered without calling the tool. It guarantees that a published
+   * opportunity returned by the tool becomes a valid entity link instead of a
+   * generic "no details" answer.
+   */
+  private async runOpportunityFallback(
+    input: AiAgentOrchestratorInput,
+    language: ReturnType<typeof detectPromptLanguage>,
+    totals: UsageTotals,
+    priorToolCalls = 0,
+    priorToolNames: readonly string[] = [],
+  ): Promise<AiAgentOrchestrationResult> {
+    const toolName = 'search_opportunities';
+    const text = buildOpportunitySearchText(input.message);
+    // No meaningful topic left means this is a generic browse request.
+    if (text === '') {
+      return this.runOpportunityBrowse(
+        input,
+        language,
+        totals,
+        priorToolCalls,
+        priorToolNames,
+      );
+    }
+
+    let result: ToolExecutionResult;
+
+    try {
+      const batch = await this.toolExecutor.executeMany([
+        {
+          name: toolName,
+          arguments: { text, limit: 3, sort: 'newest' },
+        },
+      ]);
+      result =
+        batch.results[0] ??
+        failureResult(
+          toolName,
+          'UNAVAILABLE',
+          'Tool is temporarily unavailable.',
+        );
+    } catch (error) {
+      this.logFailure('ai_agent_tool_failure', error);
+      result = failureResult(
+        toolName,
+        'UNAVAILABLE',
+        'Tool is temporarily unavailable.',
+      );
+    }
+
+    const toolNames = uniqueNames([...priorToolNames, toolName]);
+    const toolCalls = priorToolCalls + 1;
+    const extra = { toolCalls, toolNames, usage: totals };
 
     if (!result.ok) {
       return this.emitPolicyAnswer(
@@ -774,19 +965,22 @@ export class AiAgentOrchestrator {
     const links = buildAnswerLinks(
       [{ citationId: 'T1', result }],
       input.locale,
-    );
+    ).slice(0, 3);
     if (links.length === 0) {
       return this.emitPolicyAnswer(
         input,
-        policyMessage('notFound', language),
+        policyMessage(
+          result.ok && hasResolvedPlace(result.data)
+            ? 'noOpportunitiesInArea'
+            : 'noOpportunities',
+          language,
+        ),
         true,
         extra,
       );
     }
 
-    const linked = links
-      .slice(0, 3)
-      .map((link) => `[${link.title}](${link.href})`);
+    const linked = links.map((link) => `[${link.title}](${link.href})`);
     const textAnswer =
       language === 'ar'
         ? linked.length === 1
@@ -811,7 +1005,7 @@ export class AiAgentOrchestrator {
       {
         refusal: sanitized === '',
         truncated: false,
-        toolCalls: 1,
+        toolCalls,
         toolNames,
       },
       { finishReason: 'stop' },

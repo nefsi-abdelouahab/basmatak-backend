@@ -1,0 +1,43 @@
+{"version":9,"type":"context-options","origin":"testRunner","browserName":"","playwrightVersion":"1.63.0","options":{},"platform":"win32","wallTime":1793387287442,"monotonicTime":6269.216,"sdkLanguage":"javascript","testTimeout":30000,"annotations":[]}
+{"type":"before","callId":"hook@1","stepId":"hook@1","startTime":6316.866,"class":"Test","method":"hook","title":"Before Hooks","params":{},"stack":[]}
+{"type":"before","callId":"fixture@34","stepId":"fixture@34","parentId":"hook@1","startTime":6353.687,"class":"Test","method":"fixture","title":"Fixture \"browser\"","params":{},"stack":[]}
+{"type":"before","callId":"pw:api@35","stepId":"pw:api@35","parentId":"fixture@34","startTime":6368.055,"class":"Test","method":"pw:api","title":"Launch browser","params":{},"stack":[]}
+{"type":"after","callId":"pw:api@35","endTime":6681.623,"annotations":[]}
+{"type":"after","callId":"fixture@34","endTime":6682.172,"annotations":[]}
+{"type":"before","callId":"fixture@38","stepId":"fixture@38","parentId":"hook@1","startTime":6685.765,"class":"Test","method":"fixture","title":"Fixture \"context\"","params":{},"stack":[]}
+{"type":"before","callId":"pw:api@39","stepId":"pw:api@39","parentId":"fixture@38","startTime":6690.229,"class":"Test","method":"pw:api","title":"Create context","params":{},"stack":[]}
+{"type":"after","callId":"pw:api@39","endTime":6707.752,"annotations":[]}
+{"type":"after","callId":"fixture@38","endTime":6734.398,"annotations":[]}
+{"type":"before","callId":"fixture@40","stepId":"fixture@40","parentId":"hook@1","startTime":6735.109,"class":"Test","method":"fixture","title":"Fixture \"page\"","params":{},"stack":[]}
+{"type":"before","callId":"pw:api@41","stepId":"pw:api@41","parentId":"fixture@40","startTime":6738.042,"class":"Test","method":"pw:api","title":"Create page","params":{},"stack":[]}
+{"type":"after","callId":"pw:api@41","endTime":7149.611,"annotations":[]}
+{"type":"after","callId":"fixture@40","endTime":7149.768,"annotations":[]}
+{"type":"after","callId":"hook@1","endTime":7149.884,"annotations":[]}
+{"type":"before","callId":"pw:api@42","stepId":"pw:api@42","startTime":7152.934,"class":"Test","method":"pw:api","title":"Add init script","params":{},"stack":[{"file":"C:\\Users\\Failasouf\\Desktop\\projects\\basmatck\\frontend\\e2e\\toast.spec.ts","line":80,"column":3,"function":"mockApi"}],"group":"configuration"}
+{"type":"after","callId":"pw:api@42","endTime":7159.25,"annotations":[]}
+{"type":"before","callId":"pw:api@43","stepId":"pw:api@43","startTime":7161.724,"class":"Test","method":"pw:api","title":"Route requests","params":{},"stack":[{"file":"C:\\Users\\Failasouf\\Desktop\\projects\\basmatck\\frontend\\e2e\\toast.spec.ts","line":99,"column":14,"function":"mockApi"}],"group":"route"}
+{"type":"after","callId":"pw:api@43","endTime":7166.882,"annotations":[]}
+{"type":"before","callId":"pw:api@44","stepId":"pw:api@44","startTime":7169.965,"class":"Test","method":"pw:api","title":"Navigate","subtitle":"/en/volunteer/opportunities","params":{"url":"/en/volunteer/opportunities"},"stack":[{"file":"C:\\Users\\Failasouf\\Desktop\\projects\\basmatck\\frontend\\e2e\\toast.spec.ts","line":173,"column":18}]}
+{"type":"after","callId":"pw:api@44","endTime":15781.183,"annotations":[]}
+{"type":"before","callId":"pw:api@45","stepId":"pw:api@45","startTime":15787.893,"class":"Test","method":"pw:api","title":"Click","subtitle":"getByTestId('save-opp-64f000000000000000000001')","params":{"locator":"getByTestId('save-opp-64f000000000000000000001')"},"stack":[{"file":"C:\\Users\\Failasouf\\Desktop\\projects\\basmatck\\frontend\\e2e\\toast.spec.ts","line":174,"column":53}]}
+{"type":"error","message":"\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m","stack":[]}
+{"type":"before","callId":"hook@46","stepId":"hook@46","startTime":36683.831,"class":"Test","method":"hook","title":"After Hooks","params":{},"stack":[]}
+{"type":"before","callId":"fixture@47","stepId":"fixture@47","parentId":"hook@46","startTime":36685.525,"class":"Test","method":"fixture","title":"Fixture \"page\"","params":{},"stack":[]}
+{"type":"after","callId":"fixture@47","endTime":36685.968,"annotations":[]}
+{"type":"before","callId":"fixture@48","stepId":"fixture@48","parentId":"hook@46","startTime":36686.375,"class":"Test","method":"fixture","title":"Fixture \"context\"","params":{},"stack":[]}
+{"type":"before","callId":"pw:api@49","stepId":"pw:api@49","parentId":"fixture@48","startTime":38795.684,"class":"Test","method":"pw:api","title":"Close context","params":{},"stack":[]}
+{"type":"after","callId":"pw:api@45","endTime":38803.452,"annotations":[],"error":{"name":"","message":"Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('save-opp-64f000000000000000000001')\u001b[22m\n","stack":"Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('save-opp-64f000000000000000000001')\u001b[22m\n\n    at C:\\Users\\Failasouf\\Desktop\\projects\\basmatck\\frontend\\e2e\\toast.spec.ts:174:53"}}
+{"type":"error","message":"Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('save-opp-64f000000000000000000001')\u001b[22m\n","stack":[{"file":"C:\\Users\\Failasouf\\Desktop\\projects\\basmatck\\frontend\\e2e\\toast.spec.ts","line":174,"column":53}]}
+{"type":"after","callId":"pw:api@49","endTime":38810.572,"annotations":[]}
+{"type":"after","callId":"fixture@48","endTime":38810.658,"annotations":[]}
+{"type":"before","callId":"attach@f81e2e63fc5e43268d6ce06532b16b7e","stepId":"attach@f81e2e63fc5e43268d6ce06532b16b7e","startTime":38828.269,"class":"Test","method":"test.attach","title":"Attach \"error-context\"","params":{},"stack":[]}
+{"type":"after","callId":"attach@f81e2e63fc5e43268d6ce06532b16b7e","endTime":38828.297,"attachments":[{"name":"error-context","contentType":"text/markdown","file":"attachments/3c7fc062fb7710124e7c8bd231dec307fc1d5cc3"}]}
+{"type":"before","callId":"fixture@58","stepId":"fixture@58","parentId":"hook@46","startTime":38829.995,"class":"Test","method":"fixture","title":"Fixture \"baseURL\"","params":{},"stack":[{"file":"project#","line":1,"column":1}],"group":"configuration"}
+{"type":"after","callId":"fixture@58","endTime":38830.053,"annotations":[]}
+{"type":"before","callId":"fixture@61","stepId":"fixture@61","parentId":"hook@46","startTime":38830.887,"class":"Test","method":"fixture","title":"Fixture \"viewport\"","params":{},"stack":[{"file":"C:\\Users\\Failasouf\\Desktop\\projects\\basmatck\\frontend\\e2e\\toast.spec.ts","line":168,"column":8}]}
+{"type":"after","callId":"fixture@61","endTime":38830.965,"annotations":[]}
+{"type":"after","callId":"hook@46","endTime":38840.76,"annotations":[]}
+{"type":"before","callId":"hook@83","stepId":"hook@83","startTime":38841.159,"class":"Test","method":"hook","title":"Worker Cleanup","params":{},"stack":[]}
+{"type":"before","callId":"fixture@88","stepId":"fixture@88","parentId":"hook@83","startTime":38843.507,"class":"Test","method":"fixture","title":"Fixture \"browser\"","params":{},"stack":[]}
+{"type":"after","callId":"fixture@88","endTime":39417.935,"annotations":[]}
+{"type":"after","callId":"hook@83","endTime":39426.248,"annotations":[]}

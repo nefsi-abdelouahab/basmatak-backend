@@ -184,7 +184,7 @@ export class AiAgentController {
       });
       throw new BusinessException(
         'AI_AGENT_DISABLED',
-        'The assistant is temporarily unavailable.',
+        'Basma is temporarily unavailable.',
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }

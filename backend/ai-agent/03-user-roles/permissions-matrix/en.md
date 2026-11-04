@@ -26,7 +26,7 @@ This table summarizes the verified permissions. The platform enforces them.
 - Actions that change data are validated by the platform.
 - The platform never trusts a user's claim about their role, and never trusts role information produced by an AI model.
 - Only the organization side can verify contributions and write reviews.
-- The assistant has no access to accounts and cannot perform any of these actions.
+- Basma has no access to accounts and cannot perform any of these actions.
 
 ## Common Questions
 

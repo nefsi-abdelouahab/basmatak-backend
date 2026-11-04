@@ -185,7 +185,7 @@ Create the NestJS `ai-agent` module and a stable transport contract. The chat en
 3. Add DTO validation:
    - `message`: 1–2,000 characters;
    - `locale`: `en` or `ar`;
-   - `history`: max 4 messages / 2,400 characters, only `user` and `assistant`.
+   - `history`: max 6 messages / 4,000 characters, only `user` and `assistant`.
 4. Implement `POST /api/v1/ai-agent/chat` with SSE:
    - headers: `text/event-stream`, `no-cache`, `no-transform`, `keep-alive`, `X-Accel-Buffering: no`;
    - events: `meta`, `status`, `token`, `done`, `error`;

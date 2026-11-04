@@ -813,7 +813,7 @@ token counters, or usage.
   "enabled": true,
   "mode": "normal",
   "knowledge": { "files": 8, "chunks": 96 },
-  "limits": { "messageChars": 2000, "historyMessages": 4, "historyChars": 2400 }
+  "limits": { "messageChars": 2000, "historyMessages": 6, "historyChars": 4000 }
 }
 ```
 
@@ -838,9 +838,9 @@ server-side conversation storage.
 |---|---|---|---|
 | `message` | yes | string | 1-2,000 characters; must contain a non-whitespace character. |
 | `locale` | yes | enum(`en`, `ar`) | Response language and localized errors/refusals. |
-| `history` | no | array | Oldest first; at most 4 messages and 2,400 characters total. |
+| `history` | no | array | Oldest first; at most 6 messages and 4,000 characters total. |
 | `history[].role` | yes | enum(`user`, `assistant`) | |
-| `history[].content` | yes | string | 1-2,400 characters per message. |
+| `history[].content` | yes | string | 1-4,000 characters per message. |
 
 Unknown fields are rejected (`forbidNonWhitelisted`). A request that violates
 these rules is a pre-stream `400`, never an SSE stream.
@@ -902,7 +902,7 @@ events and no `done`. There is no `id:`, `retry:`, or `Last-Event-ID` support.
 
 | HTTP | `code` | Cause | Retry |
 |---|---|---|---|
-| `400` | `VALIDATION_ERROR` | Missing/unknown/invalid field, blank message, message over 2,000 characters, history over 4 messages or 2,400 characters, or invalid locale/role. | Fix the request. |
+| `400` | `VALIDATION_ERROR` | Missing/unknown/invalid field, blank message, message over 2,000 characters, history over 6 messages or 4,000 characters, or invalid locale/role. | Fix the request. |
 | `400` | `INVALID_JSON` | Malformed JSON body. | Fix the request. |
 | `413` | `PAYLOAD_TOO_LARGE` | Body exceeds the global body limit. | Send a smaller body. |
 | `415` | `UNSUPPORTED_MEDIA_TYPE` | Unsupported request encoding. | Send UTF-8 JSON. |

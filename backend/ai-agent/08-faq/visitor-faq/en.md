@@ -35,5 +35,5 @@ No. Only verified, active organizations have a public profile.
 **Can I contact a volunteer directly?**
 No. There is no messaging system, and organizations do not see a volunteer's email or phone.
 
-**Can the AI assistant act for me?**
-No. The assistant is public, has no sign-in session, and does not perform actions. It answers questions from public information and the platform's knowledge.
+**Can Basma act for me?**
+No. Basma is public, has no sign-in session, and does not perform actions. It answers questions from public information and the platform's knowledge.

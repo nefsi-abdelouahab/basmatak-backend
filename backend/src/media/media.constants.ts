@@ -3,7 +3,10 @@ import { BusinessException } from '../common/exceptions/business.exception';
 /**
  * Media purposes (inventory §2.11 vs §3 `media`, roadmap S8 F3). Each purpose
  * is the upload/link "intent type", independent of §6 `visibility`. Consumer
- * fields (S9/S11 attach rows): `opportunity_cover` ↔ `opportunities.coverMediaId`;
+ * fields (S9/S11 attach rows): `avatar` ↔ `volunteer_profiles.avatar`;
+ * `volunteer_banner` ↔ `volunteer_profiles.banner`;
+ * `opportunity_cover` ↔ `opportunities.coverMediaId`;
+ * `organization_logo` ↔ `organizations.logoMediaId`;
  * `organization_cover` ↔ `organizations.coverMediaId`;
  * `organization_document` ↔ `organizations.annualReportMediaId`.
  *
@@ -15,6 +18,7 @@ import { BusinessException } from '../common/exceptions/business.exception';
  */
 export const MEDIA_PURPOSES = [
   'avatar',
+  'volunteer_banner',
   'organization_logo',
   'verification_document',
   'submission_evidence',

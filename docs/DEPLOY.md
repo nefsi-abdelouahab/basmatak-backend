@@ -104,8 +104,8 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 | `AI_AGENT_KNOWLEDGE_DIR` | (unset) | Unset → `<backend cwd>/ai-agent`; the folder ships with the repo. |
 | `AI_AGENT_MAX_INPUT_TOKENS` | `3000` | Estimated input cap before each provider call. |
 | `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | Hard max 800. |
-| `AI_AGENT_MAX_HISTORY_MESSAGES` | `4` | Hard max 8. |
-| `AI_AGENT_MAX_HISTORY_CHARS` | `2400` | Hard max 6000. |
+| `AI_AGENT_MAX_HISTORY_MESSAGES` | `6` | Hard max 8. |
+| `AI_AGENT_MAX_HISTORY_CHARS` | `4000` | Hard max 6000. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHUNKS` | `4` | Hard max 6. |
 | `AI_AGENT_MAX_KNOWLEDGE_CHARS` | `6000` | Hard max 8000. |
 | `AI_AGENT_MAX_TOOL_ROUNDS` | `1` | Hard max 2. |

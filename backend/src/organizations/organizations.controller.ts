@@ -7,6 +7,8 @@ import {
   Patch,
   Post,
   Query,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -14,8 +16,10 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { CurrentAccount, Public } from '../common/decorators/auth.decorators';
 import { AccountToken } from '../common/interfaces/account-token.interface';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import {
   OrganizationListQueryDto,
   SubmitOrganizationVerificationDto,
@@ -96,8 +100,19 @@ export class OrganizationsController {
   })
   @Get(':slug')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Public organization profile by slug' })
-  getBySlug(@Param('slug') slug: string) {
-    return this.organizations.getPublicBySlug(slug);
+  getBySlug(
+    @Param('slug') slug: string,
+    @CurrentAccount() account: AccountToken | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // The response varies by the optional credential, so shared caches must
+    // never serve one viewer's phone to another. `res.vary` appends and thus
+    // keeps any `Vary: Origin` already set by the CORS layer.
+    res.vary('Authorization');
+    res.vary('Cookie');
+    res.setHeader('Cache-Control', 'private, no-store');
+    return this.organizations.getPublicBySlug(slug, account);
   }
 }

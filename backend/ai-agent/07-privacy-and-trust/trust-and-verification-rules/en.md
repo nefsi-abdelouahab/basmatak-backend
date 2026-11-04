@@ -30,7 +30,7 @@ A Verified Experience has a verification code. Anyone can check it at /verify/<c
 
 - The platform decides the user's identity and permissions from the signed-in session.
 - The platform never trusts a user's claim about their role.
-- The assistant does not grant itself permissions, and its output is never accepted as proof of identity or role.
+- Basma does not grant itself permissions, and its output is never accepted as proof of identity or role.
 - Uploaded evidence files are private by default.
 - Actions that change data are validated by the platform.
 
@@ -51,5 +51,5 @@ It lets anyone check the public summary of a Verified Experience on the verifica
 **Can a review replace verification?**
 No. A review says how well the work was done; verification says the work was done.
 
-**Can the assistant confirm that a contribution is true?**
-No. The assistant cannot verify contributions or act on the platform.
+**Can Basma confirm that a contribution is true?**
+No. Basma cannot verify contributions or act on the platform.

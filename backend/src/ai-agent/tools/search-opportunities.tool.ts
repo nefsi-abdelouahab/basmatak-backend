@@ -1,6 +1,10 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
+import {
+  LocationModel,
+  LocationsCollection,
+} from '../../locations/schemas/location.schema';
 import {
   OpportunityModel,
   OpportunitiesCollection,
@@ -24,10 +28,17 @@ import {
   tokenize,
 } from '../knowledge/normalizer';
 import {
+  LocationSource,
+  PlaceMatch,
+  ResolvedPlace,
+  resolvePlaceMention,
+} from '../opportunity-place';
+import {
   PublicOpportunityCard,
   PublicOpportunitySource,
   mapPublicOpportunity,
 } from './mappers/public-opportunity.mapper';
+import { buildOpportunitySearchText } from '../opportunity-query';
 import { mapPublicOrganizationRef } from './mappers/public-organization.mapper';
 import { mapPublicSkillRef } from './mappers/public-reference.mapper';
 import {
@@ -114,6 +125,26 @@ interface ReferenceSource {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isKnowledgeNormalizer(value: unknown): value is KnowledgeNormalizer {
+  if (value === null || typeof value !== 'object') return false;
+  const candidate = value as {
+    normalizeText?: unknown;
+    expandTokens?: unknown;
+  };
+  return (
+    typeof candidate.normalizeText === 'function' &&
+    typeof candidate.expandTokens === 'function'
+  );
+}
+
+function isLocationModel(value: unknown): value is Model<LocationModel> {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    typeof (value as { find?: unknown }).find === 'function'
+  );
 }
 
 function toObjectId(value: unknown): Types.ObjectId | null {
@@ -250,6 +281,12 @@ interface ParsedSearchOpportunitiesInput {
 
 export interface SearchOpportunitiesPayload {
   items: PublicOpportunityCard[];
+  /**
+   * Present only when a place phrase in `text` matched a stored wilaya or
+   * municipality. The orchestrator uses it to distinguish "no results in this
+   * area" from the generic "no opportunities" answer.
+   */
+  resolvedPlace?: ResolvedPlace;
 }
 
 function parseInput(input: unknown): ParsedSearchOpportunitiesInput {
@@ -277,6 +314,7 @@ function uniqueObjectIds(values: Array<string | null>): Types.ObjectId[] {
 export class SearchOpportunitiesTool implements ReadOnlyTool {
   readonly definition: ToolDefinition;
   private readonly normalizer: KnowledgeNormalizer;
+  private readonly locationModel?: Model<LocationModel>;
 
   constructor(
     @InjectModel(OpportunitiesCollection)
@@ -287,13 +325,33 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
     private readonly skillModel: Model<SkillModel>,
     @InjectModel(SkillCategoriesCollection)
     private readonly skillCategoryModel: Model<SkillCategoryModel>,
-    @Optional() normalizer?: KnowledgeNormalizer,
+    // The first optional slot accepts either the location model (Nest and new
+    // call sites) or a normalizer (older call sites). The second slot covers
+    // the opposite order so existing tests keep working unchanged.
+    @Optional()
+    @InjectModel(LocationsCollection)
+    locationOrNormalizer?: Model<LocationModel> | KnowledgeNormalizer,
+    @Optional()
+    @Inject(KnowledgeNormalizer)
+    normalizerOrLocation?: KnowledgeNormalizer | Model<LocationModel>,
   ) {
-    this.normalizer = normalizer ?? new KnowledgeNormalizer();
+    if (isKnowledgeNormalizer(locationOrNormalizer)) {
+      this.normalizer = locationOrNormalizer;
+      this.locationModel = isLocationModel(normalizerOrLocation)
+        ? normalizerOrLocation
+        : undefined;
+    } else {
+      this.locationModel = isLocationModel(locationOrNormalizer)
+        ? locationOrNormalizer
+        : undefined;
+      this.normalizer = isKnowledgeNormalizer(normalizerOrLocation)
+        ? normalizerOrLocation
+        : new KnowledgeNormalizer();
+    }
     this.definition = defineReadOnlyTool({
       name: SEARCH_OPPORTUNITIES_TOOL_NAME,
       description:
-        'Search published Basmatak volunteering opportunities by text, wilaya, municipality, mode, skill, category, and sort. Text accepts Arabic, French, or English terms and matches titles, descriptions, skill names, and category names. Read-only; returns at most 8 public cards (default 5).',
+        'Search published Basmatak volunteering opportunities by text, wilaya, municipality, mode, skill, category, and sort. Text accepts Arabic, French, or English terms and matches titles, descriptions, skill names, and category names; place names such as "وهران", "Oran", or "الجزائر العاصمة" are resolved to stored wilaya/municipality codes. Read-only; returns at most 8 public cards (default 5).',
       allowedIntents: ['opportunity_search'],
       inputSchema: {
         type: 'object',
@@ -304,7 +362,7 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
             minLength: 1,
             maxLength: 120,
             description:
-              'Keyword or skill/category name in Arabic, French, or English. Matches the opportunity title, description, skill names, and category names.',
+              'Keyword, skill/category name, or place name in Arabic, French, or English. Place names resolve to wilaya/municipality filters; other terms match the opportunity title, description, skill names, and category names.',
           },
           wilaya: {
             type: 'string',
@@ -354,16 +412,61 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
     });
   }
 
+  private async resolvePlace(text: string): Promise<PlaceMatch | null> {
+    const locationModel = this.getLocationModel();
+    if (!locationModel) return null;
+
+    try {
+      const locations = (await locationModel
+        .find({ type: { $in: ['wilaya', 'municipality'] } })
+        .select('code type parentCode nameAr nameFr')
+        .lean()
+        .exec()) as unknown as LocationSource[];
+      return resolvePlaceMention(text, locations);
+    } catch {
+      // A reference-data failure must not break opportunity search. Falling
+      // back to the plain text search preserves the previous behavior.
+      return null;
+    }
+  }
+
+  private getLocationModel(): Model<LocationModel> | null {
+    if (this.locationModel) return this.locationModel;
+
+    // Compatibility path for callers that only provide the opportunity model:
+    // reuse the same connection when the locations model is already registered.
+    try {
+      const model = this.opportunityModel?.db?.models?.[LocationsCollection];
+      return (model as Model<LocationModel> | undefined) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   private async execute(input: unknown): Promise<SearchOpportunitiesPayload> {
     const parsed = parseInput(input);
+    const placeMatch = parsed.text
+      ? await this.resolvePlace(parsed.text)
+      : null;
+    const resolvedPlace = placeMatch?.place;
+    // When a place resolves, its words are removed before the topic filter is
+    // built. The location code filter replaces the text match; any remaining
+    // topic (for example "برمجة") still filters normally.
+    const textForSearch = placeMatch?.remainingText ?? parsed.text;
+    // A sentence made only of stopwords and browse words carries no search
+    // topic. Removing them here keeps even a model-supplied generic phrase
+    // from filtering out every published opportunity.
+    const searchText = textForSearch
+      ? buildOpportunitySearchText(textForSearch)
+      : undefined;
     const filter: FilterQuery<OpportunityModel> = { status: 'published' };
 
     let textVariants = new Set<string>();
     const matchedSkillIds = new Set<string>();
     const matchedCategoryIds = new Set<string>();
 
-    if (parsed.text) {
-      const variants = buildTextVariants(parsed.text, this.normalizer);
+    if (searchText) {
+      const variants = buildTextVariants(searchText, this.normalizer);
       textVariants = new Set(variants);
 
       const [skills, categories] = await Promise.all([
@@ -391,8 +494,8 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
       categoryIds.forEach((id) => matchedCategoryIds.add(id.toHexString()));
 
       const textConditions = [
-        parsed.text,
-        ...rawSearchTokens(parsed.text),
+        searchText,
+        ...rawSearchTokens(searchText),
       ].flatMap((term) => {
         const regex = { $regex: escapeRegex(term), $options: 'i' };
         return [{ title: regex }, { description: regex }];
@@ -412,11 +515,18 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
         filter.$or = or;
       }
     }
-    if (parsed.wilaya) {
-      filter['location.wilayaId'] = parsed.wilaya;
+    const effectiveWilaya =
+      parsed.wilaya ??
+      (resolvedPlace?.type === 'wilaya' ? resolvedPlace.code : undefined);
+    const effectiveMunicipality =
+      parsed.municipality ??
+      (resolvedPlace?.type === 'municipality' ? resolvedPlace.code : undefined);
+
+    if (effectiveWilaya) {
+      filter['location.wilayaId'] = effectiveWilaya;
     }
-    if (parsed.municipality) {
-      filter['location.municipalityId'] = parsed.municipality;
+    if (effectiveMunicipality) {
+      filter['location.municipalityId'] = effectiveMunicipality;
     }
     if (parsed.mode) {
       filter.mode = parsed.mode;
@@ -428,7 +538,7 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
       filter.categoryId = new Types.ObjectId(parsed.category);
     }
 
-    const fetchLimit = parsed.text
+    const fetchLimit = searchText
       ? Math.min(TOOL_MAX_ROWS * TEXT_FETCH_MULTIPLIER, TEXT_FETCH_MAX_ROWS)
       : parsed.limit;
 
@@ -443,7 +553,7 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
     // Relevance first (skill/category/title/description), then the requested
     // server sort as the stable tie-breaker.
     const selectedRows =
-      parsed.text && textVariants.size > 0
+      searchText && textVariants.size > 0
         ? [...rows]
             .sort(
               (left, right) =>
@@ -535,6 +645,7 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
           skillById,
         );
       }),
+      ...(resolvedPlace ? { resolvedPlace } : {}),
     };
   }
 }

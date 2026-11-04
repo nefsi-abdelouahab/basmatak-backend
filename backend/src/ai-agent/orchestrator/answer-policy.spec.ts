@@ -1,6 +1,7 @@
 import { AI_AGENT_SYSTEM_PROMPT } from '../prompt/system-prompt';
 import {
   containsSystemInstructionLeak,
+  hasResolvedPlace,
   isPrivateDataRequest,
   policyMessage,
   POLICY_MESSAGE_KEYS,
@@ -66,20 +67,20 @@ describe('answer-policy private-data guard and refusal', () => {
     [
       'rateLimited',
       'en',
-      'Too many assistant requests. Please try again later.',
+      'Too many requests to Basma. Please try again later.',
     ],
-    ['rateLimited', 'ar', 'طلبات كثيرة جداً، حاول مرة أخرى بعد قليل.'],
-    ['busy', 'en', 'The assistant is busy. Please retry shortly.'],
-    ['busy', 'ar', 'المساعد مشغول الآن، حاول بعد لحظات.'],
+    ['rateLimited', 'ar', 'طلبات كثيرة جداً إلى بصمة، حاول مرة أخرى بعد قليل.'],
+    ['busy', 'en', 'Basma is busy. Please retry shortly.'],
+    ['busy', 'ar', 'بصمة مشغولة الآن، حاول بعد لحظات.'],
     [
       'quotaExhausted',
       'en',
-      'The assistant has reached its free usage limit, but you can still browse opportunities and organizations.',
+      'Basma has reached the free usage limit, but you can still browse opportunities and organizations.',
     ],
     [
       'quotaExhausted',
       'ar',
-      'وصل المساعد إلى حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
+      'بلغت بصمة حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
     ],
     [
       'notFound',
@@ -90,6 +91,26 @@ describe('answer-policy private-data guard and refusal', () => {
       'notFound',
       'ar',
       'لا أملك معلومات مؤكدة عن هذا. يمكنك تصفح الفرص والمنظمات في المنصة.',
+    ],
+    [
+      'noOpportunities',
+      'en',
+      'There are no published opportunities right now. You can check the Opportunities page later.',
+    ],
+    [
+      'noOpportunities',
+      'ar',
+      'لا توجد فرص منشورة حالياً. يمكنك تصفح صفحة الفرص لاحقاً.',
+    ],
+    [
+      'noOpportunitiesInArea',
+      'en',
+      'There are no published opportunities in that area right now. You can browse the Opportunities page for other areas.',
+    ],
+    [
+      'noOpportunitiesInArea',
+      'ar',
+      'لا توجد فرص منشورة في هذه الولاية حالياً. يمكنك تصفح صفحة الفرص لرؤية بقية المناطق.',
     ],
     [
       'ungrounded',
@@ -125,6 +146,33 @@ describe('answer-policy private-data guard and refusal', () => {
     'Comment contacter une organisation ?',
   ])('does not block a public contact or knowledge question: %s', (message) => {
     expect(isPrivateDataRequest(message)).toBe(false);
+  });
+});
+
+describe('answer-policy resolved place metadata', () => {
+  it('recognizes a resolved wilaya or municipality', () => {
+    expect(
+      hasResolvedPlace({
+        items: [],
+        resolvedPlace: { type: 'wilaya', code: '31' },
+      }),
+    ).toBe(true);
+    expect(
+      hasResolvedPlace({
+        items: [],
+        resolvedPlace: { type: 'municipality', code: '3101' },
+      }),
+    ).toBe(true);
+  });
+
+  it('ignores missing or malformed place metadata', () => {
+    expect(hasResolvedPlace({ items: [] })).toBe(false);
+    expect(
+      hasResolvedPlace({ resolvedPlace: { type: 'region', code: '31' } }),
+    ).toBe(false);
+    expect(
+      hasResolvedPlace({ resolvedPlace: { type: 'wilaya', code: '' } }),
+    ).toBe(false);
   });
 });
 

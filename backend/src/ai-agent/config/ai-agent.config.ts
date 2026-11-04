@@ -75,8 +75,8 @@ export function defaultAiAgentLimits(): AiAgentLimits {
   return {
     maxInputTokens: 3000,
     maxOutputTokens: 400,
-    maxHistoryMessages: 4,
-    maxHistoryChars: 2400,
+    maxHistoryMessages: 6,
+    maxHistoryChars: 4000,
     maxKnowledgeChunks: 4,
     maxKnowledgeChars: 6000,
     maxToolRounds: 1,
@@ -206,14 +206,14 @@ export function loadAiAgentConfig(
     maxHistoryMessages: readInteger(
       read,
       'AI_AGENT_MAX_HISTORY_MESSAGES',
-      4,
+      6,
       1,
       8,
     ),
     maxHistoryChars: readInteger(
       read,
       'AI_AGENT_MAX_HISTORY_CHARS',
-      2400,
+      4000,
       1,
       6000,
     ),

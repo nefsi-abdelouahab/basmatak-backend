@@ -60,7 +60,15 @@ Organizations do not see a volunteer's email or phone. Use the organization's pu
 
 ## I need help from the project team
 
-You can contact the Roeya Association by email at roeyatimimoun@gmail.com or by phone at +213 663847105.
+For problems using the platform, contact technical support by email at a.nefsi@esi-sba.dz or on WhatsApp at +213 696 946 808.
+
+## I cannot see the organization's phone
+
+The organization's phone is shown only to signed-in users. If you are not signed in, the public profile shows a sign-in prompt instead of the phone. The organization's email is public and stays visible. If you are signed in and no phone appears, the organization has not provided one.
+
+## I am not signed in and want to contact an organization
+
+Open the organization's public profile. Its email is public, so you can use it without signing in. To see the phone, sign in. You can also use the "Email the organization" link on the Submit Contribution page when it applies.
 
 ## Common Questions
 
@@ -79,5 +87,23 @@ You may not be signed in as a volunteer, the deadline may have passed, or the po
 **Why can't I edit my submission?**
 It is no longer a draft or rejected. Only drafts and rejected submissions can be edited.
 
+**Who do I contact if something is not working?**
+Contact technical support by email at a.nefsi@esi-sba.dz or on WhatsApp at +213 696 946 808 and describe what is not working.
+
+**How do I reach technical support?**
+Email a.nefsi@esi-sba.dz or send a WhatsApp message to +213 696 946 808.
+
+**Is there WhatsApp support?**
+Yes. You can reach technical support on WhatsApp at +213 696 946 808.
+
 **Who can I contact?**
-The Roeya Association by email at roeyatimimoun@gmail.com or by phone at +213 663847105.
+For the association itself, use roeyatimimoun@gmail.com or +213 663847105; for technical help with the platform, use a.nefsi@esi-sba.dz or +213 696 946 808.
+
+**Why can't I see the organization's phone?**
+The phone is shown only to signed-in users. Sign in to see it when the organization provides one.
+
+**How do I contact an organization if I am not signed in?**
+Open the organization's public profile and use its public email. Sign in if you need the phone.
+
+**Can the assistant give me an organization's phone?**
+No. Basma cannot display an organization's email or phone. Open the organization's public profile to see the contact details available to you.

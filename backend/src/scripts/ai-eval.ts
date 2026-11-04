@@ -116,6 +116,20 @@ export const EVAL_QUERIES: ReadonlyArray<EvalQuery> = [
     coreFaq: true,
   },
   {
+    id: 'identity-en-who-are-you',
+    query: 'Who are you?',
+    locale: 'en',
+    expectedSource: '09-ai-agent/about-basma/en.md',
+    coreFaq: true,
+  },
+  {
+    id: 'identity-ar-who-are-you',
+    query: 'من أنت؟',
+    locale: 'ar',
+    expectedSource: '09-ai-agent/about-basma/ar.md',
+    coreFaq: true,
+  },
+  {
     id: 'faq-ar-what-is-basmatak',
     query: 'ما هي بصمتك تطوع؟',
     locale: 'ar',
@@ -155,6 +169,34 @@ export const EVAL_QUERIES: ReadonlyArray<EvalQuery> = [
     query: 'من يقف وراء بصمتك تطوع؟',
     locale: 'ar',
     expectedSource: '01-about/organization-behind/ar.md',
+    coreFaq: true,
+  },
+  {
+    id: 'support-en-contact',
+    query: 'Where can I find the technical support contact details?',
+    locale: 'en',
+    expectedSource: '01-about/contact/en.md',
+    coreFaq: true,
+  },
+  {
+    id: 'support-ar-contact',
+    query: 'أين أجد بيانات التواصل مع الدعم التقني؟',
+    locale: 'ar',
+    expectedSource: '01-about/contact/ar.md',
+    coreFaq: true,
+  },
+  {
+    id: 'contact-en-org-phone',
+    query: "Why can't I see the organization's phone?",
+    locale: 'en',
+    expectedSource: '08-faq/troubleshooting/en.md',
+    coreFaq: true,
+  },
+  {
+    id: 'contact-ar-org-phone',
+    query: 'لماذا لا أرى هاتف المنظمة؟',
+    locale: 'ar',
+    expectedSource: '08-faq/troubleshooting/ar.md',
     coreFaq: true,
   },
   {
@@ -290,10 +332,46 @@ export const EVAL_QUERIES: ReadonlyArray<EvalQuery> = [
     expectedSource: 'data/topics.json',
   },
   {
+    id: 'browse-en-available',
+    query: 'Browse opportunities',
+    locale: 'en',
+    expectedSource: '05-pages-and-features/opportunities-page/en.md',
+  },
+  {
+    id: 'browse-en-show',
+    query: 'Where can I find opportunities?',
+    locale: 'en',
+    expectedSource: '05-pages-and-features/opportunities-page/en.md',
+  },
+  {
+    id: 'browse-ar-available',
+    query: 'ما هي الفرص المتوفرة',
+    locale: 'ar',
+    expectedSource: '05-pages-and-features/opportunities-page/ar.md',
+  },
+  {
     id: 'topics-ar-applying',
     query: 'الترشح والمشاركة',
     locale: 'ar',
     expectedSource: 'data/topics.json',
+  },
+  {
+    id: 'browse-en-oran',
+    query: 'opportunities in Oran',
+    locale: 'en',
+    expectedSource: '05-pages-and-features/opportunities-page/en.md',
+  },
+  {
+    id: 'browse-ar-oran',
+    query: 'فرص في وهران',
+    locale: 'ar',
+    expectedSource: '05-pages-and-features/opportunities-page/ar.md',
+  },
+  {
+    id: 'data-ar-wilaya',
+    query: 'ما معنى ولاية؟',
+    locale: 'ar',
+    expectedSource: 'data/glossary.csv',
   },
 ];
 

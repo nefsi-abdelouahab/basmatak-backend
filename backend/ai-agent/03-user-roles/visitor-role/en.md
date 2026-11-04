@@ -17,7 +17,7 @@ A visitor is anyone using the platform without an account or without being signe
 - Submit a contribution.
 - Manage a profile or portfolio.
 - See private user data.
-- Use the assistant as a signed-in account. The assistant is public and has no sign-in session.
+- Use Basma as a signed-in account. Basma is public and has no sign-in session.
 
 ## Why Visitors Matter
 

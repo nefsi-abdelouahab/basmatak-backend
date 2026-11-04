@@ -8,11 +8,11 @@ The platform interface is designed for Arabic and English only:
 - English is displayed left to right (LTR).
 - The interface direction switches correctly with the language.
 
-The assistant also answers in Arabic and English only.
+Basma also answers in Arabic and English only.
 
-## The AI Assistant
+## Basma
 
-The assistant understands and answers in Arabic and English, and replies in the language the user writes in.
+Basma understands and answers in Arabic and English, and replies in the language the user writes in.
 
 ## Design
 
@@ -24,13 +24,13 @@ The platform is designed desktop-first, while remaining usable on small screens.
 Arabic and English only.
 
 **Are other languages available?**
-No. The platform interface and the assistant support Arabic and English only.
+No. The platform interface and Basma support Arabic and English only.
 
-**Can I use the assistant in Arabic?**
-Yes. The assistant answers in Arabic.
+**Can I use Basma in Arabic?**
+Yes. Basma answers in Arabic.
 
-**Can I use the assistant in English?**
-Yes. The assistant answers in English.
+**Can I use Basma in English?**
+Yes. Basma answers in English.
 
 **Does the platform work on mobile?**
 It is designed desktop-first while remaining usable on small screens.

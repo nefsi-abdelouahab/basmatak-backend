@@ -52,7 +52,7 @@ These Terms may be updated when necessary. The updated version will be published
 
 ## 10. Contact
 
-For questions regarding these Terms of Service, you can contact the Basmatak Tatatoua team through the platform's official contact channels. See the contact topic for the association's details.
+For questions regarding these Terms of Service, you can contact the Basmatak Tatatoua team through the platform's official contact channels. See the contact topic for the association's details and the technical support details.
 
 ## Common Questions
 

@@ -1,6 +1,11 @@
 import { Schema, Types, Document } from 'mongoose';
 import { createSchema } from '../../common/schema/base.schema';
-import { MediaPurpose, MediaType, MediaVisibility } from '../media.constants';
+import {
+  MEDIA_PURPOSES,
+  MediaPurpose,
+  MediaType,
+  MediaVisibility,
+} from '../media.constants';
 
 /**
  * Media row (inventory §3, roadmap S8). Metadata ONLY — file bytes live in
@@ -48,16 +53,7 @@ export const MediaSchema: Schema<MediaModel> = createSchema({
   purpose: {
     type: String,
     required: true,
-    enum: [
-      'avatar',
-      'organization_logo',
-      'verification_document',
-      'submission_evidence',
-      'portfolio_item',
-      'opportunity_cover',
-      'organization_cover',
-      'organization_document',
-    ],
+    enum: MEDIA_PURPOSES,
   },
   visibility: {
     type: String,

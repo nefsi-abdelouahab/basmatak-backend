@@ -11,11 +11,11 @@ A messaging system is not part of the platform's first version.
 
 ## Contacting an Organization
 
-A volunteer can use the organization's public contact details on its public profile. The Submit Contribution page also has an "Email the organization" link. The platform does not show a volunteer's email or phone to organizations.
+An organization's public profile shows its email to everyone; its phone is shown only to signed-in users. Basma cannot display an organization's email or phone, so open the organization's public profile for the contact details available to you. The Submit Contribution page also has an "Email the organization" link. The platform does not show a volunteer's email or phone to organizations.
 
-## The AI Assistant Is Not a Messaging System
+## Basma Is Not a Messaging System
 
-The AI assistant answers questions about the platform. It is not a way to send messages to other users.
+Basma answers questions about the platform. It is not a way to send messages to other users.
 
 ## Common Questions
 
@@ -29,7 +29,7 @@ No. Coordination runs through the opportunity workflow and the organization's pu
 No. Organizations do not see a volunteer's email or phone.
 
 **How do I contact an organization?**
-Use its public contact details on its public profile, or the "Email the organization" link on the Submit Contribution page.
+Open its public profile: the email is public, and the phone appears when you are signed in. Basma cannot show either. You can also use the "Email the organization" link on the Submit Contribution page.
 
-**Is the AI assistant a chat with the organization?**
+**Is Basma a chat with the organization?**
 No. It only answers questions about the platform.

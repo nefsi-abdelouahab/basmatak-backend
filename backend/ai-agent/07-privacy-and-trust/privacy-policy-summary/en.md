@@ -59,29 +59,29 @@ You may request access to, correction of, or deletion of your personal informati
 
 This Privacy Policy may be updated from time to time. Any new version will be published with its update date.
 
-## 10. AI Assistant
+## 10. Basma, the AI Assistant
 
-The platform may offer an optional AI assistant that answers questions about volunteering, opportunities, organizations, and public platform information.
+The platform may offer an optional AI assistant named Basma that answers questions about volunteering, opportunities, organizations, and public platform information.
 
-The assistant relies only on reviewed public platform content and public data, such as published opportunities and verified organization profiles. It does not access your account, applications, private profile, or other users' personal data, and it is not intended to provide general answers from outside the platform.
+Basma relies only on reviewed public platform content and public data, such as published opportunities and verified organization profiles. Basma does not access your account, applications, private profile, or other users' personal data, and is not intended to provide general answers from outside the platform.
 
-When you use the assistant, your message and any recent conversation you choose to include may be processed by a third-party AI provider. On the provider's free tier, content may be used to improve the provider's products and may be reviewed; do not include personal, confidential, or sensitive information in your messages.
+When you use Basma, your message and any recent conversation you choose to include may be processed by a third-party AI provider. On the provider's free tier, content may be used to improve the provider's products and may be reviewed; do not include personal, confidential, or sensitive information in your messages.
 
-The platform does not store your assistant conversation on its servers. The current conversation is kept in your browser's session storage for the open tab and is cleared when you start a new chat, sign out, your session expires, or you close the tab.
+The platform does not store your conversation with Basma on its servers. The current conversation is kept in your browser's session storage for the open tab and is cleared when you start a new chat, sign out, your session expires, or you close the tab.
 
-The assistant is optional, and you can continue using the rest of the platform without it.
+Basma is optional, and you can continue using the rest of the platform without it.
 
 ## 11. Contact
 
-If you have questions about your privacy or how your information is processed, you can contact the Basmatak Tatatoua team through the platform's official contact channels. See the contact topic for the association's details.
+If you have questions about your privacy or how your information is processed, you can contact the Basmatak Tatatoua team through the platform's official contact channels. See the contact topic for the association's details and the technical support details.
 
 ## Confirmed Principles
 
 - Public data and private user data are kept separate.
 - Visitors can see public content only.
 - Discover Talents shows public data only.
-- The assistant uses public information and platform knowledge only.
-- The assistant cannot run arbitrary database queries and has no direct access to the database.
+- Basma uses public information and platform knowledge only.
+- Basma cannot run arbitrary database queries and has no direct access to the database.
 - Actions that change data are validated on the server by the platform.
 
 ## Common Questions
@@ -98,5 +98,5 @@ No. Data export is not available.
 **Does the platform sell my personal information?**
 No. The policy says the platform does not sell users' personal information.
 
-**Does the assistant store my conversation?**
+**Does Basma store my conversation?**
 No. The conversation is kept in the browser's session storage for the open tab and is cleared when you start a new chat, sign out, your session expires, or you close the tab.

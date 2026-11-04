@@ -274,8 +274,8 @@ describe('AiAgent configuration', () => {
     expect(config.limits).toEqual({
       maxInputTokens: 3000,
       maxOutputTokens: 400,
-      maxHistoryMessages: 4,
-      maxHistoryChars: 2400,
+      maxHistoryMessages: 6,
+      maxHistoryChars: 4000,
       maxKnowledgeChunks: 4,
       maxKnowledgeChars: 6000,
       maxToolRounds: 1,
@@ -374,24 +374,24 @@ describe('ChatDto validation', () => {
       },
     ],
     [
-      'more than four history messages',
+      'more than six history messages',
       {
         message: 'Hello',
         locale: 'en',
-        history: Array.from({ length: 5 }, () => ({
+        history: Array.from({ length: 7 }, () => ({
           role: 'user',
           content: 'Hi',
         })),
       },
     ],
     [
-      'history over 2,400 characters',
+      'history over 4,000 characters',
       {
         message: 'Hello',
         locale: 'en',
         history: [
-          { role: 'user', content: 'a'.repeat(1300) },
-          { role: 'assistant', content: 'b'.repeat(1300) },
+          { role: 'user', content: 'a'.repeat(2600) },
+          { role: 'assistant', content: 'b'.repeat(2600) },
         ],
       },
     ],
@@ -412,8 +412,8 @@ describe('AiAgentController', () => {
       knowledge: { files: 0, chunks: 0 },
       limits: {
         messageChars: 2000,
-        historyMessages: 4,
-        historyChars: 2400,
+        historyMessages: 6,
+        historyChars: 4000,
       },
     });
 
@@ -618,7 +618,7 @@ describe('AiAgentController', () => {
     orchestrator.impl = async (input) => {
       input.stream.event('error', {
         code: 'AI_AGENT_TIMEOUT',
-        message: 'The assistant took too long to answer. Please try again.',
+        message: 'Basma took too long to answer. Please try again.',
       });
       return defaultResult({
         finishReason: 'error',
@@ -729,7 +729,7 @@ describe('AiAgentController', () => {
     expect(error.code).toBe('RATE_LIMITED');
     expect(error.getStatus()).toBe(429);
     expect(exceptionMessage(error)).toBe(
-      'Too many assistant requests. Please try again later.',
+      'Too many requests to Basma. Please try again later.',
     );
     expect(denied.chunks).toEqual([]);
     expect(denied.statusCode).toBe(0);
@@ -766,7 +766,7 @@ describe('AiAgentController', () => {
 
     expect(error.code).toBe('RATE_LIMITED');
     expect(exceptionMessage(error)).toBe(
-      'طلبات كثيرة جداً، حاول مرة أخرى بعد قليل.',
+      'طلبات كثيرة جداً إلى بصمة، حاول مرة أخرى بعد قليل.',
     );
     expect(denied.chunks).toEqual([]);
   });
@@ -788,7 +788,7 @@ describe('AiAgentController', () => {
     expect(error.code).toBe('AI_AGENT_BUSY');
     expect(error.getStatus()).toBe(429);
     expect(exceptionMessage(error)).toBe(
-      'The assistant is busy. Please retry shortly.',
+      'Basma is busy. Please retry shortly.',
     );
     expect(denied.chunks).toEqual([]);
     expect(denied.headers['retry-after']).toBe('1');
@@ -813,7 +813,7 @@ describe('AiAgentController', () => {
     const error = await expectChatRejected(controller, denied, 'مرحبا', 'ar');
 
     expect(error.code).toBe('AI_AGENT_BUSY');
-    expect(exceptionMessage(error)).toBe('المساعد مشغول الآن، حاول بعد لحظات.');
+    expect(exceptionMessage(error)).toBe('بصمة مشغولة الآن، حاول بعد لحظات.');
     expect(denied.chunks).toEqual([]);
 
     quota.release(held.reservationId);
@@ -834,7 +834,7 @@ describe('AiAgentController', () => {
     expect(error.code).toBe('AI_AGENT_QUOTA_EXHAUSTED');
     expect(error.getStatus()).toBe(429);
     expect(exceptionMessage(error)).toBe(
-      'The assistant has reached its free usage limit, but you can still browse opportunities and organizations.',
+      'Basma has reached the free usage limit, but you can still browse opportunities and organizations.',
     );
     expect(error.details).toMatchObject({ reason: 'cooldown_day' });
     expect(denied.chunks).toEqual([]);
@@ -855,7 +855,7 @@ describe('AiAgentController', () => {
 
     expect(error.code).toBe('AI_AGENT_QUOTA_EXHAUSTED');
     expect(exceptionMessage(error)).toBe(
-      'وصل المساعد إلى حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
+      'بلغت بصمة حد الاستخدام المجاني، لكن يمكنك تصفح الفرص والمنظمات.',
     );
     expect(denied.chunks).toEqual([]);
   });

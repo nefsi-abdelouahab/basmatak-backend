@@ -377,5 +377,37 @@ describe('organizations e2e (public pages + verification documents)', () => {
       ).toBe(true);
       expect(list.body.total).toBeGreaterThanOrEqual(1);
     });
+
+    it('omits the phone from guest payloads and returns it only to the signed-in owner', async () => {
+      const token = await registerOrg('phone-org@example.com');
+      await markVerified('phone-org');
+      await request(info.app.getHttpServer())
+        .patch(`${ORGS}/me`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          contact: {
+            email: 'contact@phone-org.example',
+            phone: '+213555123456',
+          },
+        })
+        .expect(200);
+
+      const guest = await request(info.app.getHttpServer())
+        .get(`${ORGS}/phone-org`)
+        .expect(200);
+      expect(guest.body.contact).toEqual({
+        email: 'contact@phone-org.example',
+      });
+      expect(guest.body.contact).not.toHaveProperty('phone');
+      expect(guest.headers['cache-control']).toBe('private, no-store');
+      expect(guest.headers.vary).toContain('Authorization');
+      expect(guest.headers.vary).toContain('Cookie');
+
+      const signedIn = await request(info.app.getHttpServer())
+        .get(`${ORGS}/phone-org`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(signedIn.body.contact.phone).toBe('+213555123456');
+    });
   });
 });

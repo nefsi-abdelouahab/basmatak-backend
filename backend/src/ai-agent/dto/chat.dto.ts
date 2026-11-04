@@ -82,7 +82,7 @@ export class ChatDto {
 
   @ApiPropertyOptional({
     description:
-      'Recent turns, oldest first. Maximum 4 messages and 2,400 characters total.',
+      'Recent turns, oldest first. Maximum 6 messages and 4,000 characters total.',
     type: [ChatHistoryMessageDto],
     maxItems: MAX_HISTORY_MESSAGES,
   })

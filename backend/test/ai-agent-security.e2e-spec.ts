@@ -224,8 +224,8 @@ describe('ai-agent security (S12)', () => {
     expect(provider.calls).toBe(1);
     const raw = responseText(response);
     const answer = streamedAnswer(response);
-    expect(raw).not.toContain('You are the Basmatak public assistant');
-    expect(answer).not.toContain('You are the Basmatak public assistant');
+    expect(raw).not.toContain('You are Basma');
+    expect(answer).not.toContain('You are Basma');
     expect(answer).toContain(policyMessage('ungrounded', 'en'));
   });
 

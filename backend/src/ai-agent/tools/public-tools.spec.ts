@@ -546,6 +546,9 @@ describe('Session 6 public tools', () => {
         'REG-SECRET',
         'Secret street',
         'secret-green@example.com',
+        'secret-blue@example.com',
+        '0550000001',
+        '0550000002',
       ]) {
         expect(serialized).not.toContain(forbidden);
       }
@@ -580,6 +583,188 @@ describe('Session 6 public tools', () => {
       expect(
         await opportunitySlugs({ wilaya: '16', municipality: '1601' }),
       ).toEqual(['beach-cleanup']);
+    });
+
+    it('resolves Arabic and English place phrases instead of matching the place as text', async () => {
+      await handle.connection
+        .collection(OpportunitiesCollection)
+        .updateOne(
+          { _id: OPP_PROGRAMMING_ID },
+          { $set: { status: 'published' } },
+        );
+
+      expect((await opportunitySlugs({ text: 'فرص في وهران' })).sort()).toEqual(
+        ['mentorat-bootcamp-code-pour-jeunes-oran', 'remote-tutoring'],
+      );
+      expect(
+        (await opportunitySlugs({ text: 'opportunities in Oran' })).sort(),
+      ).toEqual(['mentorat-bootcamp-code-pour-jeunes-oran', 'remote-tutoring']);
+      expect(await opportunitySlugs({ text: 'فرص في باب الوادي' })).toEqual([
+        'beach-cleanup',
+      ]);
+      expect(await opportunitySlugs({ text: 'فرص في بئر الجير' })).toEqual([
+        'mentorat-bootcamp-code-pour-jeunes-oran',
+        'remote-tutoring',
+      ]);
+    });
+
+    it('matches Arabic normalization and common Latin spellings', async () => {
+      await handle.connection.collection(LocationsCollection).insertMany([
+        {
+          code: '22',
+          type: 'wilaya',
+          nameAr: 'سيدي بلعباس',
+          nameFr: 'Sidi Bel Abbès',
+        },
+        { code: '23', type: 'wilaya', nameAr: 'عنابة', nameFr: 'Annaba' },
+        {
+          code: '25',
+          type: 'wilaya',
+          nameAr: 'قسنطينة',
+          nameFr: 'Constantine',
+        },
+        { code: '49', type: 'wilaya', nameAr: 'تيميمون', nameFr: 'Timimoun' },
+      ]);
+
+      const cases = [
+        ['فِي وِهْرَان', '31'],
+        ['فرص في الوهران', '31'],
+        ['فرص في الجزائر العاصمة', '16'],
+        ['opportunities in Algiers', '16'],
+        ['فرص في تيميمون', '49'],
+        ['opportunities in Timimoun', '49'],
+        ['فرص في قسنطينة', '25'],
+        ['opportunities in Constantine', '25'],
+        ['فرص في عنابة', '23'],
+        ['opportunities in Annaba', '23'],
+        ['فرص في سيدي بلعباس', '22'],
+        ['opportunities in Sidi Bel Abbès', '22'],
+      ] as const;
+
+      for (const [text, code] of cases) {
+        const payload = await run<SearchOpportunitiesPayload>(
+          opportunitiesTool,
+          { text },
+        );
+        expect(payload.resolvedPlace).toMatchObject({ code });
+      }
+    });
+
+    it('keeps the topic filter after removing the place words', async () => {
+      await Promise.all([
+        handle.connection.collection(SkillsCollection).insertOne({
+          _id: PROGRAMMING_SKILL_ID,
+          slug: 'programming',
+          categoryId: TECH_CATEGORY_ID,
+          nameAr: 'برمجة',
+          nameFr: 'Programmation',
+          order: 4,
+          active: true,
+        }),
+        handle.connection
+          .collection(OpportunitiesCollection)
+          .updateOne(
+            { _id: OPP_PROGRAMMING_ID },
+            { $set: { status: 'published' } },
+          ),
+        handle.connection.collection(OpportunitiesCollection).insertOne(
+          opportunityDoc({
+            _id: new Types.ObjectId('64d000000000000000000009'),
+            slug: 'algiers-code-club',
+            title: 'Algiers code club',
+            description: 'Programming mentors in Algiers.',
+            categoryId: TECH_CATEGORY_ID,
+            location: {
+              wilayaId: '16',
+              municipalityId: '1601',
+              coordinates: [3.05, 36.75],
+            },
+            positions: [
+              {
+                title: 'Mentor',
+                description: 'Code with young people',
+                requiredCount: 1,
+                filledCount: 0,
+                requiredSkills: [PROGRAMMING_SKILL_ID],
+                deliverables: [],
+              },
+            ],
+          }),
+        ),
+      ]);
+
+      expect(await opportunitySlugs({ text: 'فرص برمجة في وهران' })).toEqual([
+        'mentorat-bootcamp-code-pour-jeunes-oran',
+      ]);
+      expect(await opportunitySlugs({ text: 'برمجة في وهران' })).toEqual([
+        'mentorat-bootcamp-code-pour-jeunes-oran',
+      ]);
+    });
+
+    it('falls back to text search when the place is not recognized', async () => {
+      await handle.connection.collection(OpportunitiesCollection).insertOne(
+        opportunityDoc({
+          _id: new Types.ObjectId('64d00000000000000000000a'),
+          slug: 'atlantis-cleanup',
+          title: 'Atlantis beach cleanup',
+          description: 'Clean the beach in Atlantis.',
+          location: {
+            wilayaId: '16',
+            municipalityId: '1601',
+            coordinates: [3.05, 36.75],
+          },
+        }),
+      );
+
+      expect(
+        await opportunitySlugs({ text: 'opportunities in Atlantis' }),
+      ).toEqual(['atlantis-cleanup']);
+      expect(await opportunitySlugs({ text: 'فرص في أطلانتس' })).toEqual([]);
+    });
+
+    it('returns the resolved place with an empty result', async () => {
+      await handle.connection.collection(LocationsCollection).insertOne({
+        code: '49',
+        type: 'wilaya',
+        nameAr: 'تيميمون',
+        nameFr: 'Timimoun',
+      });
+
+      const payload = await run<SearchOpportunitiesPayload>(opportunitiesTool, {
+        text: 'فرص في تيميمون',
+      });
+
+      expect(payload.items).toEqual([]);
+      expect(payload.resolvedPlace).toEqual({
+        type: 'wilaya',
+        code: '49',
+        nameAr: 'تيميمون',
+        nameFr: 'Timimoun',
+      });
+    });
+
+    it('ignores generic browse wording instead of filtering every row', async () => {
+      for (const text of [
+        'ما هي الفرص المتوفرة',
+        'ما الفرص المتاحة',
+        'show me opportunities',
+        'What opportunities are available?',
+        'any volunteering opportunities?',
+      ]) {
+        expect((await opportunitySlugs({ text, limit: 8 })).sort()).toEqual([
+          'beach-cleanup',
+          'remote-tutoring',
+          'tree-planting',
+        ]);
+      }
+
+      expect(
+        await opportunitySlugs({
+          text: 'اعرض لي الفرص',
+          limit: 3,
+          sort: 'newest',
+        }),
+      ).toEqual(['tree-planting', 'remote-tutoring', 'beach-cleanup']);
     });
 
     it('matches skill and category names in Arabic, French, and English', async () => {
@@ -740,6 +925,9 @@ describe('Session 6 public tools', () => {
         'ORG-SECRET',
         'REG-SECRET',
         'secret-green@example.com',
+        'secret-blue@example.com',
+        '0550000001',
+        '0550000002',
         'Secret street',
       ]) {
         expect(serialized).not.toContain(forbidden);

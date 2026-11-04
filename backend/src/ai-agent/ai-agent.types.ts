@@ -1,5 +1,5 @@
 /**
- * Transport and configuration types for the Basmatak AI assistant.
+ * Transport and configuration types for Basma, the Basmatak AI assistant.
  *
  * These types are the public contract shared by the SSE writer, the controller,
  * and (from later sessions) the orchestrator. Keep event payloads additive:

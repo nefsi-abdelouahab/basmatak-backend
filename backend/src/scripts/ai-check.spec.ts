@@ -198,7 +198,7 @@ describe('ai-check knowledge corpus validation', () => {
     expect(codes(result)).toContain('PHONE_PATTERN');
   });
 
-  it('accepts the official contact details in the four allowlisted files', () => {
+  it('accepts both official contact sets in the four allowlisted files', () => {
     const allowlisted = [
       ['01-about/contact/en.md', 'en'],
       ['01-about/contact/ar.md', 'ar'],
@@ -212,7 +212,7 @@ describe('ai-check knowledge corpus validation', () => {
         markdown(
           `Official contact ${index}`,
           locale,
-          'Email roeyatimimoun@gmail.com or call +213 663847105 or +213 663 847 105.',
+          'Email roeyatimimoun@gmail.com or a.nefsi@esi-sba.dz; call +213 663847105, +213 663 847 105, +213 696 946 808, or +213696946808.',
         ),
       );
     });
@@ -252,13 +252,13 @@ describe('ai-check knowledge corpus validation', () => {
     ).toHaveLength(4);
   });
 
-  it('rejects official contact details outside the allowlist', () => {
+  it('rejects both official contact sets outside the allowlist', () => {
     writeFile(
       '08-faq/contact-elsewhere/en.md',
       markdown(
         'Contact elsewhere',
         'en',
-        'Email roeyatimimoun@gmail.com or call +213 663847105.',
+        'Email roeyatimimoun@gmail.com or a.nefsi@esi-sba.dz; call +213 663847105 or +213 696 946 808.',
       ),
     );
 

@@ -1,0 +1,261 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: toast.spec.ts >> global toasts >> success copy follows the locale (en)
+- Location: e2e\toast.spec.ts:171:9
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('save-opp-64f000000000000000000001')
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - link [ref=e6] [cursor=pointer]:
+          - /url: /en
+          - img "Basmatak" [ref=e7]
+        - generic [ref=e8]:
+          - link "Home" [ref=e9] [cursor=pointer]:
+            - /url: /en
+          - button "Switch to dark theme" [ref=e10] [cursor=pointer]
+          - generic [ref=e13]:
+            - generic [ref=e14]: Language
+            - link "Arabic" [ref=e15] [cursor=pointer]:
+              - /url: /ar/volunteer/opportunities
+              - generic [aria-hidden]: Arabic
+    - generic [ref=e20]:
+      - complementary [ref=e21]:
+        - navigation "Menu" [ref=e22]:
+          - link "Home" [ref=e23] [cursor=pointer]:
+            - /url: /en
+      - main [ref=e24]:
+        - status "Loading…" [ref=e25]
+  - button "Open Basma" [ref=e28] [cursor=pointer]
+  - region "Notifications alt+T"
+  - alert [ref=e31]
+```
+
+# Test source
+
+```ts
+  74  | 
+  75  | async function mockApi(
+  76  |   page: Page,
+  77  |   handlers: Record<string, Handler>,
+  78  |   options: { clipboard?: 'ok' | 'fail' } = {},
+  79  | ) {
+  80  |   await page.addInitScript(
+  81  |     ({ clipboard }) => {
+  82  |       Object.defineProperty(navigator, 'share', {
+  83  |         configurable: true,
+  84  |         value: undefined,
+  85  |       });
+  86  |       Object.defineProperty(navigator, 'clipboard', {
+  87  |         configurable: true,
+  88  |         value: {
+  89  |           writeText: () =>
+  90  |             clipboard === 'fail'
+  91  |               ? Promise.reject(new Error('denied'))
+  92  |               : Promise.resolve(),
+  93  |         },
+  94  |       });
+  95  |     },
+  96  |     { clipboard: options.clipboard ?? 'ok' },
+  97  |   );
+  98  | 
+  99  |   await page.route('**/api/v1/**', async (route: Route) => {
+  100 |     const url = new URL(route.request().url());
+  101 |     const path = url.pathname.replace(/^.*\/api\/v1/, '') || '/';
+  102 |     const method = route.request().method();
+  103 |     const key = Object.keys(handlers).find(
+  104 |       (entry) =>
+  105 |         path === entry || (entry.endsWith('*') && path.startsWith(entry.slice(0, -1))),
+  106 |     );
+  107 |     if (!key) return route.fulfill({ status: 404, body: '{}' });
+  108 |     const handler = handlers[key];
+  109 |     const { status, body } =
+  110 |       typeof handler === 'function' ? handler({ url, method }) : handler;
+  111 |     return route.fulfill({
+  112 |       status,
+  113 |       contentType: 'application/json',
+  114 |       body: body === undefined ? '' : JSON.stringify(body),
+  115 |     });
+  116 |   });
+  117 | }
+  118 | 
+  119 | function baseHandlers(): Record<string, Handler> {
+  120 |   return {
+  121 |     '/auth/me': { status: 200, body: sessionUser },
+  122 |     '/volunteers/me': { status: 200, body: me },
+  123 |     '/volunteers/me/skills': { status: 200, body: [] },
+  124 |     '/opportunities/recommended': { status: 200, body: cursorPage([oppA], 1) },
+  125 |     '/opportunities': { status: 200, body: cursorPage([oppA, oppB], 2) },
+  126 |     '/skill-categories': { status: 200, body: [] },
+  127 |     '/skills': { status: 200, body: [] },
+  128 |     '/locations/wilayas': { status: 200, body: [] },
+  129 |     '/favorites/lookup': ({ url }) => {
+  130 |       const ids = (url.searchParams.get('targetIds') ?? '').split(',').filter(Boolean);
+  131 |       const body: Record<string, { favorited: boolean; favoriteCount: number }> = {};
+  132 |       for (const id of ids) {
+  133 |         body[id] =
+  134 |           id === oppB.id
+  135 |             ? { favorited: true, favoriteCount: oppB.favoriteCount }
+  136 |             : { favorited: false, favoriteCount: oppA.favoriteCount };
+  137 |       }
+  138 |       return { status: 200, body };
+  139 |     },
+  140 |     '/favorites/counts': { status: 200, body: { opportunities: 1, talents: 0 } },
+  141 |     '/notifications/unread-count': { status: 200, body: { count: 1 } },
+  142 |     '/notifications': { status: 200, body: cursorPage([notification], 1) },
+  143 |     [`/notifications/${notification._id}/read`]: {
+  144 |       status: 200,
+  145 |       body: { ...notification, isRead: true },
+  146 |     },
+  147 |     '/notifications/read-all': { status: 200, body: { updated: 1 } },
+  148 |     '/favorites/opportunities*': ({ method }) =>
+  149 |       method === 'POST'
+  150 |         ? { status: 201, body: { favorited: true, favoriteCount: 5 } }
+  151 |         : { status: 204 },
+  152 |   };
+  153 | }
+  154 | 
+  155 | const viewport = { width: 1280, height: 800 };
+  156 | 
+  157 | async function expectHeaderOffset(toast: Locator) {
+  158 |   // Sticky header is 4rem, plus the 0.5rem gap and no safe-area inset.
+  159 |   await expect
+  160 |     .poll(async () => {
+  161 |       const box = await toast.boundingBox();
+  162 |       return box ? Math.abs(box.y - 72) : 999;
+  163 |     })
+  164 |     .toBeLessThanOrEqual(2);
+  165 | }
+  166 | 
+  167 | test.describe('global toasts', () => {
+  168 |   test.use({ viewport });
+  169 | 
+  170 |   for (const locale of ['en', 'ar'] as const satisfies Locale[]) {
+  171 |     test(`success copy follows the locale (${locale})`, async ({ page }) => {
+  172 |       await mockApi(page, baseHandlers());
+  173 |       await page.goto(`/${locale}/volunteer/opportunities`);
+> 174 |       await page.getByTestId(`save-opp-${oppA.id}`).click();
+      |                                                     ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  175 | 
+  176 |       const copy = locale === 'ar' ? toastAr.success.favoriteAdded : toastEn.success.favoriteAdded;
+  177 |       const toast = page.getByTestId('app-toast').filter({ hasText: copy });
+  178 |       await expect(toast).toBeVisible();
+  179 | 
+  180 |       const toaster = page.locator('[data-sonner-toaster]');
+  181 |       await expect(toaster).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+  182 |       await expect(toast).not.toContainText(
+  183 |         locale === 'ar' ? toastEn.success.favoriteAdded : toastAr.success.favoriteAdded,
+  184 |       );
+  185 |       await expect(toast.locator('[data-close-button]')).toHaveCount(0);
+  186 | 
+  187 |       await expectHeaderOffset(toast);
+  188 |       const box = await toast.boundingBox();
+  189 |       expect(box).not.toBeNull();
+  190 |       expect(Math.abs(box!.x + box!.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(2);
+  191 |       expect(Math.abs(box!.width - 420)).toBeLessThanOrEqual(2);
+  192 |     });
+  193 |   }
+  194 | 
+  195 |   test('success fades after three seconds', async ({ page }) => {
+  196 |     await mockApi(page, baseHandlers());
+  197 |     await page.goto('/en/volunteer/opportunities');
+  198 |     await page.getByTestId(`save-opp-${oppA.id}`).click();
+  199 |     const toast = page
+  200 |       .getByTestId('app-toast')
+  201 |       .filter({ hasText: toastEn.success.favoriteAdded });
+  202 |     await expect(toast).toBeVisible();
+  203 | 
+  204 |     await page.waitForTimeout(2_400);
+  205 |     await expect(toast).toBeVisible();
+  206 |     await expect(toast).toBeHidden({ timeout: 2_500 });
+  207 |   });
+  208 | 
+  209 |   test('error stays for five seconds with a close button and assertive copy', async ({
+  210 |     page,
+  211 |   }) => {
+  212 |     await mockApi(page, {
+  213 |       ...baseHandlers(),
+  214 |       '/favorites/opportunities*': {
+  215 |         status: 500,
+  216 |         body: { statusCode: 500, code: 'SERVER_ERROR', message: 'boom' },
+  217 |       },
+  218 |     });
+  219 |     await page.goto('/en/volunteer/opportunities');
+  220 |     await page.getByTestId(`save-opp-${oppA.id}`).click();
+  221 | 
+  222 |     const toast = page.getByTestId('app-toast').filter({ hasText: toastEn.error.server });
+  223 |     await expect(toast).toBeVisible();
+  224 |     await expect(toast.locator('[data-close-button]')).toBeVisible();
+  225 |     await expect(page.getByTestId('toast-announcer')).toHaveText(toastEn.error.server);
+  226 | 
+  227 |     await page.waitForTimeout(3_400);
+  228 |     await expect(toast).toBeVisible();
+  229 |     await expect(toast).toBeHidden({ timeout: 3_000 });
+  230 | 
+  231 |     // Re-trigger and dismiss manually before the five-second timer.
+  232 |     await page.getByTestId(`save-opp-${oppA.id}`).click();
+  233 |     const again = page.getByTestId('app-toast').filter({ hasText: toastEn.error.server });
+  234 |     await expect(again).toBeVisible();
+  235 |     await again.locator('[data-close-button]').click();
+  236 |     await expect(again).toBeHidden({ timeout: 1_500 });
+  237 |   });
+  238 | 
+  239 |   test('keeps only three toasts visible when several fire together', async ({ page }) => {
+  240 |     await mockApi(page, baseHandlers());
+  241 |     await page.goto('/en/volunteer/opportunities');
+  242 | 
+  243 |     const saveA = page.getByTestId(`save-opp-${oppA.id}`);
+  244 |     const saveB = page.getByTestId(`save-opp-${oppB.id}`);
+  245 |     await expect(saveA).toHaveAttribute('aria-pressed', 'false');
+  246 |     await expect(saveB).toHaveAttribute('aria-pressed', 'true');
+  247 | 
+  248 |     await saveA.click();
+  249 |     await saveB.click();
+  250 |     await page
+  251 |       .getByTestId('opportunity-card')
+  252 |       .filter({ hasText: oppA.title })
+  253 |       .getByRole('button', { name: homeEn.opportunities.shareLabel })
+  254 |       .click();
+  255 |     await page.getByTestId('navbar-bell').click();
+  256 |     await page.getByTestId(`navbar-notification-read-${notification._id}`).click();
+  257 |     await page.getByTestId('navbar-notifications-read-all').click();
+  258 | 
+  259 |     await expect(page.locator('[data-sonner-toast]')).toHaveCount(5, { timeout: 5_000 });
+  260 |     await expect(page.locator('[data-sonner-toast][data-visible="true"]')).toHaveCount(3);
+  261 |   });
+  262 | 
+  263 |   test('copy link confirms with a toast and clears the chat launcher', async ({ page }) => {
+  264 |     await page.setViewportSize({ width: 390, height: 800 });
+  265 |     await mockApi(page, baseHandlers());
+  266 |     await page.goto('/en/volunteer/opportunities');
+  267 |     await page
+  268 |       .getByTestId('opportunity-card')
+  269 |       .filter({ hasText: oppA.title })
+  270 |       .getByRole('button', { name: homeEn.opportunities.shareLabel })
+  271 |       .click();
+  272 | 
+  273 |     const toast = page
+  274 |       .getByTestId('app-toast')
+```

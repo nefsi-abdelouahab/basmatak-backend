@@ -7,6 +7,11 @@ import {
   OrganizationsCollection,
 } from './schemas/organization.schema';
 import {
+  UserModel,
+  UserSchema,
+  UsersCollection,
+} from '../users/schemas/user.schema';
+import {
   startMemoryConnection,
   stopMemoryConnection,
   MemoryConnectionHandle,
@@ -16,6 +21,7 @@ describe('OrganizationRegistrationExtrasService (ROADMAP S5)', () => {
   let handle: MemoryConnectionHandle;
   let service: OrganizationRegistrationExtrasService;
   let orgModel: Model<OrganizationModel>;
+  let userModel: Model<UserModel>;
 
   beforeAll(async () => {
     handle = await startMemoryConnection();
@@ -23,9 +29,12 @@ describe('OrganizationRegistrationExtrasService (ROADMAP S5)', () => {
       OrganizationsCollection,
       OrganizationSchema,
     );
+    userModel = handle.connection.model(UsersCollection, UserSchema);
     await orgModel.init();
+    await userModel.init();
     service = new OrganizationRegistrationExtrasService(
       orgModel,
+      userModel,
       new InertRegistrationExtrasService(),
       { getNext: jest.fn().mockResolvedValue('ORG-000001') } as never,
     );
@@ -39,6 +48,7 @@ describe('OrganizationRegistrationExtrasService (ROADMAP S5)', () => {
 
   afterEach(async () => {
     await handle.connection.collection(OrganizationsCollection).deleteMany({});
+    await handle.connection.collection(UsersCollection).deleteMany({});
   });
 
   it('creates an organizations row for role organization with a pending status', async () => {
@@ -61,6 +71,7 @@ describe('OrganizationRegistrationExtrasService (ROADMAP S5)', () => {
 
     const orgService = new OrganizationRegistrationExtrasService(
       orgModel,
+      userModel,
       inert,
       { getNext: jest.fn().mockResolvedValue('ORG-000001') } as never,
     );
@@ -94,5 +105,40 @@ describe('OrganizationRegistrationExtrasService (ROADMAP S5)', () => {
 
     const org = await orgModel.findOne({ userId: user.id }).exec();
     expect(org!.slug).toBe('secours-1');
+  });
+
+  it('copies the account phone into the organization contact (normalized)', async () => {
+    const account = await userModel.create({
+      email: 'phone-owner@example.com',
+      passwordHash: 'hash',
+      role: 'organization',
+      status: 'active',
+      phone: '+213555123456',
+    });
+
+    await service.createExtras(
+      { id: account._id.toString(), role: 'organization' },
+      { email: 'phone-owner@example.com' },
+    );
+
+    const org = await orgModel
+      .findOne({ userId: account._id.toString() })
+      .lean()
+      .exec();
+    expect(org?.contact?.phone).toBe('+213555123456');
+  });
+
+  it('normalizes a local phone provided in the registration payload', async () => {
+    const user = {
+      id: '64b000000000000000000012',
+      role: 'organization' as const,
+    };
+    await service.createExtras(user, {
+      email: 'local-phone@example.com',
+      phone: '0555 12 34 56',
+    });
+
+    const org = await orgModel.findOne({ userId: user.id }).lean().exec();
+    expect(org?.contact?.phone).toBe('+213555123456');
   });
 });

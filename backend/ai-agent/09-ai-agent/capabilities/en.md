@@ -1,4 +1,4 @@
-# What the Assistant Can Do
+# What Basma Can Do
 
 ## What I Can Help With
 
@@ -30,7 +30,7 @@ I answer from confirmed platform information and from public information about o
 I can search public opportunities and explain what I find. I cannot apply for you.
 
 **Can you publish an opportunity for me?**
-Not at the moment. Creating opportunities from the assistant is a future direction only.
+Not at the moment. Creating opportunities from Basma is a future direction only.
 
 **Can you tell me if an organization is verified?**
 I can share public organization information, including whether the organization is verified.

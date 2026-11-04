@@ -1,15 +1,15 @@
 # Basmatak knowledge corpus
 
-This folder is the curated knowledge source for the Basmatak Tatatoua assistant.
+This folder is the curated knowledge source for Basma, the Basmatak Tatatoua assistant.
 It is committed to the backend repository and ships with the backend service.
 There is no runtime upload screen and no database collection for knowledge.
 
-The committed corpus currently contains 138 indexed documents across the
+The committed corpus currently contains 140 indexed documents across the
 numbered topic folders and the two data files.
 
 ## Purpose and grounding sources
 
-The assistant is allowed to ground answers in exactly two sources:
+Basma is allowed to ground answers in exactly two sources:
 
 1. **Curated knowledge** in this folder: reviewed Markdown, TXT, JSON, and CSV.
 2. **Read-only public database tools**, limited to published opportunities,
@@ -17,7 +17,7 @@ The assistant is allowed to ground answers in exactly two sources:
    counts.
 
 There is no web search, no browsing tool, and no general-knowledge fallback. If
-neither source contains the answer, the assistant must say so and point to the
+neither source contains the answer, Basma must say so and point to the
 closest official page or support channel.
 
 Version 1 is public-data only. Do not add individual volunteer or talent

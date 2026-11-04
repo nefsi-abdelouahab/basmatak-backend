@@ -1,4 +1,4 @@
-import type { AiAgentLocale } from '../ai-agent.types';
+import type { AiAgentChatMessage, AiAgentLocale } from '../ai-agent.types';
 import {
   AiAgentConfig,
   AiAgentLimits,
@@ -214,6 +214,44 @@ describe('IntentRouter', () => {
     },
   );
 
+  it.each([
+    ['ما هي الفرص المتوفرة', 'ar'],
+    ['ما الفرص المتاحة', 'ar'],
+    ['اعرض لي الفرص', 'ar'],
+    ['أريد فرصة تطوعية', 'ar'],
+    ['هل توجد فرص', 'ar'],
+    ['فرص تطوع', 'ar'],
+    ['What opportunities are available', 'en'],
+    ['show me opportunities', 'en'],
+    ['any volunteering opportunities?', 'en'],
+    ['فرص في وهران', 'ar'],
+    ['opportunities in Oran', 'en'],
+  ] as const)(
+    'routes generic opportunity phrasing %s to opportunity_search despite strong knowledge',
+    (message, expectedLanguage) => {
+      const search = new StubKnowledgeSearch();
+      // A high lexical score must not turn a generic opportunity request into
+      // knowledge-only or mixed: the opportunity list is live data.
+      search.result = retrieval([
+        makeChunk('Basmatak is a public platform.', 20),
+      ]);
+      const router = makeRouter(search);
+
+      const decision = router.route(message, 'en');
+
+      expect(decision.intent).toBe('live_data');
+      expect(decision.action).toBe('answer');
+      expect(decision.language).toBe(expectedLanguage);
+      expect(decision.tools.map((tool) => tool.name)).toEqual([
+        'search_opportunities',
+      ]);
+      expect(decision.toolIntents).toEqual(['opportunity_search']);
+      expect(decision.reason).toBe('LIVE_TOPIC');
+      expect(decision.topScore).toBe(20);
+      expect(decision.knowledgeQuery).toBe(message);
+    },
+  );
+
   it('routes a mixed question to knowledge plus the relevant tool', () => {
     const search = new StubKnowledgeSearch();
     search.result = retrieval([
@@ -261,18 +299,13 @@ describe('IntentRouter', () => {
   });
 
   it.each([
-    [
-      'English greeting',
-      'Hello',
-      'en',
-      'Hi! How can I help you with Basmatak?',
-    ],
-    ['Arabic greeting', 'مرحبا', 'ar', 'مرحباً! كيف أقدر أساعدك في بصمتك؟'],
+    ['English greeting', 'Hello', 'en', "Hi, I'm Basma. How can I help?"],
+    ['Arabic greeting', 'مرحبا', 'ar', 'مرحباً، أنا بصمة. كيف أساعدك؟'],
     [
       'French greeting (answered in English)',
       'Bonjour',
       'en',
-      'Hi! How can I help you with Basmatak?',
+      "Hi, I'm Basma. How can I help?",
     ],
     ['English thanks', 'Thanks!', 'en', "You're welcome!"],
     ['Arabic thanks', 'شكرا', 'ar', 'على الرحب والسعة!'],
@@ -286,19 +319,19 @@ describe('IntentRouter', () => {
       'English capability',
       'What can you do?',
       'en',
-      "I'm Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
+      "I'm Basma, the Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
     ],
     [
       'French capability (answered in English)',
       'Que peux-tu faire ?',
       'en',
-      "I'm Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
+      "I'm Basma, the Basmatak Assistant. I explain how the platform works and help you find opportunities and organizations.",
     ],
     [
       'Arabic capability',
       'ما الذي يمكنك فعله؟',
       'ar',
-      'أنا مساعد بصمتك. أشرح لك كيف تعمل المنصة، وأساعدك في العثور على الفرص والمنظمات.',
+      'أنا بصمة، مساعدتك في منصة بصمتك. أشرح لك كيف تعمل المنصة، وأساعدك في العثور على الفرص والمنظمات.',
     ],
   ] as const)(
     'returns a short localized direct reply for %s without retrieval or tools',
@@ -589,5 +622,108 @@ describe('IntentRouter', () => {
     expect(liveDecision.tools.map((tool) => tool.name)).toEqual([
       'search_opportunities',
     ]);
+  });
+
+  describe('short follow-up continuations', () => {
+    const ARABIC_HISTORY: AiAgentChatMessage[] = [
+      { role: 'user', content: 'كيف يعمل التحقق؟' },
+      {
+        role: 'assistant',
+        content: 'تراجع المنظمة الأدلة ثم توثق المساهمة بعد التأكد منها.',
+      },
+    ];
+
+    const ENGLISH_HISTORY: AiAgentChatMessage[] = [
+      { role: 'user', content: 'How does verification work?' },
+      {
+        role: 'assistant',
+        content:
+          'The organization reviews the evidence and verifies the contribution.',
+      },
+    ];
+
+    it.each([
+      ['اشرح أكثر', 'ar'],
+      ['زد', 'ar'],
+      ['معلومات أكثر', 'ar'],
+      ['أكثر', 'ar'],
+      ['وضح', 'ar'],
+      ['مثال', 'ar'],
+      ['معلومات أكثر عنها؟', 'ar'],
+      ['أوضح لي أكثر', 'ar'],
+      ['explain more', 'en'],
+      ['more details', 'en'],
+      ['tell me more', 'en'],
+      ['example', 'en'],
+      ['what do you mean', 'en'],
+      ['simpler', 'en'],
+    ] as const)(
+      'treats %s as a continuation, never a canned reply',
+      (message, locale) => {
+        const search = new StubKnowledgeSearch();
+        search.result = retrieval([
+          makeChunk(
+            'The organization reviews the evidence and verifies the contribution.',
+            4.2,
+          ),
+        ]);
+        const router = makeRouter(search);
+        const history = locale === 'ar' ? ARABIC_HISTORY : ENGLISH_HISTORY;
+
+        const decision = router.route(message, locale, history);
+
+        expect(decision.intent).toBe('knowledge_only');
+        expect(decision.action).toBe('answer');
+        expect(decision.directReply).toBeUndefined();
+        expect(decision.reason).toBe('FOLLOW_UP_KNOWLEDGE');
+        expect(decision.knowledgeQuery).toContain(history[0]?.content);
+        expect(decision.knowledgeQuery).toContain(history[1]?.content);
+        expect(decision.knowledgeQuery).toContain(message.trim());
+        expect(search.calls).toHaveLength(1);
+        expect(search.calls[0]?.query).toBe(decision.knowledgeQuery);
+      },
+    );
+
+    it('uses the previous turn even when retrieval finds nothing', () => {
+      const search = new StubKnowledgeSearch();
+      const router = makeRouter(search);
+
+      const decision = router.route('اشرح أكثر', 'ar', ARABIC_HISTORY);
+
+      expect(decision.intent).toBe('knowledge_only');
+      expect(decision.action).toBe('answer');
+      expect(decision.reason).toBe('FOLLOW_UP_CONTEXT');
+      expect(decision.knowledgeQuery).toContain('كيف يعمل التحقق');
+      expect(decision.tools).toEqual([]);
+      expect(decision.toolIntents).toEqual([]);
+    });
+
+    it('ignores live-data signals in a follow-up message', () => {
+      const search = new StubKnowledgeSearch();
+      const router = makeRouter(search);
+      const history: AiAgentChatMessage[] = [
+        { role: 'user', content: 'ما هي الفرص المتاحة الآن؟' },
+        {
+          role: 'assistant',
+          content: 'يمكنك تصفح الفرص من صفحة الفرص.',
+        },
+      ];
+
+      const decision = router.route('معلومات أكثر', 'ar', history);
+
+      expect(decision.intent).toBe('knowledge_only');
+      expect(decision.tools).toEqual([]);
+      expect(decision.toolIntents).toEqual([]);
+      expect(decision.knowledgeQuery).toContain('ما هي الفرص المتاحة');
+    });
+
+    it('keeps normal routing when no usable history exists', () => {
+      const search = new StubKnowledgeSearch();
+      const router = makeRouter(search);
+
+      expect(router.route('example', 'en').reason).toBe('LOW_KNOWLEDGE_SCORE');
+      expect(router.route('اشرح أكثر', 'ar').intent).toBe('clarify');
+      expect(router.route('example', 'en', []).intent).toBe('clarify');
+    });
   });
 });

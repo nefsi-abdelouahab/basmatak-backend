@@ -61,7 +61,7 @@ the deterministic private-data refusal (see §4).
 | Malformed/extended tool arguments (`limit: 9999`, `admin: true`) | Pass — schema/key validation rejects them before execution; the executor is never called | same test |
 | Oversized body (200,000 characters) | Pass — `413` / `PAYLOAD_TOO_LARGE`, fixed message, no body echo, provider not called | `ai-agent-security.e2e-spec.ts` → “rejects invalid JSON and oversized bodies…” |
 | Message over the 2,000-character DTO limit | Pass — `400` / `VALIDATION_ERROR`, provider not called | same test |
-| Too many history messages or too many history characters | Pass — DTO rejects more than 4 messages or more than 2,400 characters | `src/ai-agent/ai-agent.controller.spec.ts` (history validation cases) |
+| Too many history messages or too many history characters | Pass — DTO rejects more than 6 messages or more than 4,000 characters | `src/ai-agent/ai-agent.controller.spec.ts` (history validation cases) |
 | Invalid JSON | Pass — `400` / `BAD_REQUEST` (Nest wraps the body-parser `SyntaxError` at router level) with no echoed body; provider not called | same security test |
 | Unsupported request encoding | Fixed — mapped to `415` / `UNSUPPORTED_MEDIA_TYPE` with a fixed message | `http-exception.filter.ts` (`encoding.unsupported`) |
 | Tool/round/row/character caps | Pass — one tool round, at most 8 rows, 1,200 tool-result characters by default; provider and knowledge caps are clamped to hard maxima | config + `answer-policy.ts`; AI unit suite |

@@ -6,7 +6,11 @@ import {
   UpdatePublicSettingsDto,
   UpdateVolunteerProfileDto,
 } from './dto/volunteer-profile.dto';
-import { VolunteerDashboard, VolunteersService } from './volunteers.service';
+import {
+  VolunteerDashboard,
+  VolunteerProfileCompletion,
+  VolunteersService,
+} from './volunteers.service';
 import { VolunteerProfileModel } from './schemas/volunteer-profile.schema';
 
 @ApiBearerAuth()
@@ -42,6 +46,15 @@ export class VolunteersController {
     @Body() dto: UpdatePublicSettingsDto,
   ): Promise<VolunteerProfileModel> {
     return this.volunteers.updatePublicSettings(account.sub, dto);
+  }
+
+  @Get('me/profile-completion')
+  @Roles('volunteer')
+  @ApiOperation({ summary: 'Read own volunteer profile completion' })
+  async getMyProfileCompletion(
+    @CurrentAccount() account: AccountToken,
+  ): Promise<VolunteerProfileCompletion> {
+    return this.volunteers.getProfileCompletion(account.sub);
   }
 
   @Get('me/dashboard')

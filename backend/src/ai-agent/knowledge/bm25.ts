@@ -61,11 +61,21 @@ interface IndexedDocument {
   termFrequencies: Map<string, number>;
   /** Weighted term count used for BM25 length normalization. */
   documentLength: number;
+  /** Term frequencies including stopwords, used only for fallback queries. */
+  rawTermFrequencies: Map<string, number>;
+  /** Weighted raw term count, used only for fallback queries. */
+  rawDocumentLength: number;
 }
 
 interface QueryTerm {
   term: string;
   weight: number;
+}
+
+interface BuiltQuery {
+  terms: QueryTerm[];
+  /** True when the query contained only stopwords. */
+  useRawIndex: boolean;
 }
 
 function positiveNumber(value: number | undefined, fallback: number): number {
@@ -110,13 +120,14 @@ function addWeightedTokens(
 function buildTermFrequencies(
   chunk: KnowledgeChunk,
   normalizer: KnowledgeNormalizer,
+  removeStopwords: boolean,
 ): Map<string, number> {
   const frequencies = new Map<string, number>();
 
   addWeightedTokens(
     frequencies,
     normalizer.tokenize(chunk.text ?? '', {
-      removeStopwords: true,
+      removeStopwords,
       unique: false,
     }),
     BODY_FIELD_WEIGHT,
@@ -124,7 +135,7 @@ function buildTermFrequencies(
   addWeightedTokens(
     frequencies,
     normalizer.tokenize(chunk.title ?? '', {
-      removeStopwords: true,
+      removeStopwords,
       unique: false,
     }),
     TITLE_FIELD_WEIGHT,
@@ -132,7 +143,7 @@ function buildTermFrequencies(
   addWeightedTokens(
     frequencies,
     normalizer.tokenize((chunk.headingTrail ?? []).join(' '), {
-      removeStopwords: true,
+      removeStopwords,
       unique: false,
     }),
     HEADING_FIELD_WEIGHT,
@@ -140,7 +151,7 @@ function buildTermFrequencies(
   addWeightedTokens(
     frequencies,
     normalizer.tokenize((chunk.tags ?? []).join(' '), {
-      removeStopwords: true,
+      removeStopwords,
       unique: false,
     }),
     TAG_FIELD_WEIGHT,
@@ -184,8 +195,10 @@ function compareResults(
 export class BM25Index {
   private readonly documents: IndexedDocument[] = [];
   private readonly postings = new Map<string, number[]>();
+  private readonly rawPostings = new Map<string, number[]>();
   private readonly documentFrequencies = new Map<string, number>();
   private readonly averageDocumentLength: number;
+  private readonly averageRawDocumentLength: number;
   private readonly k1: number;
   private readonly b: number;
   private readonly normalizer: KnowledgeNormalizer;
@@ -201,11 +214,27 @@ export class BM25Index {
       new KnowledgeNormalizer({ synonyms: options.synonyms ?? [] });
 
     for (const chunk of chunks) {
-      const termFrequencies = buildTermFrequencies(chunk, this.normalizer);
+      const termFrequencies = buildTermFrequencies(
+        chunk,
+        this.normalizer,
+        true,
+      );
+      const rawTermFrequencies = buildTermFrequencies(
+        chunk,
+        this.normalizer,
+        false,
+      );
       const documentLength = sumFrequencies(termFrequencies);
+      const rawDocumentLength = sumFrequencies(rawTermFrequencies);
       const documentIndex = this.documents.length;
 
-      this.documents.push({ chunk, termFrequencies, documentLength });
+      this.documents.push({
+        chunk,
+        termFrequencies,
+        documentLength,
+        rawTermFrequencies,
+        rawDocumentLength,
+      });
 
       for (const term of termFrequencies.keys()) {
         const existing = this.postings.get(term);
@@ -219,6 +248,15 @@ export class BM25Index {
           (this.documentFrequencies.get(term) ?? 0) + 1,
         );
       }
+
+      for (const term of rawTermFrequencies.keys()) {
+        const existing = this.rawPostings.get(term);
+        if (existing) {
+          existing.push(documentIndex);
+        } else {
+          this.rawPostings.set(term, [documentIndex]);
+        }
+      }
     }
 
     const totalLength = this.documents.reduce(
@@ -227,6 +265,13 @@ export class BM25Index {
     );
     this.averageDocumentLength =
       this.documents.length === 0 ? 0 : totalLength / this.documents.length;
+
+    const totalRawLength = this.documents.reduce(
+      (total, document) => total + document.rawDocumentLength,
+      0,
+    );
+    this.averageRawDocumentLength =
+      this.documents.length === 0 ? 0 : totalRawLength / this.documents.length;
   }
 
   /** Number of indexed chunks. */
@@ -252,13 +297,15 @@ export class BM25Index {
   search(query: string, options: BM25SearchOptions = {}): BM25SearchResult[] {
     if (this.documents.length === 0) return [];
 
-    const terms = this.buildQueryTerms(query);
+    const { terms, useRawIndex } = this.buildQueryTerms(query);
     if (terms.length === 0) return [];
 
     const scores = new Map<number, number>();
 
     for (const queryTerm of terms) {
-      const postings = this.postings.get(queryTerm.term);
+      const postings = (useRawIndex ? this.rawPostings : this.postings).get(
+        queryTerm.term,
+      );
       if (!postings || postings.length === 0) continue;
 
       const documentFrequency = postings.length;
@@ -270,13 +317,23 @@ export class BM25Index {
 
       for (const documentIndex of postings) {
         const document = this.documents[documentIndex];
-        const termFrequency = document.termFrequencies.get(queryTerm.term) ?? 0;
+        const termFrequency =
+          (useRawIndex
+            ? document.rawTermFrequencies
+            : document.termFrequencies
+          ).get(queryTerm.term) ?? 0;
         if (termFrequency <= 0) continue;
 
+        const averageDocumentLength = useRawIndex
+          ? this.averageRawDocumentLength
+          : this.averageDocumentLength;
+        const documentLength = useRawIndex
+          ? document.rawDocumentLength
+          : document.documentLength;
         const lengthRatio =
-          this.averageDocumentLength === 0
+          averageDocumentLength === 0
             ? 1
-            : document.documentLength / this.averageDocumentLength;
+            : documentLength / averageDocumentLength;
         const denominator =
           termFrequency + this.k1 * (1 - this.b + this.b * lengthRatio);
         const termScore =
@@ -315,12 +372,25 @@ export class BM25Index {
     return results.slice(0, limit);
   }
 
-  private buildQueryTerms(query: string): QueryTerm[] {
-    const baseTokens = this.normalizer.tokenize(query, {
+  private buildQueryTerms(query: string): BuiltQuery {
+    const filteredTokens = this.normalizer.tokenize(query, {
       removeStopwords: true,
       unique: true,
     });
-    if (baseTokens.length === 0) return [];
+    // Identity questions such as "who are you" and "من أنت" are made entirely
+    // of stopwords. Retry against the raw index, which includes stopwords, so
+    // they can still match identity content instead of producing no results.
+    const useRawIndex = filteredTokens.length === 0;
+    const baseTokens = useRawIndex
+      ? this.normalizer.tokenize(query, {
+          removeStopwords: false,
+          unique: true,
+        })
+      : filteredTokens;
+
+    if (baseTokens.length === 0) {
+      return { terms: [], useRawIndex };
+    }
 
     const expanded = this.normalizer.expandTokens(baseTokens);
     const original = new Set(baseTokens);
@@ -338,6 +408,6 @@ export class BM25Index {
       });
     }
 
-    return terms;
+    return { terms, useRawIndex };
   }
 }
