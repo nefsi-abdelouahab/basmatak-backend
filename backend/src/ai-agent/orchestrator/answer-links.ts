@@ -35,7 +35,7 @@ function safeText(value: unknown, maxChars: number): string {
  * Slugs and usernames are path segments, never paths. Reject anything that
  * could escape the segment or change the URL shape.
  */
-function safeSegment(value: unknown): string | undefined {
+export function safeSegment(value: unknown): string | undefined {
   const segment = safeText(value, MAX_SLUG_CHARS);
   if (segment === '' || segment === '.' || segment === '..') return undefined;
   if (/[/\\?#\u0000-\u001f]/u.test(segment)) return undefined;

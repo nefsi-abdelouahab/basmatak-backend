@@ -46,6 +46,7 @@ export const SSE_EVENT_NAMES = [
   'status',
   'sources',
   'token',
+  'cards',
   'done',
   'error',
 ] as const;

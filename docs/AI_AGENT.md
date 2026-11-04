@@ -54,7 +54,7 @@ off immediately with `AI_AGENT_ENABLED=false`.
 
 | Layer | Component | Responsibility |
 |---|---|---|
-| Frontend | `frontend/src/components/ai-agent/` (`AiAgentWidget`, panel, launcher, message views) | Floating launcher, accessible panel, RTL/i18n, status and retry states, Markdown rendering with safe internal links. |
+| Frontend | `frontend/src/components/ai-agent/` (`AiAgentWidget`, panel, launcher, message views) | Floating launcher, accessible panel, RTL/i18n, status and retry states, Markdown rendering with safe internal links, and generated opportunity/organization/stats cards. Below `lg` the launcher keeps a 96px bottom inset (72px bottom navigation plus a 24px gap) so it never covers the navigation; at `lg` and above the inset is 24px. |
 | Frontend | `frontend/src/hooks/useAiChat.ts` | Client conversation state, request history (at most the recent turns), abort/retry, session-storage hydration. |
 | Frontend | `frontend/src/lib/api/aiAgent.ts`, `sse.ts` | Typed status/chat client, POST streaming with `fetch`, SSE frame parser, error mapping, `Retry-After` fallback. |
 | Backend transport | `backend/src/ai-agent/ai-agent.controller.ts` | Validation boundary, kill switch, quota reservation/commit/release, SSE lifecycle, `meta` and `done`, request logging. |
@@ -100,10 +100,13 @@ off immediately with `AI_AGENT_ENABLED=false`.
    Markdown links to real public entities survive. A system-instruction leak
    guard runs before any answer text is streamed. A failed check becomes the
    localized ungrounded refusal, never partial text.
-8. **Tokens.** After validation, `token` deltas stream the sanitized answer. No
-   `sources` event is emitted. The controller commits real usage, releases the
-   concurrency slot exactly once, writes the structured request log, and emits
-   `done`.
+8. **Tokens and cards.** After validation, `token` deltas stream the sanitized
+   answer. One `cards` event follows the tokens and precedes `done`. It carries
+   at most six deterministic cards built only from public tool rows whose exact
+   allowlisted href appears in the sanitized answer; a `stats` card is added only
+   when at least one entity card survives. No `sources` event is emitted. The
+   controller commits real usage, releases the concurrency slot exactly once,
+   writes the structured request log, and emits `done`.
 9. **Abort or failure.** A client disconnect aborts the provider and writes no
    further events. A known provider failure writes a localized in-stream
    `error` and no `done`. Pre-stream denials remain ordinary JSON errors.
@@ -125,7 +128,10 @@ off immediately with `AI_AGENT_ENABLED=false`.
 - An empty answer or a prompt-leak match is replaced by a complete refusal.
   Internal citation markers are removed from prose, and any link that is not an
   exact allowlisted locale link to a retrieved or public entity is removed.
-  No `sources` event is emitted for any answer.
+  Generated cards are projections of those same public rows: an entity card is
+  emitted only when its exact sanitized href appears in the answer, exactly-named
+  public fields are copied (never the whole row), duplicates are removed, and the
+  list is capped at six. No `sources` event is emitted for any answer.
 - An Arabic question must receive an Arabic answer. Model-first mode retries
   once with a stricter instruction and then fails closed rather than streaming
   a non-Arabic answer; Latin slugs/names inside Markdown links or bare URLs are

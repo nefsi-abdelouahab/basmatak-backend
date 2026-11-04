@@ -3,6 +3,7 @@ import { AppLogger } from '../../common/logger/app.logger';
 import { redactLogText } from '../../common/logger/log-redaction';
 import { AI_AGENT_CONFIG } from '../ai-agent.constants';
 import type {
+  AiAgentCard,
   AiAgentChatMessage,
   AiAgentErrorCode,
   AiAgentFinishReason,
@@ -86,6 +87,7 @@ import {
   allowsBrowseLinks,
 } from './answer-links';
 import type { AnswerLink } from './answer-links';
+import { buildAnswerCards } from './answer-cards';
 import {
   asksForList,
   CITATION_MARKER_PATTERN,
@@ -203,6 +205,7 @@ interface EmitOptions {
   truncated: boolean;
   toolCalls: number;
   toolNames: string[];
+  cards?: AiAgentCard[];
 }
 
 function zeroUsage(): UsageTotals {
@@ -1308,6 +1311,11 @@ export class AiAgentOrchestrator {
     }
 
     const truncated = finalTurn.finishReason === 'length';
+    const cards = buildAnswerCards({
+      results: citableResults,
+      answer: sanitized,
+      locale: input.locale,
+    });
 
     return this.emitAnswer(
       input,
@@ -1319,6 +1327,7 @@ export class AiAgentOrchestrator {
         truncated,
         toolCalls: toolCallCount,
         toolNames: uniqueNames(executedNames),
+        ...(cards.length > 0 ? { cards } : {}),
       },
       {
         finishReason: truncated ? 'length' : 'stop',
@@ -1963,6 +1972,11 @@ export class AiAgentOrchestrator {
     }
 
     const truncated = finalTurn.finishReason === 'length';
+    const cards = buildAnswerCards({
+      results: citableResults,
+      answer: sanitized,
+      locale: input.locale,
+    });
 
     return this.emitAnswer(
       input,
@@ -1974,6 +1988,7 @@ export class AiAgentOrchestrator {
         truncated,
         toolCalls: toolCallCount,
         toolNames: uniqueNames(executedNames),
+        ...(cards.length > 0 ? { cards } : {}),
       },
       {
         finishReason: truncated ? 'length' : 'stop',
@@ -2042,10 +2057,8 @@ export class AiAgentOrchestrator {
       );
     }
 
-    const links = buildAnswerLinks(
-      [{ citationId: 'T1', result }],
-      input.locale,
-    ).slice(0, 3);
+    const citableResults: CitableToolResult[] = [{ citationId: 'T1', result }];
+    const links = buildAnswerLinks(citableResults, input.locale).slice(0, 3);
     if (links.length === 0) {
       return this.emitPolicyAnswer(
         input,
@@ -2082,6 +2095,11 @@ export class AiAgentOrchestrator {
       allowLists: false,
       maxLinks: 4,
     });
+    const cards = buildAnswerCards({
+      results: citableResults,
+      answer: sanitized,
+      locale: input.locale,
+    });
 
     return this.emitAnswer(
       input,
@@ -2093,6 +2111,7 @@ export class AiAgentOrchestrator {
         truncated: false,
         toolCalls,
         toolNames,
+        ...(cards.length > 0 ? { cards } : {}),
       },
       { finishReason: 'stop' },
     );
@@ -2168,11 +2187,8 @@ export class AiAgentOrchestrator {
       );
     }
 
-    const links = buildAnswerLinks(
-      [{ citationId: 'T1', result }],
-      input.locale,
-      language,
-    );
+    const citableResults: CitableToolResult[] = [{ citationId: 'T1', result }];
+    const links = buildAnswerLinks(citableResults, input.locale, language);
     const textAnswer = formatFocusedOpportunityAnswer(rows, links, language);
     const sanitized = sanitizeAnswer(textAnswer, {
       locale: input.locale,
@@ -2180,6 +2196,11 @@ export class AiAgentOrchestrator {
       allowBrowseLinks: false,
       allowLists: false,
       maxLinks: 3,
+    });
+    const cards = buildAnswerCards({
+      results: citableResults,
+      answer: sanitized,
+      locale: input.locale,
     });
 
     return this.emitAnswer(
@@ -2192,6 +2213,7 @@ export class AiAgentOrchestrator {
         truncated: false,
         toolCalls,
         toolNames,
+        ...(cards.length > 0 ? { cards } : {}),
       },
       { finishReason: 'stop' },
     );
@@ -2274,8 +2296,11 @@ export class AiAgentOrchestrator {
           data: { items: suggestionRows },
           meta: result.meta,
         };
+        const suggestionResults: CitableToolResult[] = [
+          { citationId: 'T1', result: suggestionResult },
+        ];
         const suggestion = buildAnswerLinks(
-          [{ citationId: 'T1', result: suggestionResult }],
+          suggestionResults,
           input.locale,
           language,
         )[0];
@@ -2284,7 +2309,15 @@ export class AiAgentOrchestrator {
             language === 'ar'
               ? `لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [${suggestion.title}](${suggestion.href})؟`
               : `I couldn't find that exact name. Did you mean [${suggestion.title}](${suggestion.href})?`;
-          return this.emitPolicyAnswer(input, text, false, extra);
+          const cards = buildAnswerCards({
+            results: suggestionResults,
+            answer: text,
+            locale: input.locale,
+          });
+          return this.emitPolicyAnswer(input, text, false, {
+            ...extra,
+            ...(cards.length > 0 ? { cards } : {}),
+          });
         }
       }
 
@@ -2302,8 +2335,11 @@ export class AiAgentOrchestrator {
       data: { items: matchedRows },
       meta: result.meta,
     };
+    const citableResults: CitableToolResult[] = [
+      { citationId: 'T1', result: matchedResult },
+    ];
     const links = buildAnswerLinks(
-      [{ citationId: 'T1', result: matchedResult }],
+      citableResults,
       input.locale,
       language,
     ).slice(0, 3);
@@ -2334,6 +2370,11 @@ export class AiAgentOrchestrator {
       allowLists: false,
       maxLinks: 3,
     });
+    const cards = buildAnswerCards({
+      results: citableResults,
+      answer: sanitized,
+      locale: input.locale,
+    });
 
     return this.emitAnswer(
       input,
@@ -2345,6 +2386,7 @@ export class AiAgentOrchestrator {
         truncated: false,
         toolCalls,
         toolNames,
+        ...(cards.length > 0 ? { cards } : {}),
       },
       { finishReason: 'stop' },
     );
@@ -2414,10 +2456,8 @@ export class AiAgentOrchestrator {
       );
     }
 
-    const links = buildAnswerLinks(
-      [{ citationId: 'T1', result }],
-      input.locale,
-    ).slice(0, 3);
+    const citableResults: CitableToolResult[] = [{ citationId: 'T1', result }];
+    const links = buildAnswerLinks(citableResults, input.locale).slice(0, 3);
     if (links.length === 0) {
       return this.emitPolicyAnswer(
         input,
@@ -2457,6 +2497,11 @@ export class AiAgentOrchestrator {
       allowLists: false,
       maxLinks: 4,
     });
+    const cards = buildAnswerCards({
+      results: citableResults,
+      answer: sanitized,
+      locale: input.locale,
+    });
 
     return this.emitAnswer(
       input,
@@ -2468,6 +2513,7 @@ export class AiAgentOrchestrator {
         truncated: false,
         toolCalls,
         toolNames,
+        ...(cards.length > 0 ? { cards } : {}),
       },
       { finishReason: 'stop' },
     );
@@ -3107,6 +3153,7 @@ export class AiAgentOrchestrator {
       usage?: UsageTotals;
       truncated?: boolean;
       finishReason?: AiAgentFinishReason;
+      cards?: AiAgentCard[];
     },
   ): AiAgentOrchestrationResult {
     const toolNames = extra?.toolNames ?? [];
@@ -3122,6 +3169,7 @@ export class AiAgentOrchestrator {
         truncated: extra?.truncated ?? false,
         toolCalls,
         toolNames,
+        ...(extra?.cards !== undefined ? { cards: extra.cards } : {}),
       },
       { finishReason: extra?.finishReason ?? 'stop' },
     );
@@ -3145,6 +3193,17 @@ export class AiAgentOrchestrator {
         return this.abortedResult(mode, options.toolNames, options.toolCalls);
       }
       if (firstTokenAt === undefined) firstTokenAt = Date.now();
+    }
+
+    // Cards always follow the sanitized text and one or more token frames, and
+    // always precede the controller-owned `done` event.
+    if (options.cards !== undefined && options.cards.length > 0) {
+      if (input.stream.isClosed) {
+        return this.abortedResult(mode, options.toolNames, options.toolCalls);
+      }
+      if (!input.stream.event('cards', { cards: options.cards })) {
+        return this.abortedResult(mode, options.toolNames, options.toolCalls);
+      }
     }
 
     return this.makeResult({

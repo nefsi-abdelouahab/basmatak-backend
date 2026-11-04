@@ -875,6 +875,9 @@ data: {"delta":"You can browse "}
 event: token
 data: {"delta":"published opportunities."}
 
+event: cards
+data: {"cards":[{"kind":"opportunity","slug":"beach-cleanup","title":"Beach cleanup","organizationName":{"ar":"الأرض الخضراء","fr":"Green Earth"},"wilayaName":{"ar":"الجزائر","fr":"Algiers"},"startDate":"2026-03-15T00:00:00.000Z","applicationDeadline":"2026-04-01T00:00:00.000Z","openPositions":2,"mode":"onsite","status":"published","href":"/en/opportunities/beach-cleanup"}]}
+
 event: done
 data: {"finishReason":"stop","usage":{"inputTokens":812,"outputTokens":57,"totalTokens":869,"estimated":true}}
 
@@ -886,13 +889,15 @@ data: {"finishReason":"stop","usage":{"inputTokens":812,"outputTokens":57,"total
 | `meta` | Always first | `{ conversationId, locale, mode }`. `conversationId` is a random per-request UUID; it is not persisted. |
 | `status` | Zero or more | `{ state, tool? }`. `state` is one of `searching`, `thinking`, `answering`, `tool`; `tool` is present for a tool round (for example `search_opportunities`). Clients must tolerate all four values. |
 | `token` | Zero or more | `{ delta }` with sanitized Markdown text. Only validated locale-prefixed internal links survive; clients must escape HTML and never render arbitrary HTML from the model. |
+| `cards` | Zero or one, after all `token` events and before `done` | `{ cards }` with at most 6 cards. Each card is an `opportunity`, `organization`, or `stats` object. Entity cards are built only from public tool rows whose exact sanitized answer href matches, use exactly-named public fields, are de-duplicated by href, and always carry a locale-prefixed `href`. A `stats` card carries the five public counts and appears only alongside at least one entity card. Never present with an `error` or refusal response. |
 | `error` | On a known failure after the stream started | `{ code, message, retryAfterSeconds? }` where `message` is already localized. No `done` follows. |
 | `done` | Successful end | `{ finishReason, truncated?, usage }`. `finishReason` is `stop` or `length`; `usage` is `{ inputTokens, outputTokens, totalTokens, estimated }`. |
 
-Normal order: `meta` -> optional `status` -> `token`* -> `done`. A tool round
-adds `status` events before the final tokens. There is no `sources` event. A
-client disconnect aborts the provider and ends the response with no further
-events and no `done`. There is no `id:`, `retry:`, or `Last-Event-ID` support.
+Normal order: `meta` -> optional `status` -> `token`* -> optional `cards` ->
+`done`. A tool round adds `status` events before the final tokens. There is no
+`sources` event. A client disconnect aborts the provider and ends the response
+with no further events and no `done`. There is no `id:`, `retry:`, or
+`Last-Event-ID` support.
 
 **Pre-stream errors** (ordinary JSON envelope, not SSE):
 

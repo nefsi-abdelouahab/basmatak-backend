@@ -3,7 +3,7 @@
   "corpus": "baseline",
   "modelFirst": true,
   "mode": "scripted",
-  "generatedAt": "2026-11-04T22:33:49.647Z",
+  "generatedAt": "2026-11-04T23:06:17.107Z",
   "provider": "scripted",
   "model": "scripted",
   "maxInputTokens": 10000,
@@ -29,8 +29,8 @@
     "maxProviderCalls": 2,
     "avgToolCalls": 0.4,
     "maxToolCalls": 1,
-    "avgLatencyMs": 2.26,
-    "maxLatencyMs": 18
+    "avgLatencyMs": 2.84,
+    "maxLatencyMs": 21
   },
   "dialogues": [
     {
@@ -62,7 +62,7 @@
           "totalTokens": 0,
           "estimatedTokens": false,
           "providerCalls": 0,
-          "latencyMs": 5,
+          "latencyMs": 6,
           "events": [
             "token"
           ],
@@ -121,7 +121,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 7,
+      "durationMs": 9,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -214,7 +214,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 5,
+      "durationMs": 6,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -256,7 +256,7 @@
           "totalTokens": 2941,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 18,
+          "latencyMs": 21,
           "events": [
             "status",
             "token"
@@ -316,7 +316,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 19,
+      "durationMs": 21,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -358,7 +358,7 @@
           "totalTokens": 3104,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 4,
+          "latencyMs": 6,
           "events": [
             "status",
             "token"
@@ -418,7 +418,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 4,
+      "durationMs": 6,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -460,7 +460,7 @@
           "totalTokens": 2691,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 4,
+          "latencyMs": 7,
           "events": [
             "status",
             "token"
@@ -520,7 +520,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 4,
+      "durationMs": 7,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -622,7 +622,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 3,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -664,7 +664,7 @@
           "totalTokens": 2869,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 2,
           "events": [
             "status",
             "token"
@@ -762,7 +762,7 @@
           "totalTokens": 2947,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 6,
+          "latencyMs": 4,
           "events": [
             "status",
             "token"
@@ -868,7 +868,7 @@
           "totalTokens": 3038,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 4,
           "events": [
             "status",
             "token"
@@ -928,7 +928,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 12,
+      "durationMs": 10,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -970,7 +970,7 @@
           "totalTokens": 2911,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 1,
+          "latencyMs": 3,
           "events": [
             "status",
             "token"
@@ -1068,7 +1068,7 @@
           "totalTokens": 3082,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 4,
           "events": [
             "status",
             "token"
@@ -1174,7 +1174,7 @@
           "totalTokens": 3079,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 4,
           "events": [
             "status",
             "token"
@@ -1234,7 +1234,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 8,
+      "durationMs": 11,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1374,7 +1374,7 @@
           "totalTokens": 3011,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -1434,7 +1434,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 6,
+      "durationMs": 4,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1476,7 +1476,7 @@
           "totalTokens": 3302,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 4,
           "events": [
             "status",
             "token"
@@ -1634,7 +1634,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 4,
+      "durationMs": 6,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1674,108 +1674,6 @@
           "inputTokens": 2656,
           "outputTokens": 28,
           "totalTokens": 2684,
-          "estimatedTokens": true,
-          "providerCalls": 1,
-          "latencyMs": 0,
-          "events": [
-            "status",
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 0,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
-      "id": "privacy-policy-ar",
-      "family": "privacy-policy",
-      "title": "Privacy policy",
-      "locale": "ar",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "ماذا تقول سياسة الخصوصية؟",
-          "locale": "ar",
-          "historyBefore": [],
-          "router": {
-            "action": "answer",
-            "intent": "knowledge_only",
-            "language": "ar",
-            "reason": "KNOWLEDGE_MATCH",
-            "tools": [],
-            "topScore": 23.667360660440973
-          },
-          "declaredTools": [
-            "get_opportunity_details",
-            "get_organization_details",
-            "platform_stats",
-            "search_knowledge",
-            "search_opportunities",
-            "search_organizations",
-            "search_reference_data"
-          ],
-          "providerToolCalls": [],
-          "executedToolCalls": [],
-          "finalText": "توضح سياسة الخصوصية البيانات التي تجمعها المنصة وكيف يمكن للمستخدم طلب حذفها.",
-          "inputTokens": 2782,
-          "outputTokens": 36,
-          "totalTokens": 2818,
           "estimatedTokens": true,
           "providerCalls": 1,
           "latencyMs": 1,
@@ -1844,24 +1742,24 @@
       "failedChecks": []
     },
     {
-      "id": "account-deletion-en",
-      "family": "account-deletion",
-      "title": "Account deletion",
-      "locale": "en",
+      "id": "privacy-policy-ar",
+      "family": "privacy-policy",
+      "title": "Privacy policy",
+      "locale": "ar",
       "run": 1,
       "turns": [
         {
           "index": 1,
-          "message": "How can a user delete an account?",
-          "locale": "en",
+          "message": "ماذا تقول سياسة الخصوصية؟",
+          "locale": "ar",
           "historyBefore": [],
           "router": {
             "action": "answer",
             "intent": "knowledge_only",
-            "language": "en",
+            "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 13.863506101238517
+            "topScore": 23.667360660440973
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1874,13 +1772,13 @@
           ],
           "providerToolCalls": [],
           "executedToolCalls": [],
-          "finalText": "Open your account settings and choose Delete account. The platform removes your profile data after confirmation.",
-          "inputTokens": 2758,
-          "outputTokens": 28,
-          "totalTokens": 2786,
+          "finalText": "توضح سياسة الخصوصية البيانات التي تجمعها المنصة وكيف يمكن للمستخدم طلب حذفها.",
+          "inputTokens": 2782,
+          "outputTokens": 36,
+          "totalTokens": 2818,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 3,
           "events": [
             "status",
             "token"
@@ -1941,6 +1839,108 @@
         }
       ],
       "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "account-deletion-en",
+      "family": "account-deletion",
+      "title": "Account deletion",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How can a user delete an account?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 13.863506101238517
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Open your account settings and choose Delete account. The platform removes your profile data after confirmation.",
+          "inputTokens": 2758,
+          "outputTokens": 28,
+          "totalTokens": 2786,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 1,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2096,7 +2096,7 @@
           "totalTokens": 2805,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 4,
+          "latencyMs": 2,
           "events": [
             "status",
             "status",
@@ -2157,7 +2157,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 4,
+      "durationMs": 3,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2272,7 +2272,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 1,
+      "durationMs": 2,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2334,12 +2334,13 @@
           "totalTokens": 3286,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 6,
           "events": [
             "status",
             "status",
             "token",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -2396,7 +2397,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 6,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2458,12 +2459,253 @@
           "totalTokens": 3449,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 1,
+          "latencyMs": 4,
           "events": [
             "status",
             "status",
             "token",
-            "token"
+            "token",
+            "cards"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 4,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-place-en",
+      "family": "opportunity-place",
+      "title": "Opportunity place filter",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Are there opportunities in Oran?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 5.649929426077984
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "oran"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "oran"
+              }
+            }
+          ],
+          "finalText": "Yes. [Beach cleanup](/en/opportunities/beach-cleanup) is published in Oran.",
+          "inputTokens": 2881,
+          "outputTokens": 19,
+          "totalTokens": 2900,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "cards"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 4,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-place-ar",
+      "family": "opportunity-place",
+      "title": "Opportunity place filter",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "هل توجد فرص في وهران؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 7.343882952905048
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "وهران"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "وهران"
+              }
+            }
+          ],
+          "finalText": "نعم، [Beach cleanup](/ar/opportunities/beach-cleanup) منشورة في وهران.",
+          "inputTokens": 3159,
+          "outputTokens": 22,
+          "totalTokens": 3181,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -2526,244 +2768,6 @@
       "failedChecks": []
     },
     {
-      "id": "opportunity-place-en",
-      "family": "opportunity-place",
-      "title": "Opportunity place filter",
-      "locale": "en",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "Are there opportunities in Oran?",
-          "locale": "en",
-          "historyBefore": [],
-          "router": {
-            "action": "answer",
-            "intent": "live_data",
-            "language": "en",
-            "reason": "LIVE_TOPIC",
-            "tools": [
-              "search_opportunities"
-            ],
-            "topScore": 5.649929426077984
-          },
-          "declaredTools": [
-            "get_opportunity_details",
-            "get_organization_details",
-            "platform_stats",
-            "search_knowledge",
-            "search_opportunities",
-            "search_organizations",
-            "search_reference_data"
-          ],
-          "providerToolCalls": [
-            {
-              "name": "search_opportunities",
-              "arguments": {
-                "text": "oran"
-              }
-            }
-          ],
-          "executedToolCalls": [
-            {
-              "name": "search_opportunities",
-              "arguments": {
-                "text": "oran"
-              }
-            }
-          ],
-          "finalText": "Yes. [Beach cleanup](/en/opportunities/beach-cleanup) is published in Oran.",
-          "inputTokens": 2881,
-          "outputTokens": 19,
-          "totalTokens": 2900,
-          "estimatedTokens": true,
-          "providerCalls": 2,
-          "latencyMs": 1,
-          "events": [
-            "status",
-            "status",
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 1,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
-      "id": "opportunity-place-ar",
-      "family": "opportunity-place",
-      "title": "Opportunity place filter",
-      "locale": "ar",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "هل توجد فرص في وهران؟",
-          "locale": "ar",
-          "historyBefore": [],
-          "router": {
-            "action": "answer",
-            "intent": "live_data",
-            "language": "ar",
-            "reason": "LIVE_TOPIC",
-            "tools": [
-              "search_opportunities"
-            ],
-            "topScore": 7.343882952905048
-          },
-          "declaredTools": [
-            "get_opportunity_details",
-            "get_organization_details",
-            "platform_stats",
-            "search_knowledge",
-            "search_opportunities",
-            "search_organizations",
-            "search_reference_data"
-          ],
-          "providerToolCalls": [
-            {
-              "name": "search_opportunities",
-              "arguments": {
-                "text": "وهران"
-              }
-            }
-          ],
-          "executedToolCalls": [
-            {
-              "name": "search_opportunities",
-              "arguments": {
-                "text": "وهران"
-              }
-            }
-          ],
-          "finalText": "نعم، [Beach cleanup](/ar/opportunities/beach-cleanup) منشورة في وهران.",
-          "inputTokens": 3159,
-          "outputTokens": 22,
-          "totalTokens": 3181,
-          "estimatedTokens": true,
-          "providerCalls": 2,
-          "latencyMs": 1,
-          "events": [
-            "status",
-            "status",
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 1,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
       "id": "opportunity-detail-en",
       "family": "opportunity-detail",
       "title": "Opportunity detail follow-up",
@@ -2820,12 +2824,13 @@
           "totalTokens": 3286,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 2,
           "events": [
             "status",
             "status",
             "token",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -2936,11 +2941,12 @@
           "totalTokens": 3110,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 4,
           "events": [
             "status",
             "status",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -3063,7 +3069,8 @@
           "events": [
             "status",
             "status",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -3187,7 +3194,8 @@
             "status",
             "status",
             "token",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -3306,12 +3314,13 @@
           "totalTokens": 2994,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 2,
+          "latencyMs": 3,
           "events": [
             "status",
             "status",
             "token",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -3438,12 +3447,13 @@
           "totalTokens": 3826,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 1,
+          "latencyMs": 2,
           "events": [
             "status",
             "status",
             "token",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -3500,7 +3510,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 5,
+      "durationMs": 7,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -3564,7 +3574,8 @@
           "events": [
             "status",
             "status",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -3685,7 +3696,8 @@
           "events": [
             "status",
             "status",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -3796,7 +3808,7 @@
           "totalTokens": 3005,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 1,
+          "latencyMs": 3,
           "events": [
             "status",
             "status",
@@ -3857,7 +3869,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 1,
+      "durationMs": 3,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -4034,7 +4046,8 @@
           "events": [
             "status",
             "status",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -4153,7 +4166,8 @@
           "events": [
             "status",
             "status",
-            "token"
+            "token",
+            "cards"
           ],
           "mode": "normal",
           "finishReason": "stop",
@@ -4422,7 +4436,7 @@
           "totalTokens": 2409,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 1,
+          "latencyMs": 2,
           "events": [
             "status",
             "token"
@@ -4482,7 +4496,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 1,
+      "durationMs": 2,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -4626,7 +4640,7 @@
           "totalTokens": 2311,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 0,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -4965,7 +4979,7 @@
           "totalTokens": 2937,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -5170,7 +5184,7 @@
           "totalTokens": 2831,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 1,
+          "latencyMs": 2,
           "events": [
             "status",
             "token"
@@ -5230,7 +5244,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 1,
+      "durationMs": 3,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -5272,7 +5286,7 @@
           "totalTokens": 2744,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 1,
+          "latencyMs": 2,
           "events": [
             "status",
             "token"
@@ -5332,7 +5346,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 1,
+      "durationMs": 2,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -5374,7 +5388,7 @@
           "totalTokens": 3482,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 1,
+          "latencyMs": 2,
           "events": [
             "status",
             "token"
@@ -5434,7 +5448,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 1,
+      "durationMs": 2,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
