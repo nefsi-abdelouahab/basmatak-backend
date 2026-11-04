@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { Response } from 'express';
+import { AppLogger } from '../../common/logger/app.logger';
 import type {
   AiAgentChatMessage,
   AiAgentLocale,
@@ -323,6 +324,7 @@ function createHarness(
     decision?: RouterDecision;
     retrieval?: RetrievalResult;
     executeMany?: jest.Mock;
+    logger?: AppLogger;
   } = {},
 ): Harness {
   const config = options.config ?? createConfig();
@@ -351,6 +353,7 @@ function createHarness(
     toolExecutor as unknown as ToolExecutor,
     quota,
     provider,
+    options.logger,
   );
 
   return {
@@ -486,6 +489,41 @@ describe('AiAgentOrchestrator', () => {
       'Basmatak is a platform.',
     );
     expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
+  });
+
+  it('logs a content-free event when the prompt budget is exceeded', async () => {
+    const logger = {
+      warn: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger;
+    const harness = createHarness({
+      config: createConfig({ limits: { maxInputTokens: 10 } }),
+      logger,
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'SECRET_PROMPT_TEXT',
+    );
+
+    expect(result.errorCode).toBe('AI_AGENT_INVALID_INPUT');
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'error']);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+
+    const record = JSON.parse(
+      (logger.warn as jest.Mock).mock.calls[0][0] as string,
+    ) as Record<string, unknown>;
+    expect(record).toMatchObject({
+      event: 'ai_agent_prompt_budget_exceeded',
+      provider: 'mock',
+      model: expect.any(String),
+      toolCount: 0,
+      historyMessages: 0,
+      maxInputTokens: 10,
+    });
+    expect(record.estimatedRequiredTokens).toBeGreaterThan(10);
+    expect(JSON.stringify(record)).not.toContain('SECRET_PROMPT_TEXT');
   });
 
   it('passes client history to the router and to the prompt', async () => {

@@ -94,6 +94,11 @@ export interface BuiltPrompt {
   text: string;
   language: PromptLanguage;
   estimatedInputTokens: number;
+  /**
+   * Portion of `estimatedInputTokens` charged for provider tool declarations.
+   * Zero when the turn declares no tools.
+   */
+  estimatedToolDeclarationTokens: number;
   /** Configured output budget reserved alongside the input. */
   estimatedOutputTokens: number;
   estimatedTotalTokens: number;

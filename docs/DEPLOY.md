@@ -102,7 +102,7 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 | `GROQ_API_KEY` | Groq key | Server-side secret only, required when `AI_AGENT_PROVIDER=groq`. Never expose it to the frontend, SSE, logs, or errors. |
 | `GEMINI_API_KEY` | Gemini key | Server-side secret only, required when `AI_AGENT_PROVIDER=gemini`. Never expose it to the frontend, SSE, logs, or errors. |
 | `AI_AGENT_KNOWLEDGE_DIR` | (unset) | Unset → `<backend cwd>/ai-agent`; the folder ships with the repo. |
-| `AI_AGENT_MAX_INPUT_TOKENS` | `3000` | Estimated input cap before each provider call. |
+| `AI_AGENT_MAX_INPUT_TOKENS` | `10000` | Estimated input cap before each provider call. |
 | `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | Hard max 800. |
 | `AI_AGENT_MAX_HISTORY_MESSAGES` | `6` | Hard max 8. |
 | `AI_AGENT_MAX_HISTORY_CHARS` | `4000` | Hard max 6000. |
@@ -117,7 +117,7 @@ dashboard). `PORT` is injected by Render — do **not** set it.
 | `AI_AGENT_GLOBAL_RPD` | `80` | Deliberately below the provider daily ceiling because traffic is unknown. |
 | `AI_AGENT_MAX_CONCURRENT` | `2` | Extra requests get `AI_AGENT_BUSY` (429) immediately. |
 | `AI_AGENT_DAILY_TOKEN_BUDGET` | `150000` | Estimated input + output tokens per UTC day. |
-| `AI_AGENT_RETRIEVAL_FALLBACK` | `true` | Extractive sources instead of an LLM at 100%. |
+| `AI_AGENT_RETRIEVAL_FALLBACK` | `true` | Extractive snippets instead of an LLM at 100%. |
 | `AI_AGENT_FALLBACK_ENABLED` | `false` | Parsed for forward compatibility, but no second adapter is selected in this build. Keep `false`; automatic fallback is not active. |
 
 ### 2.1 Proxy, AI switches, cold starts, and restarts
@@ -383,10 +383,10 @@ record the failure and stop.
 | 4 | Incremental SSE through Render | `curl -N -sS -D -` to chat with `Origin: $ORIGIN` | `200 text/event-stream`, fixed headers, `meta` first, then `token` frames arriving over time (not one buffered blob), final `done`; heartbeat `: heartbeat` every ~15 s on a long turn. | |
 | 5 | CORS allow | Preflight `OPTIONS` and actual chat with an allowlisted `Origin` | `204` preflight / `200` chat with `Access-Control-Allow-Origin: $ORIGIN`; no credentials wildcard. | |
 | 6 | CORS reject | Preflight with an unlisted origin | No `Access-Control-Allow-Origin`; browser blocks it. Bare `*` is dropped, so a `*` config allows nothing. | |
-| 7 | Knowledge answer + citations | Ask a question covered by the reviewed corpus, in English and Arabic | Grounded answer with `[K#]` citations and `sources.knowledge` entries; Arabic answer is natural and RTL-safe. | |
-| 8 | Live public data | Ask “Which opportunities are open now?” (or equivalent) | Answer cites public rows with `[T#]` and `sources.data` paths; no private fields, emails, phones, or internal ids. | |
+| 7 | Knowledge answer + links | Ask a question covered by the reviewed corpus, in English and Arabic | Grounded answer with no `[K#]` markers and no `sources` event; where the answer names a public entity, it contains a valid locale-prefixed link. Arabic answer is natural and RTL-safe. | |
+| 8 | Live public data | Ask “Which opportunities are open now?” (or equivalent) | Answer links public rows with locale-prefixed Markdown links; no `[T#]` markers, `sources` event, private fields, emails, phones, or internal ids. | |
 | 9 | Grounded refusal | Ask for another person's contact/account data, and one out-of-scope question | Localized refusal; no private data; no speculative answer; no provider leak. | |
-| 10 | Degraded/quota path | Temp `AI_AGENT_DAILY_TOKEN_BUDGET=1`; restart; one chat; restore `150000`; restart | `200` SSE, `meta.mode=retrieval_only`, local text + browse links, zero provider tokens; after restore, `mode=normal`. Record both temp/restore. Optional 429 gate: `AI_AGENT_IP_RPD=1`, two requests, second `429 RATE_LIMITED`/`reason=ip_day` with `Retry-After`; restore `15`. | |
+| 10 | Degraded/quota path | Temp `AI_AGENT_DAILY_TOKEN_BUDGET=1`; restart; one chat; restore `150000`; restart | `200` SSE, `meta.mode=retrieval_only`, local text, zero provider tokens; after restore, `mode=normal`. Record both temp/restore. Optional 429 gate: `AI_AGENT_IP_RPD=1`, two requests, second `429 RATE_LIMITED`/`reason=ip_day` with `Retry-After`; restore `15`. | |
 | 11 | Usage auth | `GET /api/v1/ai-agent/usage` anonymous, volunteer, admin | `401 UNAUTHORIZED`, `403 FORBIDDEN`, `200` with aggregate `today`/`last7Days`/`budget`; no content, IPs, or per-user rows. | |
 | 12 | Cold start/widget | Let the host sleep (or simulate a cold start), then open the widget | Widget shows waking/unavailable and retries; status recovers; one user action does not create duplicate/looped chats. Record elapsed time. | |
 | 13 | Privacy/log spot check | Search Render logs for the exact test message, prompt, tool payload, key name, and client IP; inspect SSE/network for provider/model/key/private fields | No message/prompt/retrieved text/tool payload/IP/key in logs or frames; only allowlisted operational fields. Do not paste log lines into the record. | |
@@ -452,9 +452,9 @@ considering any cap increase:
   restart; if latency is high, lower output/tool caps. Do not raise several caps
   at once. Never exceed the live AI Studio free-tier limit.
 - **Content quality:** sample grounded answers in English and Arabic, verify
-  citations point to reviewed public content, and update the corpus through
-  `npm run ai:check` + deploy when facts change. Never weaken citation checks
-  to make an answer “work”.
+  links point to reviewed public content, and update the corpus through
+  `npm run ai:check` + deploy when facts change. Never weaken the grounding or
+  link checks to make an answer “work”.
 - **Privacy:** confirm logs still contain only the allowlisted operational
   fields, the admin report has no content/IP/per-user rows, the widget still
   clears `sessionStorage` on new chat/sign-out/session expiry/tab close, and the

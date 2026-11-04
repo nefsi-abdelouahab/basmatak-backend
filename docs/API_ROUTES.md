@@ -869,9 +869,6 @@ data: {"conversationId":"4bb2b8d3-6a2a-4a5f-9f6d-0e2e2f5f6c71","locale":"en","mo
 event: status
 data: {"state":"searching"}
 
-event: sources
-data: {"knowledge":[{"id":"K1","title":"Volunteering basics","source":"volunteering.md","heading":"Getting started"}],"data":[]}
-
 event: token
 data: {"delta":"You can browse "}
 
@@ -888,13 +885,12 @@ data: {"finishReason":"stop","usage":{"inputTokens":812,"outputTokens":57,"total
 |---|---|---|
 | `meta` | Always first | `{ conversationId, locale, mode }`. `conversationId` is a random per-request UUID; it is not persisted. |
 | `status` | Zero or more | `{ state, tool? }`. `state` is one of `searching`, `thinking`, `answering`, `tool`; `tool` is present for a tool round (for example `search_opportunities`). Clients must tolerate all four values. |
-| `sources` | Before answer tokens, only when non-empty and only after validation | `{ knowledge: [{ id, title, source, heading? }], data: [{ id, citationId, type, title, path? }] }`. `source` is corpus-relative; `path` is a public frontend route. |
-| `token` | Zero or more | `{ delta }` with plain text only. Clients must render it as text, not HTML. |
+| `token` | Zero or more | `{ delta }` with sanitized Markdown text. Only validated locale-prefixed internal links survive; clients must escape HTML and never render arbitrary HTML from the model. |
 | `error` | On a known failure after the stream started | `{ code, message, retryAfterSeconds? }` where `message` is already localized. No `done` follows. |
 | `done` | Successful end | `{ finishReason, truncated?, usage }`. `finishReason` is `stop` or `length`; `usage` is `{ inputTokens, outputTokens, totalTokens, estimated }`. |
 
-Normal order: `meta` -> optional `status` -> optional `sources` -> `token`* ->
-`done`. A tool round adds `status` events before the final `sources`/tokens. A
+Normal order: `meta` -> optional `status` -> `token`* -> `done`. A tool round
+adds `status` events before the final tokens. There is no `sources` event. A
 client disconnect aborts the provider and ends the response with no further
 events and no `done`. There is no `id:`, `retry:`, or `Last-Event-ID` support.
 

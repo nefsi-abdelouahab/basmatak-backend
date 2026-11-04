@@ -56,6 +56,7 @@ import {
   selectFocusedOpportunitySlugs,
 } from '../conversation-focus';
 import { PromptBuilder } from '../prompt/prompt-builder';
+import type { PromptBudgetError } from '../prompt/prompt.types';
 import { detectPromptLanguage, IntentRouter } from '../router/intent-router';
 import type { RouterDecision } from '../router/intent-router';
 import type { SseStream } from '../sse/sse-writer';
@@ -783,6 +784,11 @@ export class AiAgentOrchestrator {
     });
 
     if (!promptResult.ok) {
+      this.logPromptBudgetExceeded(
+        promptResult.error,
+        input,
+        toolsAllowed ? decision.tools.length : 0,
+      );
       this.emitError(
         input.stream,
         'AI_AGENT_INVALID_INPUT',
@@ -2382,6 +2388,32 @@ export class AiAgentOrchestrator {
    * credentials. Message text, prompts, tool payloads, and completions are
    * never included here.
    */
+  /**
+   * Record a content-free budget failure. Prompt text, message text, knowledge,
+   * and tool arguments never enter the log; only accounting metadata does.
+   */
+  private logPromptBudgetExceeded(
+    error: PromptBudgetError,
+    input: AiAgentOrchestratorInput,
+    toolCount: number,
+  ): void {
+    try {
+      this.logger.warn(
+        JSON.stringify({
+          event: 'ai_agent_prompt_budget_exceeded',
+          provider: this.config.provider,
+          model: this.config.model,
+          toolCount,
+          historyMessages: input.history.length,
+          estimatedRequiredTokens: error.estimatedRequiredTokens,
+          maxInputTokens: error.maxInputTokens,
+        }),
+      );
+    } catch {
+      // Logging must never break the request path.
+    }
+  }
+
   private logFailure(event: string, error: unknown): void {
     try {
       const record: Record<string, unknown> = {

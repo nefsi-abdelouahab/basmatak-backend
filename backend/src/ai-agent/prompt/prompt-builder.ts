@@ -5,6 +5,7 @@ import { estimateTokens } from '../budget/token-estimator';
 import { formatConversationFocus } from '../conversation-focus';
 import type { AiAgentConfig } from '../config/ai-agent.config';
 import type { RetrievedChunk } from '../knowledge/retriever';
+import { toLlmToolDeclaration } from '../llm/provider.types';
 import type { ToolDescriptor, ToolExecutionResult } from '../tools/tool.types';
 import type {
   BuiltPrompt,
@@ -42,6 +43,10 @@ import {
  * The current user message, system rules, tool declarations, and the output
  * reserve are never trimmed. If they alone exceed the input budget, `build()`
  * returns a safe `ok: false` result instead of cutting safety content.
+ *
+ * Tool descriptors are also supplied to the provider out of band. The prompt
+ * therefore contains only a short hint; `estimatedInputTokens` includes the
+ * estimated declaration payload so the budget matches the whole request.
  *
  * All untrusted text (knowledge, tool results, history, examples, and the user
  * message) is escaped so delimiter-like sequences cannot close a section or
@@ -179,6 +184,7 @@ export class PromptBuilder {
     const style = buildResponseStyle(language);
     const linkRules = buildLinkRules(input.locale);
     const tools = this.prepareTools(input.tools);
+    const declarationTokens = this.estimateToolDeclarationTokens(tools);
     const focus =
       input.focus !== undefined ? formatConversationFocus(input.focus) : '';
 
@@ -204,7 +210,8 @@ export class PromptBuilder {
       examples: [],
       message,
     });
-    const requiredTokens = estimatePromptTokens(required.text);
+    const requiredTokens =
+      estimatePromptTokens(required.text) + declarationTokens;
     if (requiredTokens > maxInputTokens) {
       return {
         ok: false,
@@ -237,7 +244,7 @@ export class PromptBuilder {
       examples,
       message,
     });
-    let inputTokens = estimatePromptTokens(rendered.text);
+    let inputTokens = estimatePromptTokens(rendered.text) + declarationTokens;
 
     // Trim in the documented order, one item at a time, until the prompt fits.
     while (inputTokens > maxInputTokens) {
@@ -282,7 +289,7 @@ export class PromptBuilder {
         examples,
         message,
       });
-      inputTokens = estimatePromptTokens(rendered.text);
+      inputTokens = estimatePromptTokens(rendered.text) + declarationTokens;
     }
 
     const citations: Record<string, PromptCitation> = {};
@@ -329,6 +336,7 @@ export class PromptBuilder {
       text: rendered.text,
       language,
       estimatedInputTokens: inputTokens,
+      estimatedToolDeclarationTokens: declarationTokens,
       estimatedOutputTokens: maxOutputTokens,
       estimatedTotalTokens: inputTokens + maxOutputTokens,
       truncated,
@@ -353,6 +361,24 @@ export class PromptBuilder {
         tool.inputSchema !== null &&
         typeof tool.inputSchema === 'object',
     );
+  }
+
+  /**
+   * Estimate the provider-facing declaration payload exactly as the
+   * orchestrator sends it. The prompt itself no longer embeds these schemas,
+   * but the provider request still charges for them.
+   */
+  private estimateToolDeclarationTokens(
+    tools: readonly ToolDescriptor[],
+  ): number {
+    if (tools.length === 0) return 0;
+    try {
+      return estimatePromptTokens(
+        JSON.stringify(tools.map((tool) => toLlmToolDeclaration(tool))),
+      );
+    } catch {
+      return 0;
+    }
   }
 
   private prepareHistory(
@@ -569,21 +595,9 @@ export class PromptBuilder {
 
     if (input.tools.length > 0) {
       sections.push('tools');
-      const lines: string[] = ['<tools>'];
-      for (const tool of input.tools) {
-        lines.push(
-          `<tool name="${escapeAttribute(tool.name)}" read_only="true">`,
-        );
-        lines.push(
-          `<description>${escapeText(tool.description)}</description>`,
-        );
-        lines.push(
-          `<input_schema>${escapeText(safeJson(tool.inputSchema))}</input_schema>`,
-        );
-        lines.push('</tool>');
-      }
-      lines.push('</tools>');
-      parts.push(lines.join('\n'));
+      parts.push(
+        '<tools>\nTool declarations are supplied separately to the provider; use them when they help answer the request.\n</tools>',
+      );
     }
 
     if (input.knowledge.length > 0) {

@@ -25,9 +25,10 @@ answers only from two sources:
    public organization profiles, public reference data, and public platform
    counts.
 
-Every substantive answer must carry validated citations (`[K#]` for knowledge,
-`[T#]` for public data) or be replaced by a localized refusal. There is no web
-search, no general-knowledge fallback, no browsing, and no runtime knowledge
+Every substantive answer is grounded in exactly one of those two sources. The
+orchestrator strips internal citation markers from model text and renders only
+validated, locale-prefixed Markdown links to real public entities. There is no
+web search, no general-knowledge fallback, no browsing, and no runtime knowledge
 upload.
 
 **Out of scope, by design:**
@@ -51,12 +52,12 @@ off immediately with `AI_AGENT_ENABLED=false`.
 
 | Layer | Component | Responsibility |
 |---|---|---|
-| Frontend | `frontend/src/components/ai-agent/` (`AiAgentWidget`, panel, launcher, message/source views) | Floating launcher, accessible panel, RTL/i18n, status and retry states, plain-text rendering, safe source links. |
+| Frontend | `frontend/src/components/ai-agent/` (`AiAgentWidget`, panel, launcher, message views) | Floating launcher, accessible panel, RTL/i18n, status and retry states, Markdown rendering with safe internal links. |
 | Frontend | `frontend/src/hooks/useAiChat.ts` | Client conversation state, request history (at most the recent turns), abort/retry, session-storage hydration. |
 | Frontend | `frontend/src/lib/api/aiAgent.ts`, `sse.ts` | Typed status/chat client, POST streaming with `fetch`, SSE frame parser, error mapping, `Retry-After` fallback. |
 | Backend transport | `backend/src/ai-agent/ai-agent.controller.ts` | Validation boundary, kill switch, quota reservation/commit/release, SSE lifecycle, `meta` and `done`, request logging. |
 | Backend transport | `sse/sse-writer.ts` | Exact SSE headers, `event:`/`data:` framing, 15-second comment heartbeat, close detection. |
-| Backend engine | `orchestrator/ai-agent.orchestrator.ts` | Private-data guard, routing, retrieval, prompt, provider/tool rounds, citation validation, refusals, degradation, 45-second deadline. |
+| Backend engine | `orchestrator/ai-agent.orchestrator.ts` | Private-data guard, routing, retrieval, prompt, provider/tool rounds, marker stripping, link validation, refusals, degradation, 45-second deadline. |
 | Backend engine | `router/intent-router.ts` | Deterministic intent/language routing (knowledge, live data, mixed, direct reply, refusal). |
 | Backend engine | `knowledge/` | Boot-time safe loader, parsers, chunker, normalizer, BM25 index, bounded retrieval. |
 | Backend engine | `prompt/` | Versioned grounded prompt, untrusted-section escaping, input-token budget and trimming order. |
@@ -88,12 +89,13 @@ off immediately with `AI_AGENT_ENABLED=false`.
    provider calls in one turn (default one tool round). Tool calls are
    allowlisted, schema-validated, bounded by rows/characters, and executed
    read-only.
-7. **Grounding check.** Model output is buffered until the turn ends. Citations
-   are validated against the actual retrieved chunks/tool rows, and a
-   system-instruction leak guard runs before any answer text is streamed. A
-   failed check becomes the localized ungrounded refusal, never partial text.
-8. **Sources and tokens.** `sources` is emitted only after validation, followed
-   by `token` deltas. The controller commits real usage, releases the
+7. **Grounding and links.** Model output is buffered until the turn ends.
+   Internal citation markers are stripped, and only validated locale-prefixed
+   Markdown links to real public entities survive. A system-instruction leak
+   guard runs before any answer text is streamed. A failed check becomes the
+   localized ungrounded refusal, never partial text.
+8. **Tokens.** After validation, `token` deltas stream the sanitized answer. No
+   `sources` event is emitted. The controller commits real usage, releases the
    concurrency slot exactly once, writes the structured request log, and emits
    `done`.
 9. **Abort or failure.** A client disconnect aborts the provider and writes no
@@ -105,12 +107,13 @@ off immediately with `AI_AGENT_ENABLED=false`.
 - The assistant refuses requests for the caller's or another person's private
   data before routing or calling a provider.
 - Knowledge-only, mixed, and live-data questions are routed deterministically;
-  greetings and capability questions get citation-exempt direct replies.
+  greetings and capability questions get marker-exempt direct replies.
 - A tool result with no usable public rows is treated as “not found”; there is
   no speculative follow-up call.
-- An answer with missing/invalid citations, an empty answer, or a prompt-leak
-  match is replaced by a complete refusal. `sources` is not emitted for an
-  unvalidated answer.
+- An empty answer or a prompt-leak match is replaced by a complete refusal.
+  Internal citation markers are removed from prose, and any link that is not an
+  exact allowlisted locale link to a retrieved or public entity is removed.
+  No `sources` event is emitted for any answer.
 - The provider never receives volunteer profiles, private organization fields,
   applications, submissions, account data, or the caller's IP.
 
@@ -201,7 +204,7 @@ the feature.
 | `GROQ_API_KEY` | unset | — | **Secret.** Required when `AI_AGENT_PROVIDER=groq`. Server-side only, read lazily; never commit, log, expose to the frontend, or put in SSE/errors. |
 | `GEMINI_API_KEY` | unset | — | **Secret.** Required when `AI_AGENT_PROVIDER=gemini`. Server-side only, read lazily; never commit, log, expose to the frontend, or put in SSE/errors. |
 | `AI_AGENT_KNOWLEDGE_DIR` | unset → `<cwd>/ai-agent` | — | Override for local testing only; keep unset in production. |
-| `AI_AGENT_MAX_INPUT_TOKENS` | `3000` | `100000` | Estimated input cap; the prompt builder trims optional content to fit and fails closed if reserved content cannot fit. |
+| `AI_AGENT_MAX_INPUT_TOKENS` | `10000` | `100000` | Estimated input cap (prompt text plus provider tool declarations); the prompt builder trims optional content to fit and fails closed if reserved content cannot fit. |
 | `AI_AGENT_MAX_OUTPUT_TOKENS` | `400` | `800` | Per-turn output cap; conservative mode lowers it to 300. |
 | `AI_AGENT_MAX_HISTORY_MESSAGES` | `6` | `8` | Prompt history cap. The public DTO still accepts at most 6. |
 | `AI_AGENT_MAX_HISTORY_CHARS` | `4000` | `6000` | Prompt history character cap. The public DTO still accepts at most 4,000. |
@@ -253,7 +256,7 @@ max(committed tokens / AI_AGENT_DAILY_TOKEN_BUDGET,
 |---|---|---|
 | `< 70%` | `normal` | Full configured caps. |
 | `>= 70%` | `conservative` | Fewer chunks/history/output tokens/rows and at most one tool call. |
-| `>= 90%` | `knowledge_only` | No tools; live-data questions get a limitation message plus browse links; provider may still answer knowledge questions. |
+| `>= 90%` | `knowledge_only` | No tools; live-data questions get a fixed limitation message with no provider call; knowledge questions may still be answered. |
 | `>= 100%` | `exhausted` | No provider and no retrieval. With `AI_AGENT_RETRIEVAL_FALLBACK=true` this is exposed as `retrieval_only`; otherwise as `exhausted`. |
 
 A day-scoped provider cooldown also forces `exhausted`, even when local counters
@@ -270,9 +273,10 @@ next reservation instead.
 | `retrieval_only` | min(2, configured) | 0 | 0 | 0 | 0 | 0 | no |
 | `exhausted` | 0 | 0 | 0 | 0 | 0 | 0 | no |
 
-`retrieval_only` extracts up to two knowledge chunks with citations and a fixed
-intro. For a mixed/live question it adds the live-results limitation and browse
-links. `exhausted` returns the fixed free-limit message plus browse links.
+`retrieval_only` extracts up to two knowledge chunks as plain sanitized snippets.
+For a mixed/live question it adds the live-results limitation. `exhausted`
+returns the fixed free-limit message. Both answers are local and emit no
+`sources` event.
 
 ### 6.3 Request gates and denial behavior
 
@@ -288,7 +292,7 @@ concurrency, provider cooldown, mode, then token-budget reservation.
 
 A token-budget denial can occur before 100% utilization when a
 worst-case reservation no longer fits. It deliberately degrades to the local
-fallback instead of returning 429, so the user still gets public browse links.
+fallback instead of returning 429, so the user still gets a local answer.
 
 ### 6.4 Provider 429s and cooldowns
 
@@ -341,8 +345,8 @@ Switch procedure:
 3. Verify `GET /api/v1/ai-agent/status` is `200` and `enabled` is true.
 4. Send one chat. With `mock`/`fake`, expect deterministic text and no real
    provider dependency; do not use those modes for public traffic.
-5. Switch back to `gemini`, restart, and confirm one grounded answer with
-   citations.
+5. Switch back to `gemini`, restart, and confirm one grounded answer with a
+   valid locale-prefixed entity link (or a plain grounded answer).
 
 **Automatic fallback is not active in this build.** `AI_AGENT_FALLBACK_ENABLED`
 is parsed and defaults to `false`, but no second provider is configured or
@@ -470,7 +474,7 @@ the client chooses to include in a request.
 | In-stream `AI_AGENT_QUOTA_EXHAUSTED` | Upstream provider 429 | No automatic retry; the cooldown blocks subsequent calls. Wait, then lower caps if recurrent. |
 | `status.mode=conservative` / `knowledge_only` | 70%/90% daily utilization | Expected degradation; check usage and tune deliberately. |
 | `status.mode=retrieval_only`/`exhausted` | 100% budget or day cooldown | Expected local fallback; wait for UTC reset or adjust the budget. |
-| Answers are refusals / “couldn’t find that” | Knowledge gap, weak retrieval, or invalid citations | Add/repair paired content, run `npm run ai:check`, redeploy, re-test. Do not remove citation checks. |
+| Answers are refusals / “couldn’t find that” | Knowledge gap, weak retrieval, or empty model output | Add/repair paired content, run `npm run ai:check`, redeploy, re-test. Do not remove the grounding checks. |
 | `status.knowledge.files=0` or `chunks=0` | Wrong knowledge root, missing folder, or loader/chunker failure | Check the boot log issue codes and `AI_AGENT_KNOWLEDGE_DIR`; keep the folder under `backend/ai-agent/`; restart. |
 | SSE arrives all at once | A proxy or client is buffering the stream | Keep `X-Accel-Buffering: no`, `Cache-Control: no-transform`, no compression/buffering proxy; use `curl -N`; test through Render. |
 | Browser CORS error | Origin not in `CORS_ORIGIN`, wrong scheme/port, or bare `*` | Use the exact frontend origin, comma-separated; bare `*` is dropped; restart after changing. |

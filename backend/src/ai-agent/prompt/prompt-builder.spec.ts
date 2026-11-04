@@ -1,4 +1,5 @@
 import type { AiAgentChatMessage } from '../ai-agent.types';
+import { estimateTokens } from '../budget/token-estimator';
 import {
   AiAgentConfig,
   AiAgentLimits,
@@ -469,7 +470,7 @@ describe('PromptBuilder', () => {
     });
   });
 
-  it('renders tool declarations from descriptors and never includes handlers', () => {
+  it('renders a tool hint without descriptions or schemas and never includes handlers', () => {
     const withHandler = {
       ...descriptor(),
       handler: () => 'SECRET_HANDLER_OUTPUT',
@@ -478,14 +479,32 @@ describe('PromptBuilder', () => {
     const prompt = buildOk(makeBuilder(), baseInput({ tools: [withHandler] }));
 
     expect(prompt.text).toContain(
-      '<tool name="search_opportunities" read_only="true">',
+      '<tools>\nTool declarations are supplied separately to the provider; use them when they help answer the request.\n</tools>',
     );
-    expect(prompt.text).toContain(
-      '<description>Search published opportunities.</description>',
-    );
-    expect(prompt.text).toContain('"additionalProperties":false');
+    expect(prompt.text).not.toContain('<description>');
+    expect(prompt.text).not.toContain('<input_schema>');
+    expect(prompt.text).not.toContain('"additionalProperties":false');
     expect(prompt.text).not.toContain('handler');
     expect(prompt.text).not.toContain('SECRET_HANDLER_OUTPUT');
+    expect(prompt.estimatedToolDeclarationTokens).toBeGreaterThan(0);
+  });
+
+  it('counts provider declarations in the input estimate', () => {
+    const withoutTools = buildOk(makeBuilder(), baseInput());
+    const withTools = buildOk(
+      makeBuilder(),
+      baseInput({ tools: [descriptor()] }),
+    );
+
+    expect(withoutTools.estimatedToolDeclarationTokens).toBe(0);
+    expect(withTools.estimatedToolDeclarationTokens).toBeGreaterThan(0);
+    expect(withTools.estimatedInputTokens).toBe(
+      estimateTokens(withTools.text, { overheadTokens: 0 }).tokens +
+        withTools.estimatedToolDeclarationTokens,
+    );
+    expect(withTools.estimatedInputTokens).toBeGreaterThan(
+      withoutTools.estimatedInputTokens,
+    );
   });
 
   it('trims oldest history first and respects message and character caps', () => {

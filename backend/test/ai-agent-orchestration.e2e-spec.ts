@@ -260,12 +260,12 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     });
   });
 
-  it('answers a knowledge question with one provider call and validated sources', async () => {
-    const answer =
-      'Basmatak connects volunteers with opportunities and organizations [K1].';
+  it('answers a knowledge question with one provider call and no sources event', async () => {
     provider.queueTurn({
       interactionId: 'interaction-knowledge',
-      text: [answer],
+      text: [
+        'Basmatak connects volunteers with opportunities and organizations [K1].',
+      ],
       usage: { inputTokens: 123, outputTokens: 11 },
     });
 
@@ -278,28 +278,19 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(frames.map((frame) => frame.event)).toEqual([
       'meta',
       'status',
-      'sources',
       'token',
       'done',
     ]);
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
     expect((frames[0].data as { mode: string }).mode).toBe('normal');
     expect(frames[1].data).toEqual({ state: 'searching' });
 
-    const sources = frames[2].data as {
-      knowledge: Array<Record<string, unknown>>;
-      data: unknown[];
-    };
-    expect(sources.knowledge).toEqual([
-      {
-        id: 'K1',
-        title: 'Basmatak frequently asked questions',
-        source: 'faq/en.md',
-        heading: expect.stringContaining('What is Basmatak?'),
-      },
-    ]);
-    expect(sources.data).toEqual([]);
-    expect(tokenText(frames)).toBe(answer);
-    expect(frames[4].data).toEqual({
+    const text = tokenText(frames);
+    expect(text).toBe(
+      'Basmatak connects volunteers with opportunities and organizations.',
+    );
+    expect(text).not.toMatch(/\[[KTD]\d+\]/u);
+    expect(frames[3].data).toEqual({
       finishReason: 'stop',
       usage: {
         inputTokens: 123,
@@ -321,7 +312,7 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(quota.activeConcurrencyCount).toBe(0);
   });
 
-  it('runs exactly one live-data tool round and cites the public row', async () => {
+  it('runs exactly one live-data tool round and links the public row', async () => {
     provider.queueTurn({
       interactionId: 'interaction-tool',
       toolCalls: [
@@ -333,9 +324,11 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
       ],
       usage: { inputTokens: 25, outputTokens: 3 },
     });
+    const linkedAnswer =
+      'Beach cleanup is currently open for volunteers: [Beach cleanup e2e](/en/opportunities/beach-cleanup-e2e).';
     provider.queueTurn({
       interactionId: 'interaction-tool',
-      text: ['Beach cleanup is currently open for volunteers [T1].'],
+      text: [linkedAnswer],
       usage: { inputTokens: 15, outputTokens: 8 },
     });
 
@@ -349,34 +342,23 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
       'meta',
       'status',
       'status',
-      'sources',
       'token',
       'done',
     ]);
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
     expect(frames[1].data).toEqual({ state: 'searching' });
     expect(frames[2].data).toEqual({
       state: 'tool',
       tool: 'search_opportunities',
     });
 
-    const sources = frames[3].data as {
-      knowledge: unknown[];
-      data: Array<Record<string, unknown>>;
-    };
-    expect(sources.knowledge).toEqual([]);
-    expect(sources.data).toEqual([
-      {
-        id: 'T1-1',
-        citationId: 'T1',
-        type: 'opportunity',
-        title: 'Beach cleanup e2e',
-        path: '/opportunities/beach-cleanup-e2e',
-      },
-    ]);
-    expect(tokenText(frames)).toBe(
-      'Beach cleanup is currently open for volunteers [T1].',
+    const text = tokenText(frames);
+    expect(text).toBe(linkedAnswer);
+    expect(text).toContain(
+      '[Beach cleanup e2e](/en/opportunities/beach-cleanup-e2e)',
     );
-    expect(frames[5].data).toEqual({
+    expect(text).not.toMatch(/\[[KTD]\d+\]/u);
+    expect(frames[4].data).toEqual({
       finishReason: 'stop',
       usage: {
         inputTokens: 40,
@@ -438,25 +420,16 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
       'meta',
       'status',
       'status',
-      'sources',
       'token',
       'done',
     ]);
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
     expect(provider.calls).toBe(1);
 
-    const sources = frames[3].data as {
-      knowledge: unknown[];
-      data: Array<{ id: string }>;
-    };
-    expect(sources.knowledge).toEqual([]);
-    expect(sources.data.map((source) => source.id)).toEqual([
-      'browse-opportunities',
-      'browse-organizations',
-    ]);
     expect(tokenText(frames)).toBe(
       "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
     );
-    expect(frames[5].data).toMatchObject({
+    expect(frames[4].data).toMatchObject({
       finishReason: 'stop',
       usage: {
         inputTokens: 10,
@@ -466,7 +439,7 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     });
   });
 
-  it('removes invalid citations and replaces an ungrounded answer with a refusal', async () => {
+  it('strips citation markers instead of failing a prose answer', async () => {
     provider.queueTurn({
       text: ['Basmatak is a platform [K9] [D1].'],
       usage: { inputTokens: 20, outputTokens: 5 },
@@ -481,28 +454,16 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(frames.map((frame) => frame.event)).toEqual([
       'meta',
       'status',
-      'sources',
       'token',
       'done',
     ]);
-
-    const sources = frames[2].data as {
-      knowledge: unknown[];
-      data: Array<{ id: string }>;
-    };
-    expect(sources.knowledge).toEqual([]);
-    expect(sources.data.map((source) => source.id)).toEqual([
-      'browse-opportunities',
-      'browse-organizations',
-    ]);
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
 
     const text = tokenText(frames);
-    expect(text).toBe(
-      "I couldn't confirm that answer. Could you rephrase your question?",
-    );
+    expect(text).toBe('Basmatak is a platform.');
     expect(text).not.toContain('[K9]');
     expect(text).not.toContain('[D1]');
-    expect(frames[4].data).toMatchObject({
+    expect(frames[3].data).toMatchObject({
       finishReason: 'stop',
       usage: {
         inputTokens: 20,
@@ -522,21 +483,15 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     }).expect(200);
 
     const frames = visibleFrames(responseText(response));
-    expect(frames.slice(0, 4).map((frame) => frame.event)).toEqual([
+    expect(frames.slice(0, 3).map((frame) => frame.event)).toEqual([
       'meta',
       'status',
-      'sources',
       'token',
     ]);
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
     expect(frames[frames.length - 1].event).toBe('done');
     expect((frames[0].data as { mode: string }).mode).toBe('retrieval_only');
 
-    const sources = frames[2].data as {
-      knowledge: Array<{ id: string }>;
-      data: unknown[];
-    };
-    expect(sources.knowledge.length).toBeGreaterThan(0);
-    expect(sources.knowledge[0].id).toBe('K1');
     const text = tokenText(frames);
     expect(text.trim().length).toBeGreaterThan(0);
     expect(text).not.toContain('Here is what I found');
@@ -573,26 +528,11 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     const frames = visibleFrames(responseText(response));
     expect(frames.map((frame) => frame.event)).toEqual([
       'meta',
-      'sources',
       'token',
       'done',
     ]);
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
     expect((frames[0].data as { mode: string }).mode).toBe('exhausted');
-    const sources = frames[1].data as {
-      knowledge: unknown[];
-      data: Array<{ type: string; path: string }>;
-    };
-    expect(sources.knowledge).toEqual([]);
-    expect(sources.data).toEqual([
-      expect.objectContaining({
-        type: 'opportunity',
-        path: '/opportunities',
-      }),
-      expect.objectContaining({
-        type: 'organization',
-        path: '/orgs',
-      }),
-    ]);
     expect(tokenText(frames)).toContain('reached its free usage limit');
     expect(provider.calls).toBe(0);
   });
@@ -643,10 +583,9 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(provider.calls).toBe(1);
   });
 
-  it('keeps a cited MAX_TOKENS partial answer and marks it truncated', async () => {
-    const partial = 'Basmatak connects volunteers with opportunities [K1].';
+  it('keeps a sanitized MAX_TOKENS partial answer and marks it truncated', async () => {
     provider.queueTurn({
-      text: [partial],
+      text: ['Basmatak connects volunteers with opportunities [K1].'],
       finishReason: 'length',
       usage: { inputTokens: 30, outputTokens: 7 },
     });
@@ -660,12 +599,14 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(frames.map((frame) => frame.event)).toEqual([
       'meta',
       'status',
-      'sources',
       'token',
       'done',
     ]);
-    expect(tokenText(frames)).toBe(partial);
-    expect(frames[4].data).toEqual({
+    expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
+    expect(tokenText(frames)).toBe(
+      'Basmatak connects volunteers with opportunities.',
+    );
+    expect(frames[3].data).toEqual({
       finishReason: 'length',
       truncated: true,
       usage: {
@@ -694,12 +635,11 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     expect(frames.map((frame) => frame.event)).toEqual([
       'meta',
       'status',
-      'sources',
       'token',
       'done',
     ]);
     expect(frames.some((frame) => frame.event === 'error')).toBe(false);
-    expect(frames[4].data).toMatchObject({
+    expect(frames[3].data).toMatchObject({
       finishReason: 'stop',
       usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
     });
