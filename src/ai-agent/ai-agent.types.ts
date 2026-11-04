@@ -88,6 +88,59 @@ export interface AiAgentSourcesEvent {
   data: AiAgentDataSource[];
 }
 
+/** Optional bilingual label carried by a generated UI card. */
+export interface AiAgentCardName {
+  ar?: string;
+  fr?: string;
+}
+
+/**
+ * Compact public cards that may accompany an answer. They are built only from
+ * public tool fields and are emitted only for entities whose allowlisted href
+ * survived answer sanitization. `stats` cards carry the five public counts.
+ */
+export interface AiAgentOpportunityCard {
+  kind: 'opportunity';
+  slug: string;
+  title: string;
+  organizationName?: AiAgentCardName;
+  wilayaName?: AiAgentCardName;
+  startDate?: string;
+  applicationDeadline?: string;
+  openPositions?: number;
+  mode?: string;
+  status?: string;
+  href: string;
+}
+
+export interface AiAgentOrganizationCard {
+  kind: 'organization';
+  slug: string;
+  nameAr?: string;
+  nameFr?: string;
+  type?: string;
+  wilayaName?: AiAgentCardName;
+  foundedYear?: number;
+  href: string;
+}
+
+export interface AiAgentStatsCard {
+  kind: 'stats';
+  publishedOpportunities: number;
+  verifiedOrganizations: number;
+  activeSkills: number;
+  wilayas: number;
+  municipalities: number;
+}
+
+export type AiAgentCard =
+  AiAgentOpportunityCard | AiAgentOrganizationCard | AiAgentStatsCard;
+
+/** A single `cards` event per turn, after sanitization and before `done`. */
+export interface AiAgentCardsEvent {
+  cards: AiAgentCard[];
+}
+
 export type AiAgentErrorCode =
   | 'AI_AGENT_DISABLED'
   | 'AI_AGENT_INVALID_INPUT'
@@ -111,6 +164,7 @@ export interface AiAgentSseEventMap {
   status: AiAgentStatusEvent;
   sources: AiAgentSourcesEvent;
   token: AiAgentTokenEvent;
+  cards: AiAgentCardsEvent;
   done: AiAgentDoneEvent;
   error: AiAgentErrorEvent;
 }

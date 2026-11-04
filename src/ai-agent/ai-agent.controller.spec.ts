@@ -593,6 +593,56 @@ describe('AiAgentController', () => {
     );
   });
 
+  it('orders cards after tokens and before done', async () => {
+    const orchestrator = new FakeOrchestrator();
+    orchestrator.impl = async (input) => {
+      input.stream.event('status', { state: 'answering' });
+      input.stream.event('token', { delta: 'See [Beach cleanup].' });
+      input.stream.event('cards', {
+        cards: [
+          {
+            kind: 'opportunity',
+            slug: 'beach-cleanup',
+            title: 'Beach cleanup',
+            href: '/en/opportunities/beach-cleanup',
+          },
+        ],
+      });
+      return defaultResult({ inputTokens: 5, outputTokens: 2, totalTokens: 7 });
+    };
+    const { controller } = createController(
+      createConfig({ limits: highLimits() }),
+      { files: 0, chunks: 0 },
+      orchestrator,
+    );
+    const response = new FakeResponse();
+
+    await controller.chat(
+      { message: 'Show me opportunities', locale: 'en' },
+      new FakeRequest() as unknown as Request,
+      response as unknown as Response,
+    );
+
+    const frames = parseFrames(response.chunks);
+    expect(frames.map((frame) => frame.event)).toEqual([
+      'meta',
+      'status',
+      'token',
+      'cards',
+      'done',
+    ]);
+    expect(frames[3].data).toEqual({
+      cards: [
+        {
+          kind: 'opportunity',
+          slug: 'beach-cleanup',
+          title: 'Beach cleanup',
+          href: '/en/opportunities/beach-cleanup',
+        },
+      ],
+    });
+  });
+
   it('marks a truncated answer in done and the request log', async () => {
     const orchestrator = new FakeOrchestrator();
     orchestrator.impl = async (input) => {

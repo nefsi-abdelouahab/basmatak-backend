@@ -134,7 +134,8 @@ async function waitFor(
 }
 
 const KNOWLEDGE_QUESTION = 'What is Basmatak?';
-const LIVE_QUESTION = 'Show me current volunteering opportunities';
+const LIVE_QUESTION =
+  'Show me current volunteering opportunities for beach cleanup';
 const OPPORTUNITY_ID = new Types.ObjectId('64d100000000000000000101');
 const ORGANIZATION_ID = new Types.ObjectId('64c100000000000000000101');
 
@@ -338,13 +339,20 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
     }).expect(200);
 
     const frames = visibleFrames(responseText(response));
-    expect(frames.map((frame) => frame.event)).toEqual([
+    const events = frames.map((frame) => frame.event);
+    // The existing stream emits several `token` frames, so assert the order of
+    // the non-token events and that cards sit immediately before `done`.
+    expect(events.filter((event) => event !== 'token')).toEqual([
       'meta',
       'status',
       'status',
-      'token',
+      'cards',
       'done',
     ]);
+    expect(events.filter((event) => event === 'token').length).toBeGreaterThan(
+      0,
+    );
+    expect(events.indexOf('cards')).toBe(events.length - 2);
     expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
     expect(frames[1].data).toEqual({ state: 'searching' });
     expect(frames[2].data).toEqual({
@@ -358,7 +366,39 @@ describe('ai-agent answer orchestration e2e (Session 9)', () => {
       '[Beach cleanup e2e](/en/opportunities/beach-cleanup-e2e)',
     );
     expect(text).not.toMatch(/\[[KTD]\d+\]/u);
-    expect(frames[4].data).toEqual({
+
+    const cardsFrame = frames.find((frame) => frame.event === 'cards');
+    if (cardsFrame === undefined) throw new Error('expected a cards frame');
+    const cards = (cardsFrame.data as { cards: Array<Record<string, unknown>> })
+      .cards;
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toMatchObject({
+      kind: 'opportunity',
+      slug: 'beach-cleanup-e2e',
+      title: 'Beach cleanup e2e',
+      organizationName: {
+        ar: 'الأرض الخضراء',
+        fr: 'Orchestration Green',
+      },
+      startDate: '2026-11-01T00:00:00.000Z',
+      applicationDeadline: '2026-10-30T00:00:00.000Z',
+      openPositions: 1,
+      mode: 'onsite',
+      status: 'published',
+      href: '/en/opportunities/beach-cleanup-e2e',
+    });
+    const rawCard = JSON.stringify(cards[0]).toLowerCase();
+    for (const forbidden of [
+      '_id',
+      'registryid',
+      'coordinates',
+      'contact',
+      'orchestration secret',
+    ]) {
+      expect(rawCard).not.toContain(forbidden);
+    }
+
+    expect(frames[frames.length - 1].data).toEqual({
       finishReason: 'stop',
       usage: {
         inputTokens: 40,

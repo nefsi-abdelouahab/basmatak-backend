@@ -1357,6 +1357,7 @@ describe('AiAgentOrchestrator', () => {
       'status',
       'status',
       'token',
+      'cards',
     ]);
     expect(frames[0].data).toEqual({ state: 'searching' });
     expect(frames[1].data).toEqual({
@@ -1366,6 +1367,16 @@ describe('AiAgentOrchestrator', () => {
     expect((frames[2].data as { delta: string }).delta).toBe(
       'Beach cleanup is available: [Beach cleanup](/en/opportunities/beach-cleanup).',
     );
+    expect(frames[3].data).toEqual({
+      cards: [
+        {
+          kind: 'opportunity',
+          slug: 'beach-cleanup',
+          title: 'Beach cleanup',
+          href: '/en/opportunities/beach-cleanup',
+        },
+      ],
+    });
     expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
   });
 
@@ -2645,5 +2656,68 @@ describe('model-first fallback counters', () => {
       language_retry_failed: 1,
       total: 1,
     });
+  });
+});
+
+describe('generated UI cards', () => {
+  it('emits one cards event after tokens for links that survive sanitization', async () => {
+    const harness = createHarness({
+      decision: liveDataDecision(),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              { slug: 'beach-cleanup', title: 'Beach cleanup' },
+              { slug: 'tree-planting', title: 'Tree planting' },
+            ],
+          }),
+        ]),
+      ),
+    });
+    const provider = queueProvider(harness);
+    provider.queueTurn({
+      interactionId: 'interaction-1',
+      text: [],
+      toolCalls: [
+        {
+          callId: 'call-1',
+          name: 'search_opportunities',
+          arguments: { limit: 2 },
+        },
+      ],
+      usage: { inputTokens: 30, outputTokens: 4 },
+    });
+    provider.queueTurn({
+      interactionId: 'interaction-1',
+      text: [
+        'Open [Beach cleanup](/en/opportunities/beach-cleanup) or [Invented](/en/opportunities/invented).',
+      ],
+      usage: { inputTokens: 20, outputTokens: 7 },
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'Show me a beach cleanup opportunity',
+    );
+
+    const events = frames.map((frame) => frame.event);
+    const tokenIndex = events.indexOf('token');
+    const cardsIndex = events.indexOf('cards');
+    expect(tokenIndex).toBeGreaterThanOrEqual(0);
+    expect(cardsIndex).toBeGreaterThan(tokenIndex);
+    expect(events.filter((event) => event === 'cards')).toHaveLength(1);
+    expect(events).not.toContain('sources');
+
+    const cards = frames[cardsIndex]?.data as {
+      cards: Array<Record<string, unknown>>;
+    };
+    expect(cards.cards).toEqual([
+      {
+        kind: 'opportunity',
+        slug: 'beach-cleanup',
+        title: 'Beach cleanup',
+        href: '/en/opportunities/beach-cleanup',
+      },
+    ]);
   });
 });
