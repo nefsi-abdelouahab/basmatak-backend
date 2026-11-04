@@ -208,6 +208,14 @@ checker enforces at most 300 indexed files, 5 MB total, 1 MB per file, strict
 UTF-8, valid front matter, unique titles, and the secret/PII/formula/content
 rules. A corpus that fails the checker cannot produce a backend build.
 
+Documents and queries pass through the same normalizer: lowercase, Arabic
+diacritics and tatweel removed, hamza carriers folded (ؤ→و, ئ→ي) before NFD,
+U+0654/U+0655 stripped, alef/ya/ta-marbuta folded, Arabic-Indic and extended
+Arabic-Indic digits mapped to ASCII, and French accents removed. BM25 also stores
+and queries a 0.5-weight variant with a known Arabic clitic prefix
+(وال/بال/كال/فال/لل/ال/و) removed when at least three letters remain; the
+original token always stays primary, so exact matches still rank first.
+
 ### 4.3 Update procedure
 
 1. Edit the English and Arabic counterparts together. Keep facts, conditions,

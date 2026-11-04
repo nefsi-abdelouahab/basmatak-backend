@@ -409,6 +409,75 @@ export const EVAL_QUERIES: ReadonlyArray<EvalQuery> = [
     locale: 'ar',
     expectedSource: '04-workflow/task-execution/ar.md',
   },
+  // Hard Arabic retrieval cases (pre-presentation Task 6). These exercise
+  // hamza carriers, Arabic-Indic digits, the Arabic article, and common
+  // clitics (وال، بال، لل) that BM25 used to miss.
+  {
+    id: 'hard-ar-hamza-country',
+    query: 'هل بصمتك تطوع في الجزاير؟',
+    locale: 'ar',
+    expectedSource: '01-about/hackathon-context/ar.md',
+  },
+  {
+    id: 'hard-ar-hamza-responsible',
+    query: 'من هو المسئول عن التوثيق؟',
+    locale: 'ar',
+    expectedSource: '04-workflow/verification-process/ar.md',
+  },
+  {
+    id: 'hard-ar-hamza-questions',
+    query: 'ما الأسئلة الشائعة للمتطوع؟',
+    locale: 'ar',
+    expectedSource: '08-faq/volunteer-faq/ar.md',
+  },
+  {
+    id: 'hard-ar-hamza-body',
+    query: 'ما هي هيئة جمعية رؤية؟',
+    locale: 'ar',
+    expectedSource: '01-about/organization-behind/ar.md',
+  },
+  {
+    id: 'hard-ar-clitic-opportunities',
+    query: 'كيف أتطوع بالفرص المناسبة لي؟',
+    locale: 'ar',
+    expectedSource: '02-concepts/skills-vs-proven-experience/ar.md',
+  },
+  {
+    id: 'hard-ar-clitic-registration',
+    query: 'والتسجيل',
+    locale: 'ar',
+    expectedSource: '03-user-roles/account-and-sessions/ar.md',
+  },
+  {
+    id: 'hard-ar-clitic-volunteers',
+    query: 'ما الذي تشمله الملفات العامة للمتطوعين؟',
+    locale: 'ar',
+    expectedSource: '07-privacy-and-trust/public-vs-private-data/ar.md',
+  },
+  {
+    id: 'hard-ar-article-bare',
+    query: 'فرص التطوع المتاحة',
+    locale: 'ar',
+    expectedSource: '05-pages-and-features/opportunities-page/ar.md',
+  },
+  {
+    id: 'hard-ar-article-definite',
+    query: 'الفرص المتاحة للتطوع',
+    locale: 'ar',
+    expectedSource: '05-pages-and-features/opportunities-page/ar.md',
+  },
+  {
+    id: 'hard-ar-indic-digits',
+    query: 'ما هو الهاكاثون الوطني للابتكار ٢٠٢٦؟',
+    locale: 'ar',
+    expectedSource: '01-about/hackathon-context/ar.md',
+  },
+  {
+    id: 'hard-ar-indic-digits-only',
+    query: '٢٠٢٦',
+    locale: 'ar',
+    expectedSource: '01-about/hackathon-context/ar.md',
+  },
 ];
 
 function hitWithin(foundAt: number | null, depth: number): boolean {

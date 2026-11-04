@@ -201,6 +201,46 @@ describe('BM25Index', () => {
     expect(noSynonyms.search('opportunity')).toEqual([]);
   });
 
+  it('adds a secondary clitic variant so وال/بال/لل queries match bare terms', () => {
+    const index = new BM25Index([
+      makeChunk({
+        text: 'التسجيل وتسجيل الدخول إلى المنصة.',
+        source: 'account/ar.md',
+        locale: 'ar',
+      }),
+      makeChunk({
+        text: 'موضوع آخر لا علاقة له.',
+        source: 'other/ar.md',
+        locale: 'ar',
+      }),
+    ]);
+
+    const results = index.search('والتسجيل');
+    expect(results).toHaveLength(1);
+    expect(results[0].chunk.source).toBe('account/ar.md');
+  });
+
+  it('keeps the original clitic token primary over the stripped variant', () => {
+    const index = new BM25Index([
+      makeChunk({ text: 'بالفرص', source: 'exact/ar.md', locale: 'ar' }),
+      makeChunk({ text: 'فرص', source: 'stripped/ar.md', locale: 'ar' }),
+    ]);
+
+    const results = index.search('بالفرص');
+    expect(results.map((result) => result.chunk.source)).toEqual([
+      'exact/ar.md',
+      'stripped/ar.md',
+    ]);
+    expect(results[0].score).toBeGreaterThan(results[1].score);
+  });
+
+  it('does not match clitic variants across scripts', () => {
+    const index = new BM25Index([
+      makeChunk({ text: 'opportunity', source: 'en.md' }),
+    ]);
+    expect(index.search('بالفرص')).toEqual([]);
+  });
+
   it('breaks ties deterministically by priority, source, ordinal, and id', () => {
     const sourceTie = new BM25Index([
       makeChunk({ text: 'alpha', source: 'b.md' }),

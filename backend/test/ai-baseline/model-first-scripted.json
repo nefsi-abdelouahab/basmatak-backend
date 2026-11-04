@@ -3,7 +3,7 @@
   "corpus": "baseline",
   "modelFirst": true,
   "mode": "scripted",
-  "generatedAt": "2026-11-04T12:51:44.205Z",
+  "generatedAt": "2026-11-04T22:33:49.647Z",
   "provider": "scripted",
   "model": "scripted",
   "maxInputTokens": 10000,
@@ -21,16 +21,16 @@
   "metrics": {
     "dialogues": 40,
     "turns": 50,
-    "avgInputTokens": 4969.26,
-    "maxInputTokens": 6130,
+    "avgInputTokens": 2729.54,
+    "maxInputTokens": 3771,
     "avgOutputTokens": 25.56,
     "maxOutputTokens": 73,
     "avgProviderCalls": 1.28,
     "maxProviderCalls": 2,
     "avgToolCalls": 0.4,
     "maxToolCalls": 1,
-    "avgLatencyMs": 4.62,
-    "maxLatencyMs": 50
+    "avgLatencyMs": 2.26,
+    "maxLatencyMs": 18
   },
   "dialogues": [
     {
@@ -62,407 +62,8 @@
           "totalTokens": 0,
           "estimatedTokens": false,
           "providerCalls": 0,
-          "latencyMs": 14,
+          "latencyMs": 5,
           "events": [
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 20,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
-      "id": "greeting-ar",
-      "family": "greeting",
-      "title": "Greeting",
-      "locale": "ar",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "مرحبا",
-          "locale": "ar",
-          "historyBefore": [],
-          "router": {
-            "action": "direct_reply",
-            "intent": "greeting",
-            "language": "ar",
-            "reason": "GREETING",
-            "tools": [],
-            "topScore": 0
-          },
-          "declaredTools": [],
-          "providerToolCalls": [],
-          "executedToolCalls": [],
-          "finalText": "مرحباً، أنا بصمة. كيف أساعدك؟",
-          "inputTokens": 0,
-          "outputTokens": 0,
-          "totalTokens": 0,
-          "estimatedTokens": false,
-          "providerCalls": 0,
-          "latencyMs": 13,
-          "events": [
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 16,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
-      "id": "capability-en",
-      "family": "capability",
-      "title": "Capability",
-      "locale": "en",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "What can you do?",
-          "locale": "en",
-          "historyBefore": [],
-          "router": {
-            "action": "direct_reply",
-            "intent": "greeting",
-            "language": "en",
-            "reason": "CAPABILITY",
-            "tools": [],
-            "topScore": 0
-          },
-          "declaredTools": [
-            "get_opportunity_details",
-            "get_organization_details",
-            "platform_stats",
-            "search_knowledge",
-            "search_opportunities",
-            "search_organizations",
-            "search_reference_data"
-          ],
-          "providerToolCalls": [],
-          "executedToolCalls": [],
-          "finalText": "I'm Basma. I can help you find opportunities and organizations and explain how the platform works.",
-          "inputTokens": 5200,
-          "outputTokens": 25,
-          "totalTokens": 5225,
-          "estimatedTokens": true,
-          "providerCalls": 1,
-          "latencyMs": 50,
-          "events": [
-            "status",
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 51,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
-      "id": "capability-ar",
-      "family": "capability",
-      "title": "Capability",
-      "locale": "ar",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "ما الذي يمكنك فعله؟",
-          "locale": "ar",
-          "historyBefore": [],
-          "router": {
-            "action": "direct_reply",
-            "intent": "greeting",
-            "language": "ar",
-            "reason": "CAPABILITY",
-            "tools": [],
-            "topScore": 0
-          },
-          "declaredTools": [
-            "get_opportunity_details",
-            "get_organization_details",
-            "platform_stats",
-            "search_knowledge",
-            "search_opportunities",
-            "search_organizations",
-            "search_reference_data"
-          ],
-          "providerToolCalls": [],
-          "executedToolCalls": [],
-          "finalText": "أنا بصمة. أساعدك في العثور على الفرص والمنظمات وأشرح لك كيف تعمل المنصة.",
-          "inputTokens": 5662,
-          "outputTokens": 33,
-          "totalTokens": 5695,
-          "estimatedTokens": true,
-          "providerCalls": 1,
-          "latencyMs": 7,
-          "events": [
-            "status",
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 8,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
-      "id": "platform-overview-en",
-      "family": "platform-overview",
-      "title": "Platform overview",
-      "locale": "en",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "What is Basmatak?",
-          "locale": "en",
-          "historyBefore": [],
-          "router": {
-            "action": "answer",
-            "intent": "knowledge_only",
-            "language": "en",
-            "reason": "KNOWLEDGE_MATCH",
-            "tools": [],
-            "topScore": 5.639768233105538
-          },
-          "declaredTools": [
-            "get_opportunity_details",
-            "get_organization_details",
-            "platform_stats",
-            "search_knowledge",
-            "search_opportunities",
-            "search_organizations",
-            "search_reference_data"
-          ],
-          "providerToolCalls": [],
-          "executedToolCalls": [],
-          "finalText": "Basmatak is a volunteering platform that connects volunteers with organizations and published opportunities.",
-          "inputTokens": 4948,
-          "outputTokens": 27,
-          "totalTokens": 4975,
-          "estimatedTokens": true,
-          "providerCalls": 1,
-          "latencyMs": 6,
-          "events": [
-            "status",
             "token"
           ],
           "mode": "normal",
@@ -526,24 +127,117 @@
       "failedChecks": []
     },
     {
-      "id": "platform-overview-ar",
-      "family": "platform-overview",
-      "title": "Platform overview",
+      "id": "greeting-ar",
+      "family": "greeting",
+      "title": "Greeting",
       "locale": "ar",
       "run": 1,
       "turns": [
         {
           "index": 1,
-          "message": "ما هو بصمتك؟",
+          "message": "مرحبا",
           "locale": "ar",
           "historyBefore": [],
           "router": {
-            "action": "answer",
-            "intent": "knowledge_only",
+            "action": "direct_reply",
+            "intent": "greeting",
             "language": "ar",
-            "reason": "KNOWLEDGE_MATCH",
+            "reason": "GREETING",
             "tools": [],
-            "topScore": 6.878677435565138
+            "topScore": 0
+          },
+          "declaredTools": [],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "مرحباً، أنا بصمة. كيف أساعدك؟",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 0,
+          "latencyMs": 4,
+          "events": [
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 5,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "capability-en",
+      "family": "capability",
+      "title": "Capability",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "What can you do?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "en",
+            "reason": "CAPABILITY",
+            "tools": [],
+            "topScore": 0
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -556,13 +250,13 @@
           ],
           "providerToolCalls": [],
           "executedToolCalls": [],
-          "finalText": "بصمتك منصة تطوعية تربط المتطوعين بالجمعيات والفرص المنشورة.",
-          "inputTokens": 5507,
-          "outputTokens": 28,
-          "totalTokens": 5535,
+          "finalText": "I'm Basma. I can help you find opportunities and organizations and explain how the platform works.",
+          "inputTokens": 2916,
+          "outputTokens": 25,
+          "totalTokens": 2941,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 18,
           "events": [
             "status",
             "token"
@@ -622,7 +316,313 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 19,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "capability-ar",
+      "family": "capability",
+      "title": "Capability",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ما الذي يمكنك فعله؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "ar",
+            "reason": "CAPABILITY",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "أنا بصمة. أساعدك في العثور على الفرص والمنظمات وأشرح لك كيف تعمل المنصة.",
+          "inputTokens": 3071,
+          "outputTokens": 33,
+          "totalTokens": 3104,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 4,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "platform-overview-en",
+      "family": "platform-overview",
+      "title": "Platform overview",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "What is Basmatak?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 5.691907205838821
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Basmatak is a volunteering platform that connects volunteers with organizations and published opportunities.",
+          "inputTokens": 2664,
+          "outputTokens": 27,
+          "totalTokens": 2691,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 4,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "platform-overview-ar",
+      "family": "platform-overview",
+      "title": "Platform overview",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ما هو بصمتك؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 6.867939476943042
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "بصمتك منصة تطوعية تربط المتطوعين بالجمعيات والفرص المنشورة.",
+          "inputTokens": 2915,
+          "outputTokens": 28,
+          "totalTokens": 2943,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -645,7 +645,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 9.43505152586174
+            "topScore": 9.620357581291904
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -659,12 +659,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "Organizations submit evidence and the platform reviews it before a contribution is verified.",
-          "inputTokens": 5130,
+          "inputTokens": 2846,
           "outputTokens": 23,
-          "totalTokens": 5153,
+          "totalTokens": 2869,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 5,
+          "latencyMs": 3,
           "events": [
             "status",
             "token"
@@ -743,7 +743,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 8.374695167921049
+            "topScore": 8.415218741631653
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -757,12 +757,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "The organization reviews the evidence and the platform verifies the contribution.",
-          "inputTokens": 5291,
+          "inputTokens": 2926,
           "outputTokens": 21,
-          "totalTokens": 5312,
+          "totalTokens": 2947,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 7,
+          "latencyMs": 6,
           "events": [
             "status",
             "token"
@@ -849,7 +849,7 @@
             "language": "en",
             "reason": "FOLLOW_UP_KNOWLEDGE",
             "tools": [],
-            "topScore": 17.768308341565582
+            "topScore": 18.509476564554557
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -863,12 +863,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "Verification keeps volunteer contributions trustworthy for everyone.",
-          "inputTokens": 5382,
+          "inputTokens": 3021,
           "outputTokens": 17,
-          "totalTokens": 5399,
+          "totalTokens": 3038,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 5,
+          "latencyMs": 3,
           "events": [
             "status",
             "token"
@@ -928,7 +928,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 18,
+      "durationMs": 12,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -951,7 +951,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 17.426141223685914
+            "topScore": 20.445761449286188
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -965,12 +965,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "تقدم الجمعيات الأدلة وتراجعها المنصة قبل التحقق من المساهمة.",
-          "inputTokens": 5391,
+          "inputTokens": 2883,
           "outputTokens": 28,
-          "totalTokens": 5419,
+          "totalTokens": 2911,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -1049,7 +1049,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 7.414876831566054
+            "topScore": 10.595259713676642
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1063,12 +1063,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "تراجع الجمعية الأدلة ثم تتحقق المنصة من المساهمة.",
-          "inputTokens": 5739,
+          "inputTokens": 3059,
           "outputTokens": 23,
-          "totalTokens": 5762,
+          "totalTokens": 3082,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 7,
+          "latencyMs": 3,
           "events": [
             "status",
             "token"
@@ -1155,7 +1155,7 @@
             "language": "ar",
             "reason": "FOLLOW_UP_KNOWLEDGE",
             "tools": [],
-            "topScore": 12.654320142705592
+            "topScore": 21.02223747142186
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1169,12 +1169,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "يساعد التحقق في الحفاظ على موثوقية مساهمات المتطوعين.",
-          "inputTokens": 5726,
+          "inputTokens": 3054,
           "outputTokens": 25,
-          "totalTokens": 5751,
+          "totalTokens": 3079,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 4,
+          "latencyMs": 3,
           "events": [
             "status",
             "token"
@@ -1234,7 +1234,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 13,
+      "durationMs": 8,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1257,7 +1257,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 11.710706147552004
+            "topScore": 11.795792354246867
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1271,12 +1271,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "Open the opportunity page, choose Apply, and submit the requested details before the deadline.",
-          "inputTokens": 5072,
+          "inputTokens": 2788,
           "outputTokens": 24,
-          "totalTokens": 5096,
+          "totalTokens": 2812,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 4,
+          "latencyMs": 3,
           "events": [
             "status",
             "token"
@@ -1355,7 +1355,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 13.811576764831841
+            "topScore": 14.07110504419374
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1369,9 +1369,9 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "The organization reviews your application and updates its status after the contribution is verified.",
-          "inputTokens": 5353,
+          "inputTokens": 2986,
           "outputTokens": 25,
-          "totalTokens": 5378,
+          "totalTokens": 3011,
           "estimatedTokens": true,
           "providerCalls": 1,
           "latencyMs": 3,
@@ -1434,7 +1434,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 7,
+      "durationMs": 6,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1457,7 +1457,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 8.029118643213376
+            "topScore": 7.854397769392613
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1471,12 +1471,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "افتح صفحة الفرصة واختر التقديم ثم أرسل البيانات المطلوبة قبل الموعد النهائي.",
-          "inputTokens": 5859,
+          "inputTokens": 3267,
           "outputTokens": 35,
-          "totalTokens": 5894,
+          "totalTokens": 3302,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 6,
+          "latencyMs": 2,
           "events": [
             "status",
             "token"
@@ -1555,7 +1555,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 12.836858092743734
+            "topScore": 12.617551649351093
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1569,9 +1569,9 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "تراجع الجمعية طلبك وتحدث حالته بعد التحقق من المساهمة.",
-          "inputTokens": 6130,
+          "inputTokens": 3446,
           "outputTokens": 25,
-          "totalTokens": 6155,
+          "totalTokens": 3471,
           "estimatedTokens": true,
           "providerCalls": 1,
           "latencyMs": 2,
@@ -1634,7 +1634,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 8,
+      "durationMs": 4,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1657,7 +1657,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 19.0814825131964
+            "topScore": 19.18775483418657
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1671,12 +1671,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "The privacy policy explains what data the platform collects, why it is used, and how users can request deletion.",
-          "inputTokens": 4940,
+          "inputTokens": 2656,
           "outputTokens": 28,
-          "totalTokens": 4968,
+          "totalTokens": 2684,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 0,
           "events": [
             "status",
             "token"
@@ -1736,7 +1736,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 0,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1759,7 +1759,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 19.877635415903452
+            "topScore": 23.667360660440973
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1773,12 +1773,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "توضح سياسة الخصوصية البيانات التي تجمعها المنصة وكيف يمكن للمستخدم طلب حذفها.",
-          "inputTokens": 5373,
+          "inputTokens": 2782,
           "outputTokens": 36,
-          "totalTokens": 5409,
+          "totalTokens": 2818,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -1838,7 +1838,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -1861,7 +1861,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 13.423579651910394
+            "topScore": 13.863506101238517
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1875,12 +1875,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "Open your account settings and choose Delete account. The platform removes your profile data after confirmation.",
-          "inputTokens": 5042,
+          "inputTokens": 2758,
           "outputTokens": 28,
-          "totalTokens": 5070,
+          "totalTokens": 2786,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 2,
           "events": [
             "status",
             "token"
@@ -1963,7 +1963,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 22.74358310742331
+            "topScore": 21.90894384187861
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -1977,9 +1977,9 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "افتح إعدادات الحساب واختر حذف الحساب. تحذف المنصة بيانات ملفك بعد التأكيد.",
-          "inputTokens": 5485,
+          "inputTokens": 2872,
           "outputTokens": 34,
-          "totalTokens": 5519,
+          "totalTokens": 2906,
           "estimatedTokens": true,
           "providerCalls": 1,
           "latencyMs": 2,
@@ -2067,7 +2067,7 @@
             "tools": [
               "platform_stats"
             ],
-            "topScore": 5.623754369978266
+            "topScore": 5.649929426077984
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -2091,124 +2091,9 @@
             }
           ],
           "finalText": "There are 42 published opportunities and 17 verified organizations on Basmatak.",
-          "inputTokens": 5063,
+          "inputTokens": 2785,
           "outputTokens": 20,
-          "totalTokens": 5083,
-          "estimatedTokens": true,
-          "providerCalls": 2,
-          "latencyMs": 5,
-          "events": [
-            "status",
-            "status",
-            "token"
-          ],
-          "mode": "normal",
-          "finishReason": "stop",
-          "refusal": false,
-          "truncated": false,
-          "checks": [
-            {
-              "name": "tool_choice",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "tool_args",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "key_facts",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "refusal",
-              "structural": false,
-              "pass": true
-            },
-            {
-              "name": "language",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "safety",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "promise",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "links",
-              "structural": true,
-              "pass": true
-            },
-            {
-              "name": "events",
-              "structural": true,
-              "pass": true
-            }
-          ],
-          "structuralPass": true,
-          "qualityPass": true
-        }
-      ],
-      "durationMs": 5,
-      "structuralPass": true,
-      "qualityPass": true,
-      "failedChecks": []
-    },
-    {
-      "id": "platform-stats-ar",
-      "family": "platform-stats",
-      "title": "Platform statistics",
-      "locale": "ar",
-      "run": 1,
-      "turns": [
-        {
-          "index": 1,
-          "message": "كم عدد الفرص الموجودة؟",
-          "locale": "ar",
-          "historyBefore": [],
-          "router": {
-            "action": "answer",
-            "intent": "live_data",
-            "language": "ar",
-            "reason": "LIVE_STATS",
-            "tools": [
-              "platform_stats"
-            ],
-            "topScore": 9.79391751558676
-          },
-          "declaredTools": [
-            "get_opportunity_details",
-            "get_organization_details",
-            "platform_stats",
-            "search_knowledge",
-            "search_opportunities",
-            "search_organizations",
-            "search_reference_data"
-          ],
-          "providerToolCalls": [
-            {
-              "name": "platform_stats",
-              "arguments": {}
-            }
-          ],
-          "executedToolCalls": [
-            {
-              "name": "platform_stats",
-              "arguments": {}
-            }
-          ],
-          "finalText": "تضم بصمتك 42 فرصة منشورة و17 جمعية موثقة.",
-          "inputTokens": 6038,
-          "outputTokens": 18,
-          "totalTokens": 6056,
+          "totalTokens": 2805,
           "estimatedTokens": true,
           "providerCalls": 2,
           "latencyMs": 4,
@@ -2278,6 +2163,121 @@
       "failedChecks": []
     },
     {
+      "id": "platform-stats-ar",
+      "family": "platform-stats",
+      "title": "Platform statistics",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كم عدد الفرص الموجودة؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_STATS",
+            "tools": [
+              "platform_stats"
+            ],
+            "topScore": 9.65871275263001
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "finalText": "تضم بصمتك 42 فرصة منشورة و17 جمعية موثقة.",
+          "inputTokens": 3235,
+          "outputTokens": 18,
+          "totalTokens": 3253,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 1,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 1,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
       "id": "opportunity-browse-en",
       "family": "opportunity-browse",
       "title": "Opportunity browse",
@@ -2297,7 +2297,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 8.494599357486903
+            "topScore": 8.79590717835855
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -2329,12 +2329,12 @@
             }
           ],
           "finalText": "Here are the latest published opportunities: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), and [Remote tutoring](/en/opportunities/remote-tutoring).",
-          "inputTokens": 5519,
+          "inputTokens": 3235,
           "outputTokens": 51,
-          "totalTokens": 5570,
+          "totalTokens": 3286,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 4,
+          "latencyMs": 3,
           "events": [
             "status",
             "status",
@@ -2396,7 +2396,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 4,
+      "durationMs": 3,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2421,7 +2421,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 9.433740752347978
+            "topScore": 10.667293311411054
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -2453,12 +2453,12 @@
             }
           ],
           "finalText": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
-          "inputTokens": 6008,
+          "inputTokens": 3398,
           "outputTokens": 51,
-          "totalTokens": 6059,
+          "totalTokens": 3449,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 4,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -2520,7 +2520,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 4,
+      "durationMs": 2,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2545,7 +2545,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 5.623754369978266
+            "topScore": 5.649929426077984
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -2573,12 +2573,12 @@
             }
           ],
           "finalText": "Yes. [Beach cleanup](/en/opportunities/beach-cleanup) is published in Oran.",
-          "inputTokens": 5159,
+          "inputTokens": 2881,
           "outputTokens": 19,
-          "totalTokens": 5178,
+          "totalTokens": 2900,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -2639,7 +2639,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2664,7 +2664,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 7.678820183478363
+            "topScore": 7.343882952905048
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -2692,12 +2692,12 @@
             }
           ],
           "finalText": "نعم، [Beach cleanup](/ar/opportunities/beach-cleanup) منشورة في وهران.",
-          "inputTokens": 5723,
+          "inputTokens": 3159,
           "outputTokens": 22,
-          "totalTokens": 5745,
+          "totalTokens": 3181,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -2758,7 +2758,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -2783,7 +2783,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 8.494599357486903
+            "topScore": 8.79590717835855
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -2815,12 +2815,12 @@
             }
           ],
           "finalText": "Here are the latest published opportunities: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), and [Remote tutoring](/en/opportunities/remote-tutoring).",
-          "inputTokens": 5519,
+          "inputTokens": 3235,
           "outputTokens": 51,
-          "totalTokens": 5570,
+          "totalTokens": 3286,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 4,
+          "latencyMs": 3,
           "events": [
             "status",
             "status",
@@ -2931,12 +2931,12 @@
             }
           ],
           "finalText": "Beach cleanup is open for applications with five positions in Oran: [Beach cleanup](/en/opportunities/beach-cleanup).",
-          "inputTokens": 5474,
+          "inputTokens": 3080,
           "outputTokens": 30,
-          "totalTokens": 5504,
+          "totalTokens": 3110,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 5,
+          "latencyMs": 3,
           "events": [
             "status",
             "status",
@@ -3054,12 +3054,12 @@
             }
           ],
           "finalText": "The deadline for [Beach cleanup](/en/opportunities/beach-cleanup) is 31 December 2026.",
-          "inputTokens": 5448,
+          "inputTokens": 3050,
           "outputTokens": 22,
-          "totalTokens": 5470,
+          "totalTokens": 3072,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 2,
           "events": [
             "status",
             "status",
@@ -3120,7 +3120,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 12,
+      "durationMs": 8,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -3145,7 +3145,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 9.433740752347978
+            "topScore": 10.667293311411054
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -3177,12 +3177,12 @@
             }
           ],
           "finalText": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
-          "inputTokens": 6008,
+          "inputTokens": 3398,
           "outputTokens": 51,
-          "totalTokens": 6059,
+          "totalTokens": 3449,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -3301,12 +3301,12 @@
             }
           ],
           "finalText": "هذه الفرص الثلاث مفتوحة للتقديم، ويمكنك معرفة المناصب المتاحة في كل صفحة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
-          "inputTokens": 5622,
+          "inputTokens": 2921,
           "outputTokens": 73,
-          "totalTokens": 5695,
+          "totalTokens": 2994,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 5,
+          "latencyMs": 2,
           "events": [
             "status",
             "status",
@@ -3433,12 +3433,12 @@
             }
           ],
           "finalText": "نعم، الفرص الثلاث مفتوحة للتقديم: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
-          "inputTokens": 5962,
+          "inputTokens": 3771,
           "outputTokens": 55,
-          "totalTokens": 6017,
+          "totalTokens": 3826,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -3500,7 +3500,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 11,
+      "durationMs": 5,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -3525,7 +3525,7 @@
             "tools": [
               "search_organizations"
             ],
-            "topScore": 10.505223784153825
+            "topScore": 10.615551963917932
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -3555,12 +3555,12 @@
             }
           ],
           "finalText": "I found this organization: [Nour](/en/orgs/nour-association).",
-          "inputTokens": 5084,
+          "inputTokens": 2800,
           "outputTokens": 16,
-          "totalTokens": 5100,
+          "totalTokens": 2816,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -3621,7 +3621,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -3646,7 +3646,7 @@
             "tools": [
               "search_organizations"
             ],
-            "topScore": 7.315511797101854
+            "topScore": 7.312046539115094
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -3676,9 +3676,9 @@
             }
           ],
           "finalText": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association).",
-          "inputTokens": 5543,
+          "inputTokens": 2952,
           "outputTokens": 17,
-          "totalTokens": 5560,
+          "totalTokens": 2969,
           "estimatedTokens": true,
           "providerCalls": 2,
           "latencyMs": 2,
@@ -3767,7 +3767,7 @@
             "tools": [
               "search_reference_data"
             ],
-            "topScore": 12.810477686559876
+            "topScore": 13.177082367442138
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -3791,12 +3791,12 @@
             }
           ],
           "finalText": "Available skills include Teaching, and the listed wilaya is Oran.",
-          "inputTokens": 5272,
+          "inputTokens": 2988,
           "outputTokens": 17,
-          "totalTokens": 5289,
+          "totalTokens": 3005,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -3857,7 +3857,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -3882,7 +3882,7 @@
             "tools": [
               "search_reference_data"
             ],
-            "topScore": 8.493413252524297
+            "topScore": 11.523076020270608
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -3906,12 +3906,12 @@
             }
           ],
           "finalText": "تشمل المهارات المتاحة التعليم، والولاية المدرجة هي وهران.",
-          "inputTokens": 5633,
+          "inputTokens": 3044,
           "outputTokens": 27,
-          "totalTokens": 5660,
+          "totalTokens": 3071,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -3972,7 +3972,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -3997,7 +3997,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 11.234178325517659
+            "topScore": 11.512772930754029
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -4025,12 +4025,12 @@
             }
           ],
           "finalText": "To apply, open a current opportunity and choose Apply before its deadline. For example, [Beach cleanup](/en/opportunities/beach-cleanup) is open.",
-          "inputTokens": 5329,
+          "inputTokens": 3045,
           "outputTokens": 37,
-          "totalTokens": 5366,
+          "totalTokens": 3082,
           "estimatedTokens": true,
           "providerCalls": 2,
-          "latencyMs": 5,
+          "latencyMs": 2,
           "events": [
             "status",
             "status",
@@ -4091,7 +4091,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 6,
+      "durationMs": 2,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -4116,7 +4116,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 8.374755814569811
+            "topScore": 10.151418220683922
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -4144,9 +4144,9 @@
             }
           ],
           "finalText": "للتقدم، افتح فرصة متاحة واختر التقديم قبل موعدها. مثال: [Beach cleanup](/ar/opportunities/beach-cleanup) مفتوحة.",
-          "inputTokens": 5793,
+          "inputTokens": 3168,
           "outputTokens": 41,
-          "totalTokens": 5834,
+          "totalTokens": 3209,
           "estimatedTokens": true,
           "providerCalls": 2,
           "latencyMs": 2,
@@ -4321,7 +4321,7 @@
           "totalTokens": 0,
           "estimatedTokens": false,
           "providerCalls": 0,
-          "latencyMs": 1,
+          "latencyMs": 0,
           "events": [
             "token"
           ],
@@ -4380,7 +4380,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 1,
+      "durationMs": 0,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -4417,9 +4417,9 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "That's outside what I can help with, but I'd be glad to help you find a volunteering opportunity.",
-          "inputTokens": 4668,
+          "inputTokens": 2384,
           "outputTokens": 25,
-          "totalTokens": 4693,
+          "totalTokens": 2409,
           "estimatedTokens": true,
           "providerCalls": 1,
           "latencyMs": 1,
@@ -4519,12 +4519,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "هذا خارج ما أستطيع مساعدتك فيه، لكن يسعدني أن أساعدك في إيجاد فرصة تطوعية.",
-          "inputTokens": 4974,
+          "inputTokens": 3035,
           "outputTokens": 34,
-          "totalTokens": 5008,
+          "totalTokens": 3069,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -4584,7 +4584,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -4621,12 +4621,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "Could you tell me a bit more about what you need?",
-          "inputTokens": 4582,
+          "inputTokens": 2298,
           "outputTokens": 13,
-          "totalTokens": 4595,
+          "totalTokens": 2311,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 1,
+          "latencyMs": 0,
           "events": [
             "status",
             "token"
@@ -4723,12 +4723,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "ممكن توضح لي أكثر ماذا تريد؟",
-          "inputTokens": 4963,
+          "inputTokens": 2372,
           "outputTokens": 13,
-          "totalTokens": 4976,
+          "totalTokens": 2385,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -4788,7 +4788,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -4813,7 +4813,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 5.623754369978266
+            "topScore": 5.649929426077984
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -4841,12 +4841,12 @@
             }
           ],
           "finalText": "There are no published opportunities right now. You can check the Opportunities page later.",
-          "inputTokens": 4938,
+          "inputTokens": 2660,
           "outputTokens": 0,
-          "totalTokens": 4938,
+          "totalTokens": 2660,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "status",
@@ -4907,7 +4907,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -4932,7 +4932,7 @@
             "tools": [
               "search_opportunities"
             ],
-            "topScore": 7.678820183478363
+            "topScore": 7.343882952905048
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -4960,9 +4960,9 @@
             }
           ],
           "finalText": "لا توجد فرص منشورة حالياً. يمكنك تصفح صفحة الفرص لاحقاً.",
-          "inputTokens": 5501,
+          "inputTokens": 2937,
           "outputTokens": 0,
-          "totalTokens": 5501,
+          "totalTokens": 2937,
           "estimatedTokens": true,
           "providerCalls": 1,
           "latencyMs": 2,
@@ -5049,7 +5049,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 10.82810224520788
+            "topScore": 10.963190809659576
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -5063,12 +5063,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
-          "inputTokens": 5040,
+          "inputTokens": 2756,
           "outputTokens": 13,
-          "totalTokens": 5053,
+          "totalTokens": 2769,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -5128,7 +5128,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -5151,7 +5151,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 8.258035348533618
+            "topScore": 11.004131105880527
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -5165,12 +5165,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "لا أملك معلومات مؤكدة عن هذا. يمكنك تصفح الفرص والمنظمات في المنصة.",
-          "inputTokens": 5769,
+          "inputTokens": 2816,
           "outputTokens": 15,
-          "totalTokens": 5784,
+          "totalTokens": 2831,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -5230,7 +5230,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -5253,7 +5253,7 @@
             "language": "en",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 11.045472702606217
+            "topScore": 11.35254821627068
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -5267,12 +5267,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "Applications move from submitted to under review, then accepted or rejected.",
-          "inputTokens": 5002,
+          "inputTokens": 2718,
           "outputTokens": 26,
-          "totalTokens": 5028,
+          "totalTokens": 2744,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 2,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -5332,7 +5332,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 2,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
@@ -5355,7 +5355,7 @@
             "language": "ar",
             "reason": "KNOWLEDGE_MATCH",
             "tools": [],
-            "topScore": 14.451567811944102
+            "topScore": 16.82898715841022
           },
           "declaredTools": [
             "get_opportunity_details",
@@ -5369,12 +5369,12 @@
           "providerToolCalls": [],
           "executedToolCalls": [],
           "finalText": "تنتقل الطلبات من مقدمة إلى قيد المراجعة ثم مقبولة أو مرفوضة.",
-          "inputTokens": 5599,
+          "inputTokens": 3446,
           "outputTokens": 36,
-          "totalTokens": 5635,
+          "totalTokens": 3482,
           "estimatedTokens": true,
           "providerCalls": 1,
-          "latencyMs": 3,
+          "latencyMs": 1,
           "events": [
             "status",
             "token"
@@ -5434,7 +5434,7 @@
           "qualityPass": true
         }
       ],
-      "durationMs": 3,
+      "durationMs": 1,
       "structuralPass": true,
       "qualityPass": true,
       "failedChecks": []
