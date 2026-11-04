@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Model, Types } from 'mongoose';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { AccountToken } from '../../common/interfaces/account-token.interface';
@@ -115,6 +116,11 @@ describe('AttestationService access matrix (Session 18)', () => {
     const settings = {
       get: jest.fn(async (_key: string, fallback: unknown) => fallback),
     } as unknown as SettingsService;
+    const config = {
+      get: jest.fn((key: string, fallback?: unknown) =>
+        key === 'FRONTEND_URL' ? 'https://basmatak.test/' : fallback,
+      ),
+    } as unknown as ConfigService;
     return new AttestationService(
       experienceModel,
       profileModel,
@@ -124,6 +130,7 @@ describe('AttestationService access matrix (Session 18)', () => {
       enrichment,
       organizations,
       settings,
+      config,
     );
   }
 
@@ -161,7 +168,10 @@ describe('AttestationService access matrix (Session 18)', () => {
       durationMinutes: 180,
       verifiedOn: '2026-09-05',
       organizationRegistryId: 'ORG-000007',
+      verifyUrl: 'https://basmatak.test/en/verify/ABCDEFGH',
     });
+    expect(data.verifyQrPng).toBeInstanceOf(Buffer);
+    expect(data.verifyQrPng?.subarray(1, 4).toString('latin1')).toBe('PNG');
   });
 
   it('verifying organization assembles the certificate data', async () => {

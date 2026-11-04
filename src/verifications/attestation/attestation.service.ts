@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import * as QRCode from 'qrcode';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { AccountToken } from '../../common/interfaces/account-token.interface';
 import { SETTING_DEFAULTS } from '../../core/settings/setting-keys';
@@ -34,6 +36,7 @@ const EXPERIENCE_NOT_FOUND = 'EXPERIENCE_NOT_FOUND';
 const ORGANIZATION_NOT_FOUND = 'ORGANIZATION_NOT_FOUND';
 const ATTESTATION_FORBIDDEN = 'FORBIDDEN';
 const PLATFORM_NAME_KEY = 'platform.name' as const;
+const DEFAULT_FRONTEND_URL = 'http://localhost:3000';
 
 interface LeanPosition {
   _id: Types.ObjectId;
@@ -62,6 +65,7 @@ export class AttestationService {
     private readonly enrichment: ExperienceEnrichmentService,
     private readonly organizations: OrganizationsService,
     private readonly settings: SettingsService,
+    private readonly config: ConfigService,
   ) {}
 
   async assemble(
@@ -160,6 +164,17 @@ export class AttestationService {
       (await this.settings.get<string>(PLATFORM_NAME_KEY, platformFallback)) ??
       platformFallback;
 
+    const frontendUrl = (
+      this.config.get<string>('FRONTEND_URL') ?? DEFAULT_FRONTEND_URL
+    ).replace(/\/+$/, '');
+    const verifyUrl = `${frontendUrl}/${lang}/verify/${enriched.verificationCode}`;
+    const verifyQrPng = await QRCode.toBuffer(verifyUrl, {
+      type: 'png',
+      width: 160,
+      margin: 1,
+      errorCorrectionLevel: 'medium',
+    });
+
     return {
       lang,
       platformName,
@@ -180,6 +195,8 @@ export class AttestationService {
       positionTitle: position?.title ?? null,
       deliverables: position?.deliverables ?? [],
       skillNames,
+      verifyUrl,
+      verifyQrPng,
     };
   }
 

@@ -31,6 +31,10 @@ export interface AttestationData {
   positionTitle: string | null;
   deliverables: string[];
   skillNames: string[];
+  /** Absolute public verification URL, `${FRONTEND_URL}/${locale}/verify/${code}`. */
+  verifyUrl: string;
+  /** QR PNG for `verifyUrl`, pre-rendered by the service; `null` skips it. */
+  verifyQrPng: Buffer | null;
 }
 
 interface AttestationStrings {
@@ -211,11 +215,6 @@ function formatDurationLead(
     lead: `${wholeHours} ${strings.hours}`,
     rest: ` (${minutes} ${strings.minutesDocumented})`,
   };
-}
-
-/** Public deep-link path backing the verification box (same as frontend). */
-function verifyPath(code: string): string {
-  return `/verify/${code}`;
 }
 
 /**
@@ -800,7 +799,7 @@ export function buildAttestationDocument(
     formatLongDate(data.verifiedOn, data.lang),
     data.verificationCode,
   );
-  const boxH = 108;
+  const boxH = data.verifyQrPng ? 150 : 108;
   const leftH =
     9 +
     16 +
@@ -859,7 +858,6 @@ export function buildAttestationDocument(
     });
   const leftBottom = doc.y + 4;
 
-  const path = verifyPath(data.verificationCode);
   doc.font(MONO_BOLD).fontSize(11);
   const codeW = doc.widthOfString(data.verificationCode) + 32;
   const innerW = Math.min(Math.max(codeW, 150), boxW - 32);
@@ -888,11 +886,20 @@ export function buildAttestationDocument(
       align: 'center',
       characterSpacing: 1,
     });
+  let linkY = innerY + 30;
+  if (data.verifyQrPng) {
+    const qrSize = 46;
+    doc.image(data.verifyQrPng, boxX + (boxW - qrSize) / 2, linkY, {
+      width: qrSize,
+      height: qrSize,
+    });
+    linkY += qrSize + 6;
+  }
   doc
     .font(MONO)
-    .fontSize(7.5)
+    .fontSize(6.5)
     .fillColor(BODY)
-    .text(path, boxX + 16, innerY + 30, {
+    .text(data.verifyUrl, boxX + 16, linkY, {
       width: boxW - 32,
       align: 'center',
     });
@@ -900,7 +907,7 @@ export function buildAttestationDocument(
     .font(SANS)
     .fontSize(7)
     .fillColor(MUTED)
-    .text(strings.verifyHint, boxX + 16, innerY + 42, {
+    .text(strings.verifyHint, boxX + 16, linkY + 22, {
       width: boxW - 32,
       align: 'center',
     });

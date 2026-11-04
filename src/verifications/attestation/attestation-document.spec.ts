@@ -3,6 +3,12 @@ import {
   buildAttestationDocument,
 } from './attestation-document';
 
+/** 1x1 PNG; the document only needs a decodable image buffer for the QR slot. */
+const QR_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 const CIVIC_TOKENS = [
   'Civic',
   'Sovereign',
@@ -33,7 +39,13 @@ function fixtureData(): AttestationData {
     positionTitle: 'Shoreline volunteer',
     deliverables: ['Plant 20 seedlings', 'Collect 12 bags'],
     skillNames: ['Teamwork'],
+    verifyUrl: 'https://basmatak.test/en/verify/ABCDEFGH',
+    verifyQrPng: QR_PNG,
   };
+}
+
+function imageCount(bytes: Buffer): number {
+  return (bytes.toString('latin1').match(/\/Subtype\s*\/Image/g) ?? []).length;
 }
 
 /**
@@ -80,6 +92,17 @@ describe('buildAttestationDocument (Session 18)', () => {
     expect(text).toContain('180');
     expect(text).toContain('2026-09-05');
     expect(text).toContain('Verified by');
+    expect(text).toContain('https://basmatak.test/en/verify/ABCDEFGH');
+  });
+
+  it('embeds the QR image alongside the absolute verify URL', async () => {
+    const withQr = await renderToBuffer(fixtureData());
+    const withoutQr = await renderToBuffer({
+      ...fixtureData(),
+      verifyQrPng: null,
+    });
+    // The bundled logo is one image; the QR adds a second XObject.
+    expect(imageCount(withQr)).toBeGreaterThan(imageCount(withoutQr));
   });
 
   it('contains no civic-narrative or fabricated-registry content', async () => {
