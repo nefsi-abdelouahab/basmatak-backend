@@ -33,6 +33,7 @@ export interface AdminStatsOverview {
     opportunities: number;
     pendingVerifications: number;
   };
+  /** Converted from the stored minutes at read time (D4). */
   totalVolunteerHours: number;
   verificationRate: number;
   gateFreezes: number;
@@ -74,7 +75,7 @@ export class AdminStatsService {
       verifiedOrganizations,
       opportunities,
       pendingVerifications,
-      hoursAgg,
+      minutesAgg,
       gateFreezes,
     ] = await Promise.all([
       this.userModel.countDocuments({}).exec(),
@@ -85,7 +86,7 @@ export class AdminStatsService {
         .exec(),
       this.opportunityModel.countDocuments({}).exec(),
       this.verificationModel.countDocuments({ status: 'pending' }).exec(),
-      this.aggregateVolunteerHours(),
+      this.aggregateVolunteerMinutes(),
       this.countGateFreezes(),
     ]);
 
@@ -98,20 +99,21 @@ export class AdminStatsService {
         opportunities,
         pendingVerifications,
       },
-      totalVolunteerHours: hoursAgg ?? 0,
+      totalVolunteerHours:
+        minutesAgg === null ? 0 : Math.round((minutesAgg / 60) * 10) / 10,
       verificationRate:
         organizations > 0 ? verifiedOrganizations / organizations : 0,
       gateFreezes,
     };
   }
 
-  private async aggregateVolunteerHours(): Promise<number | null> {
+  private async aggregateVolunteerMinutes(): Promise<number | null> {
     const [row] = await this.volunteerModel
-      .aggregate<{ hours: number }>([
-        { $group: { _id: null, hours: { $sum: '$stats.volunteerHours' } } },
+      .aggregate<{ minutes: number }>([
+        { $group: { _id: null, minutes: { $sum: '$stats.volunteerHours' } } },
       ])
       .exec();
-    return row ? row.hours : null;
+    return row ? row.minutes : null;
   }
 
   /** Distinct organizations currently locked by the §4 publish gate (Session 8 reuse). */

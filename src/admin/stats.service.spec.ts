@@ -114,7 +114,7 @@ describe('AdminStatsService (inventory §2.20 overview)', () => {
     }
   });
 
-  async function seedVolunteer(hours: number): Promise<Types.ObjectId> {
+  async function seedVolunteer(minutes: number): Promise<Types.ObjectId> {
     const user = await userModel.create({
       email: `vol-${new Types.ObjectId()}@example.com`,
       passwordHash: 'hash',
@@ -127,7 +127,7 @@ describe('AdminStatsService (inventory §2.20 overview)', () => {
       stats: {
         completedTasks: 0,
         verifiedExperiences: 0,
-        volunteerHours: hours,
+        volunteerHours: minutes,
       },
       publicProfile: {
         enabled: false,
@@ -202,9 +202,9 @@ describe('AdminStatsService (inventory §2.20 overview)', () => {
     expect(overview.gateFreezes).toBe(0);
   });
 
-  it('sums volunteer hours and counts users/volunteers separately', async () => {
-    await seedVolunteer(5);
-    await seedVolunteer(7);
+  it('sums stored minutes and reports volunteer hours', async () => {
+    await seedVolunteer(180);
+    await seedVolunteer(90);
     await userModel.create({
       email: 'admin@example.com',
       passwordHash: 'hash',
@@ -215,7 +215,8 @@ describe('AdminStatsService (inventory §2.20 overview)', () => {
     const overview = await service.getOverview();
     expect(overview.counts.users).toBe(3);
     expect(overview.counts.volunteers).toBe(2);
-    expect(overview.totalVolunteerHours).toBe(12);
+    // 270 stored minutes -> 4.5 hours (D4: convert at display, not storage).
+    expect(overview.totalVolunteerHours).toBe(4.5);
   });
 
   it('computes verificationRate as verified ÷ total (0 when no orgs)', async () => {
