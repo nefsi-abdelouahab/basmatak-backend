@@ -5,6 +5,11 @@ import {
   OpportunitySchema,
 } from '../opportunities/schemas/opportunity.schema';
 import {
+  OrganizationsCollection,
+  OrganizationModel,
+  OrganizationSchema,
+} from '../organizations/schemas/organization.schema';
+import {
   VolunteerProfileModel,
   VolunteerProfileSchema,
   VolunteerProfilesCollection,
@@ -31,6 +36,10 @@ describe('FavoritesService (Session 17)', () => {
   const oppId = new Types.ObjectId();
   const talentUserId = new Types.ObjectId();
   const TALENT_USERNAME = 's17-unit-talent';
+  const orgId = new Types.ObjectId();
+  const orgUserId = new Types.ObjectId();
+  const ORG_SLUG = 's17-unit-org';
+  const deadline = new Date('2026-12-31T00:00:00.000Z');
 
   beforeAll(async () => {
     handle = await startMemoryConnection();
@@ -46,13 +55,20 @@ describe('FavoritesService (Session 17)', () => {
       VolunteerProfilesCollection,
       VolunteerProfileSchema,
     );
+    const organizationModel = handle.connection.model<OrganizationModel>(
+      OrganizationsCollection,
+      OrganizationSchema,
+    );
     await favoriteModel.init();
     // Peer rows bypass mongoose validation (raw inserts — only the fields
     // this service reads are needed).
     await handle.connection.collection('opportunities').insertOne({
       _id: oppId,
+      organizationId: orgId,
       title: 'Unit River Cleanup',
       slug: 'unit-river-cleanup',
+      status: 'published',
+      applicationDeadline: deadline,
     });
     await handle.connection.collection('volunteer_profiles').insertOne({
       _id: new Types.ObjectId(),
@@ -61,10 +77,19 @@ describe('FavoritesService (Session 17)', () => {
       firstName: 'Unit',
       lastName: 'Talent',
     });
+    await handle.connection.collection('organizations').insertOne({
+      _id: orgId,
+      userId: orgUserId,
+      slug: ORG_SLUG,
+      nameFr: 'Unit Organization',
+      nameAr: 'منظمة الوحدة',
+      status: 'active',
+    });
     service = new FavoritesService(
       favoriteModel,
       opportunityModel,
       profileModel,
+      organizationModel,
     );
   });
 
@@ -173,6 +198,45 @@ describe('FavoritesService (Session 17)', () => {
     });
   });
 
+  describe('organization toggle', () => {
+    it('resolves the slug to the organization userId', async () => {
+      const result = await service.saveOrganization(userA, ORG_SLUG);
+      expect(result).toEqual({ created: true, favoriteCount: 1 });
+      const row = await favoriteModel
+        .findOne({
+          userId: new Types.ObjectId(userA),
+          targetType: 'organization',
+        })
+        .lean()
+        .exec();
+      expect(row?.targetId).toBe(orgUserId.toString());
+    });
+
+    it('rejects unknown slugs and tolerates unknown deletes', async () => {
+      await expect(
+        service.saveOrganization(userA, 'ghost-org'),
+      ).rejects.toMatchObject({
+        status: 404,
+        code: 'ORGANIZATION_NOT_FOUND',
+      });
+      await expect(
+        service.removeOrganization(userA, 'ghost-org'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('summarizes saved organizations', async () => {
+      await service.saveOrganization(userA, ORG_SLUG);
+      const page = await service.listOwn(userA, { targetType: 'organization' });
+      expect(page.total).toBe(1);
+      expect(page.items[0].summary).toEqual({
+        slug: ORG_SLUG,
+        nameAr: 'منظمة الوحدة',
+        nameFr: 'Unit Organization',
+        status: 'active',
+      });
+    });
+  });
+
   describe('list, counts, lookup', () => {
     it('lists newest-first with totals and per-type summaries', async () => {
       await service.saveOpportunity(userA, oppId.toString());
@@ -191,6 +255,13 @@ describe('FavoritesService (Session 17)', () => {
       expect(page.items[1].summary).toEqual({
         title: 'Unit River Cleanup',
         slug: 'unit-river-cleanup',
+        status: 'published',
+        applicationDeadline: deadline,
+        organization: {
+          slug: ORG_SLUG,
+          nameAr: 'منظمة الوحدة',
+          nameFr: 'Unit Organization',
+        },
       });
 
       const filtered = await service.listOwn(userA, {
@@ -211,21 +282,27 @@ describe('FavoritesService (Session 17)', () => {
       // Restore the peer row for the remaining tests.
       await handle.connection.collection('opportunities').insertOne({
         _id: oppId,
+        organizationId: orgId,
         title: 'Unit River Cleanup',
         slug: 'unit-river-cleanup',
+        status: 'published',
+        applicationDeadline: deadline,
       });
     });
 
     it('scopes counts to the caller', async () => {
       await service.saveOpportunity(userA, oppId.toString());
       await service.saveTalent(userA, TALENT_USERNAME);
+      await service.saveOrganization(userA, ORG_SLUG);
       await expect(service.countsOwn(userA)).resolves.toEqual({
         opportunity: 1,
         talent: 1,
+        organization: 1,
       });
       await expect(service.countsOwn(userB)).resolves.toEqual({
         opportunity: 0,
         talent: 0,
+        organization: 0,
       });
     });
 
@@ -268,6 +345,25 @@ describe('FavoritesService (Session 17)', () => {
         favoriteCount: 1,
       });
       expect(result['ghost-username']).toEqual({
+        favorited: false,
+        favoriteCount: 0,
+      });
+    });
+
+    it('organization lookup keys on slug with zero entries for ghosts', async () => {
+      await service.saveOrganization(userA, ORG_SLUG);
+      const result = await service.lookup(
+        {
+          targetType: 'organization',
+          targetIds: `${ORG_SLUG},ghost-org`,
+        },
+        userA,
+      );
+      expect(result[ORG_SLUG]).toEqual({
+        favorited: true,
+        favoriteCount: 1,
+      });
+      expect(result['ghost-org']).toEqual({
         favorited: false,
         favoriteCount: 0,
       });

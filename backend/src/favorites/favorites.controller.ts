@@ -119,9 +119,46 @@ export class FavoritesController {
     await this.favorites.removeTalent(account.sub, username);
   }
 
+  @ApiParam({
+    name: 'slug',
+    description: 'Organization slug',
+    type: String,
+  })
+  @Post('favorites/organizations/:slug')
+  @Roles('volunteer')
+  @ApiOperation({ summary: 'Save an organization by slug (idempotent)' })
+  async saveOrganization(
+    @CurrentAccount() account: AccountToken,
+    @Param('slug') slug: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.favorites.saveOrganization(account.sub, slug);
+    res.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
+    return {
+      favorited: true,
+      favoriteCount: result.favoriteCount,
+    };
+  }
+
+  @ApiParam({
+    name: 'slug',
+    description: 'Organization slug',
+    type: String,
+  })
+  @Delete('favorites/organizations/:slug')
+  @Roles('volunteer')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Unsave an organization by slug (idempotent)' })
+  async removeOrganization(
+    @CurrentAccount() account: AccountToken,
+    @Param('slug') slug: string,
+  ): Promise<void> {
+    await this.favorites.removeOrganization(account.sub, slug);
+  }
+
   @Get('favorites')
   @Roles('volunteer')
-  @ApiOperation({ summary: "List the caller's saves (both target types)" })
+  @ApiOperation({ summary: "List the caller's saves (all target types)" })
   listOwn(
     @CurrentAccount() account: AccountToken,
     @Query() query: FavoritesListQueryDto,
