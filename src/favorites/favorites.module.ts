@@ -5,6 +5,10 @@ import {
   OpportunitySchema,
 } from '../opportunities/schemas/opportunity.schema';
 import {
+  OrganizationsCollection,
+  OrganizationSchema,
+} from '../organizations/schemas/organization.schema';
+import {
   VolunteerProfileSchema,
   VolunteerProfilesCollection,
 } from '../volunteers/schemas/volunteer-profile.schema';
@@ -14,9 +18,9 @@ import { FavoriteSchema, FavoritesCollection } from './schemas/favorite.schema';
 
 /**
  * Favorites feature module (Session 17 `backend-v2-favorites`). Owns the
- * `favorites` collection; the opportunity and volunteer-profile models below
- * are read-only references to peer-owned collections (same pattern as the
- * activity module). No peer module is imported or modified.
+ * `favorites` collection; the opportunity, volunteer-profile and organization
+ * models below are read-only references to peer-owned collections (same pattern
+ * as the activity module). No peer module is imported or modified.
  */
 @Module({
   imports: [
@@ -24,6 +28,7 @@ import { FavoriteSchema, FavoritesCollection } from './schemas/favorite.schema';
       { name: FavoritesCollection, schema: FavoriteSchema },
       { name: OpportunitiesCollection, schema: OpportunitySchema },
       { name: VolunteerProfilesCollection, schema: VolunteerProfileSchema },
+      { name: OrganizationsCollection, schema: OrganizationSchema },
     ]),
   ],
   controllers: [FavoritesController],

@@ -41,7 +41,7 @@ export class FavoritesLookupQueryDto {
 
   @ApiProperty({
     description:
-      'Comma-separated keys (opportunity ObjectIds, or talent usernames); 1–50',
+      'Comma-separated keys (opportunity ObjectIds, talent usernames, or organization slugs); 1–50',
     example: '69123456789abcdef01234567,another-id',
   })
   @IsString()

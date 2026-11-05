@@ -3,7 +3,11 @@ import { createSchema } from '../../common/schema/base.schema';
 
 export const FavoritesCollection = 'favorites';
 
-export const FAVORITE_TARGET_TYPES = ['opportunity', 'talent'] as const;
+export const FAVORITE_TARGET_TYPES = [
+  'opportunity',
+  'talent',
+  'organization',
+] as const;
 
 export type FavoriteTargetType = (typeof FAVORITE_TARGET_TYPES)[number];
 
@@ -26,8 +30,9 @@ export class FavoriteModel extends Document implements Favorite {
  * row). One row per `(userId, targetType, targetId)` triple — enforced by the
  * unique index, which is also the concurrency arbiter for double-POST races.
  * `targetId` is a string by design: the opportunity ObjectId hex for
- * `opportunity`, the volunteer `userId` hex for `talent` (usernames resolve
- * server-side at write time so renames never orphan rows).
+ * `opportunity`, the volunteer `userId` hex for `talent`, and the organization
+ * `userId` hex for `organization` (usernames/slugs resolve server-side at
+ * write time so renames never orphan rows).
  */
 export const FavoriteSchema = createSchema({
   userId: { type: Schema.Types.ObjectId, required: true },

@@ -10,6 +10,10 @@ import {
   OpportunityModel,
 } from '../opportunities/schemas/opportunity.schema';
 import {
+  OrganizationsCollection,
+  OrganizationModel,
+} from '../organizations/schemas/organization.schema';
+import {
   VolunteerProfileModel,
   VolunteerProfilesCollection,
 } from '../volunteers/schemas/volunteer-profile.schema';
@@ -29,6 +33,13 @@ export const MAX_LOOKUP_KEYS = 50;
 export interface OpportunityFavoriteSummary {
   title: string;
   slug: string;
+  status: string;
+  applicationDeadline: Date | null;
+  organization: {
+    slug: string;
+    nameAr: string | null;
+    nameFr: string | null;
+  } | null;
 }
 
 export interface TalentFavoriteSummary {
@@ -36,8 +47,18 @@ export interface TalentFavoriteSummary {
   fullName: string | null;
 }
 
+export interface OrganizationFavoriteSummary {
+  slug: string;
+  nameAr: string | null;
+  nameFr: string | null;
+  status: string;
+}
+
 export type FavoriteSummary =
-  OpportunityFavoriteSummary | TalentFavoriteSummary | null;
+  | OpportunityFavoriteSummary
+  | TalentFavoriteSummary
+  | OrganizationFavoriteSummary
+  | null;
 
 export interface FavoriteItem {
   targetType: FavoriteTargetType;
@@ -49,6 +70,15 @@ export interface FavoriteItem {
 export interface LookupEntry {
   favorited: boolean;
   favoriteCount: number;
+}
+
+interface OrganizationSummaryRow {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  slug: string;
+  nameAr?: string | null;
+  nameFr?: string | null;
+  status: string;
 }
 
 /**
@@ -67,6 +97,8 @@ export class FavoritesService {
     private readonly opportunityModel: Model<OpportunityModel>,
     @InjectModel(VolunteerProfilesCollection)
     private readonly profileModel: Model<VolunteerProfileModel>,
+    @InjectModel(OrganizationsCollection)
+    private readonly organizationModel: Model<OrganizationModel>,
   ) {}
 
   /**
@@ -170,6 +202,61 @@ export class FavoritesService {
   }
 
   /**
+   * Save an organization for the caller. The slug resolves server-side to the
+   * organization account `userId` (stored as `targetId`), mirroring the talent
+   * path so a rename never orphans the row.
+   */
+  async saveOrganization(
+    userId: string,
+    slug: string,
+  ): Promise<{ created: boolean; favoriteCount: number }> {
+    const organization = await this.organizationModel
+      .findOne({ slug })
+      .select('_id userId')
+      .lean()
+      .exec();
+    if (!organization) {
+      throw new BusinessException(
+        'ORGANIZATION_NOT_FOUND',
+        'Organization not found',
+        404,
+      );
+    }
+    const targetId = organization.userId.toString();
+    const created = await this.insertIgnoreDuplicate(
+      userId,
+      'organization',
+      targetId,
+    );
+    return {
+      created,
+      favoriteCount: await this.countFor('organization', targetId),
+    };
+  }
+
+  /**
+   * Remove the caller's organization save; unknown slugs are a silent no-op
+   * (nothing could have been stored for them).
+   */
+  async removeOrganization(userId: string, slug: string): Promise<void> {
+    const organization = await this.organizationModel
+      .findOne({ slug })
+      .select('_id userId')
+      .lean()
+      .exec();
+    if (!organization) {
+      return;
+    }
+    await this.favoriteModel
+      .deleteOne({
+        userId: new Types.ObjectId(userId),
+        targetType: 'organization',
+        targetId: organization.userId.toString(),
+      })
+      .exec();
+  }
+
+  /**
    * The caller's saves, newest-first, as a counted page. Summaries resolve
    * best-effort in two batched reads; rows whose target is gone keep a `null`
    * summary (no delete-cascades — those would need hooks in archived modules).
@@ -200,17 +287,20 @@ export class FavoritesService {
   /** The caller's per-type totals (tab badges). */
   async countsOwn(
     userId: string,
-  ): Promise<{ opportunity: number; talent: number }> {
+  ): Promise<{ opportunity: number; talent: number; organization: number }> {
     const owner = new Types.ObjectId(userId);
-    const [opportunity, talent] = await Promise.all([
+    const [opportunity, talent, organization] = await Promise.all([
       this.favoriteModel
         .countDocuments({ userId: owner, targetType: 'opportunity' })
         .exec(),
       this.favoriteModel
         .countDocuments({ userId: owner, targetType: 'talent' })
         .exec(),
+      this.favoriteModel
+        .countDocuments({ userId: owner, targetType: 'organization' })
+        .exec(),
     ]);
-    return { opportunity, talent };
+    return { opportunity, talent, organization };
   }
 
   /**
@@ -233,7 +323,10 @@ export class FavoritesService {
     if (query.targetType === 'opportunity') {
       return this.lookupOpportunities(keys, viewerUserId);
     }
-    return this.lookupTalents(keys, viewerUserId);
+    if (query.targetType === 'talent') {
+      return this.lookupTalents(keys, viewerUserId);
+    }
+    return this.lookupOrganizations(keys, viewerUserId);
   }
 
   private async lookupOpportunities(
@@ -286,6 +379,40 @@ export class FavoritesService {
     return out;
   }
 
+  private async lookupOrganizations(
+    slugs: string[],
+    viewerUserId?: string,
+  ): Promise<Record<string, LookupEntry>> {
+    const organizations = await this.organizationModel
+      .find({ slug: { $in: slugs } })
+      .select('_id slug userId')
+      .lean()
+      .exec();
+    const idBySlug = new Map(
+      organizations.map((organization) => [
+        organization.slug,
+        organization.userId.toString(),
+      ]),
+    );
+    const targetIds = [...idBySlug.values()];
+    const counts = await this.countMany('organization', targetIds);
+    const saved = viewerUserId
+      ? await this.savedSet(viewerUserId, 'organization', targetIds)
+      : new Set<string>();
+    const out: Record<string, LookupEntry> = {};
+    for (const slug of slugs) {
+      const targetId = idBySlug.get(slug);
+      out[slug] =
+        targetId === undefined
+          ? { favorited: false, favoriteCount: 0 }
+          : {
+              favorited: saved.has(targetId),
+              favoriteCount: counts.get(targetId) ?? 0,
+            };
+    }
+    return out;
+  }
+
   private async withSummaries(rows: FavoriteModel[]): Promise<FavoriteItem[]> {
     const oppIds = [
       ...new Set(
@@ -309,11 +436,22 @@ export class FavoritesService {
           .map((row) => row.targetId),
       ),
     ];
+    const orgTargetIds = [
+      ...new Set(
+        rows
+          .filter(
+            (row) =>
+              row.targetType === 'organization' &&
+              Types.ObjectId.isValid(row.targetId),
+          )
+          .map((row) => row.targetId),
+      ),
+    ];
     const [opps, profiles] = await Promise.all([
       oppIds.length > 0
         ? this.opportunityModel
             .find({ _id: { $in: oppIds.map((id) => new Types.ObjectId(id)) } })
-            .select('_id title slug')
+            .select('_id title slug status applicationDeadline organizationId')
             .lean()
             .exec()
         : [],
@@ -329,21 +467,79 @@ export class FavoritesService {
             .exec()
         : [],
     ]);
+    const oppOrgIds = [
+      ...new Set(
+        opps
+          .map((opp) => opp.organizationId?.toString())
+          .filter(
+            (id): id is string =>
+              typeof id === 'string' && Types.ObjectId.isValid(id),
+          ),
+      ),
+    ];
+    const orgClauses: Record<string, unknown>[] = [];
+    if (orgTargetIds.length > 0) {
+      orgClauses.push({
+        userId: { $in: orgTargetIds.map((id) => new Types.ObjectId(id)) },
+      });
+    }
+    if (oppOrgIds.length > 0) {
+      orgClauses.push({
+        _id: { $in: oppOrgIds.map((id) => new Types.ObjectId(id)) },
+      });
+    }
+    const organizations = (
+      orgClauses.length > 0
+        ? await this.organizationModel
+            .find({ $or: orgClauses })
+            .select('_id userId slug nameAr nameFr status')
+            .lean()
+            .exec()
+        : []
+    ) as OrganizationSummaryRow[];
     const oppById = new Map(opps.map((opp) => [opp._id.toString(), opp]));
     const profileByUserId = new Map(
       profiles.map((profile) => [profile.userId.toString(), profile]),
+    );
+    const orgByUserId = new Map(
+      organizations.map((organization) => [
+        organization.userId.toString(),
+        organization,
+      ]),
+    );
+    const orgById = new Map(
+      organizations.map((organization) => [
+        organization._id.toString(),
+        organization,
+      ]),
     );
     return rows.map((row) => ({
       targetType: row.targetType,
       targetId: row.targetId,
       createdAt: row.createdAt,
-      summary: this.summarize(row, oppById, profileByUserId),
+      summary: this.summarize(
+        row,
+        oppById,
+        profileByUserId,
+        orgByUserId,
+        orgById,
+      ),
     }));
   }
 
   private summarize(
     row: FavoriteModel,
-    oppById: Map<string, { _id: Types.ObjectId; title: string; slug: string }>,
+    oppById: Map<
+      string,
+      {
+        _id: Types.ObjectId;
+        title: string;
+        slug: string;
+        status?: string;
+        applicationDeadline?: Date;
+        organizationId?: Types.ObjectId;
+      }
+    >,
     profileByUserId: Map<
       string,
       {
@@ -352,10 +548,42 @@ export class FavoritesService {
         lastName?: string;
       }
     >,
+    orgByUserId: Map<string, OrganizationSummaryRow>,
+    orgById: Map<string, OrganizationSummaryRow>,
   ): FavoriteSummary {
     if (row.targetType === 'opportunity') {
       const opp = oppById.get(row.targetId);
-      return opp ? { title: opp.title, slug: opp.slug } : null;
+      if (!opp) {
+        return null;
+      }
+      const organization = opp.organizationId
+        ? orgById.get(opp.organizationId.toString())
+        : undefined;
+      return {
+        title: opp.title,
+        slug: opp.slug,
+        status: opp.status ?? 'draft',
+        applicationDeadline: opp.applicationDeadline ?? null,
+        organization: organization
+          ? {
+              slug: organization.slug,
+              nameAr: organization.nameAr ?? null,
+              nameFr: organization.nameFr ?? null,
+            }
+          : null,
+      };
+    }
+    if (row.targetType === 'organization') {
+      const organization = orgByUserId.get(row.targetId);
+      if (!organization) {
+        return null;
+      }
+      return {
+        slug: organization.slug,
+        nameAr: organization.nameAr ?? null,
+        nameFr: organization.nameFr ?? null,
+        status: organization.status,
+      };
     }
     const profile = profileByUserId.get(row.targetId);
     if (!profile) {
