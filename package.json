@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "ai:check": "ts-node -r tsconfig-paths/register src/scripts/ai-check.ts",
     "ai:eval": "ts-node -r tsconfig-paths/register src/scripts/ai-eval.ts",
+    "ai:regression": "ts-node -r tsconfig-paths/register src/scripts/ai-regression.ts",
     "seed:locations": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only locations",
     "seed:skills": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only skills",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seed.ts --only admin",

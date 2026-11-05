@@ -11,6 +11,15 @@ import { QuotaBudgetSnapshot } from '../budget/quota.types';
 const DAY_MS = 86_400_000;
 const ROLLING_DAYS = 7;
 
+export const AI_AGENT_FALLBACK_REASONS = [
+  'quota',
+  'provider_error',
+  'no_tool_retry_failed',
+  'language_retry_failed',
+] as const;
+
+export type AiAgentFallbackReason = (typeof AI_AGENT_FALLBACK_REASONS)[number];
+
 interface UsageBucket {
   dayKey: number;
   requests: number;
@@ -20,6 +29,7 @@ interface UsageBucket {
   toolCalls: number;
   refusals: number;
   rateLimited: number;
+  fallbacks: Record<AiAgentFallbackReason, number>;
   latencyMsTotal: number;
   latencySamples: number;
 }
@@ -45,9 +55,21 @@ export interface AiAgentUsageAggregate {
   averageLatencyMs: number;
 }
 
+export interface AiAgentFallbackAggregate {
+  quota: number;
+  provider_error: number;
+  no_tool_retry_failed: number;
+  language_retry_failed: number;
+  total: number;
+}
+
 export interface AiAgentUsageReport {
   today: AiAgentUsageAggregate;
   last7Days: AiAgentUsageAggregate;
+  fallbacks: {
+    today: AiAgentFallbackAggregate;
+    last7Days: AiAgentFallbackAggregate;
+  };
   budget: QuotaBudgetSnapshot;
 }
 
@@ -80,6 +102,15 @@ function normalizeCount(value: number | undefined): number {
   return Math.max(0, Math.trunc(value));
 }
 
+function emptyFallbacks(): Record<AiAgentFallbackReason, number> {
+  return {
+    quota: 0,
+    provider_error: 0,
+    no_tool_retry_failed: 0,
+    language_retry_failed: 0,
+  };
+}
+
 function emptyBucket(dayKey: number): UsageBucket {
   return {
     dayKey,
@@ -90,6 +121,7 @@ function emptyBucket(dayKey: number): UsageBucket {
     toolCalls: 0,
     refusals: 0,
     rateLimited: 0,
+    fallbacks: emptyFallbacks(),
     latencyMsTotal: 0,
     latencySamples: 0,
   };
@@ -138,6 +170,31 @@ export class UsageMeterService {
     this.prune(dayKey);
   }
 
+  /**
+   * Count one silent fallback and emit a structured warning. The orchestrator
+   * calls this at most once per reason per turn, so the log line and the
+   * cumulative counter both stay meaningful.
+   */
+  recordFallback(
+    reason: AiAgentFallbackReason,
+    now: number = Date.now(),
+  ): void {
+    const dayKey = utcDayKey(now);
+    const bucket = this.getOrCreateBucket(dayKey);
+    bucket.fallbacks[reason] += 1;
+    this.prune(dayKey);
+
+    this.logger.warn(
+      JSON.stringify({
+        event: 'ai_agent_fallback',
+        reason,
+        count: bucket.fallbacks[reason],
+        day: new Date(now).toISOString().slice(0, 10),
+      }),
+      'AiAgentUsage',
+    );
+  }
+
   getReport(
     budget: QuotaBudgetSnapshot,
     now: number = Date.now(),
@@ -152,7 +209,15 @@ export class UsageMeterService {
     );
     const last7Days = this.summarize(rollingKeys);
 
-    return { today, last7Days, budget };
+    return {
+      today,
+      last7Days,
+      fallbacks: {
+        today: this.summarizeFallbacks([todayKey]),
+        last7Days: this.summarizeFallbacks(rollingKeys),
+      },
+      budget,
+    };
   }
 
   /**
@@ -250,6 +315,26 @@ export class UsageMeterService {
       this.buckets.set(dayKey, bucket);
     }
     return bucket;
+  }
+
+  private summarizeFallbacks(
+    dayKeys: ReadonlyArray<number>,
+  ): AiAgentFallbackAggregate {
+    const totals = emptyFallbacks();
+    for (const dayKey of dayKeys) {
+      const bucket = this.buckets.get(dayKey);
+      if (!bucket) continue;
+      for (const reason of AI_AGENT_FALLBACK_REASONS) {
+        totals[reason] += bucket.fallbacks[reason];
+      }
+    }
+    return {
+      ...totals,
+      total: AI_AGENT_FALLBACK_REASONS.reduce(
+        (sum, reason) => sum + totals[reason],
+        0,
+      ),
+    };
   }
 
   private summarize(dayKeys: ReadonlyArray<number>): AiAgentUsageAggregate {

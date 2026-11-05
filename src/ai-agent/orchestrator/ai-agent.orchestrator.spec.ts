@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { Response } from 'express';
+import { AppLogger } from '../../common/logger/app.logger';
 import type {
   AiAgentChatMessage,
   AiAgentLocale,
@@ -29,12 +30,14 @@ import { MockProvider } from '../llm/mock.provider';
 import { PromptBuilder } from '../prompt/prompt-builder';
 import type { IntentRouter, RouterDecision } from '../router/intent-router';
 import { SseWriter } from '../sse/sse-writer';
+import type { ToolRegistry } from '../tools/tool-registry';
 import type {
   ToolBatchExecutionResult,
   ToolDescriptor,
   ToolExecutionResult,
 } from '../tools/tool.types';
 import { ToolExecutor } from '../tools/tool-executor';
+import { UsageMeterService } from '../usage/usage-meter.service';
 import {
   AI_AGENT_MAX_PROVIDER_CALLS,
   AiAgentOrchestrator,
@@ -136,11 +139,100 @@ const OPPORTUNITY_TOOL: ToolDescriptor = {
         minLength: 1,
         maxLength: 100,
       },
+      compact: {
+        type: 'boolean',
+        description: 'Return only slug and title.',
+      },
     },
   },
   allowedIntents: ['opportunity_search'],
   readOnly: true,
 };
+
+const ORGANIZATION_TOOL: ToolDescriptor = {
+  name: 'search_organizations',
+  description: 'Search public organizations.',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      limit: {
+        type: 'integer',
+        description: 'Maximum rows.',
+        minimum: 1,
+        maximum: 8,
+      },
+      name: {
+        type: 'string',
+        description: 'Organization name.',
+        minLength: 1,
+        maxLength: 120,
+      },
+    },
+  },
+  allowedIntents: ['organization_search'],
+  readOnly: true,
+};
+
+const MODEL_FIRST_DESCRIPTORS: ToolDescriptor[] = [
+  OPPORTUNITY_TOOL,
+  ORGANIZATION_TOOL,
+  {
+    name: 'search_reference_data',
+    description: 'Search public reference data.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['reference_lookup'],
+    readOnly: true,
+  },
+  {
+    name: 'platform_stats',
+    description: 'Return public platform counts.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['platform_stats'],
+    readOnly: true,
+  },
+  {
+    name: 'search_knowledge',
+    description: 'Search the public knowledge base.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['knowledge_lookup'],
+    readOnly: true,
+  },
+  {
+    name: 'get_opportunity_details',
+    description: 'Return one public opportunity.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['opportunity_details'],
+    readOnly: true,
+  },
+  {
+    name: 'get_organization_details',
+    description: 'Return one public organization.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+    allowedIntents: ['organization_details'],
+    readOnly: true,
+  },
+];
 
 class QueueProvider extends MockProvider {
   readonly requests: LlmTurnRequest[] = [];
@@ -197,7 +289,14 @@ function createConfig(
     enabled: true,
     provider: 'mock',
     ...overrides,
-    limits: { ...base.limits, ...(overrides.limits ?? {}) },
+    limits: {
+      ...base.limits,
+      // The strict tool schema used by these tests pushes the rendered prompt
+      // just past the production default. Keep the quota unchanged in
+      // production and give the fake provider enough room in tests.
+      maxInputTokens: 6000,
+      ...(overrides.limits ?? {}),
+    },
   };
 }
 
@@ -257,6 +356,17 @@ function liveDataDecision(
   };
 }
 
+function organizationDecision(
+  overrides: Partial<RouterDecision> = {},
+): RouterDecision {
+  return liveDataDecision({
+    tools: [ORGANIZATION_TOOL],
+    toolIntents: ['organization_search'],
+    knowledgeQuery: 'organization',
+    ...overrides,
+  });
+}
+
 interface Harness {
   config: AiAgentConfig;
   writer: SseWriter;
@@ -267,6 +377,7 @@ interface Harness {
   router: { route: jest.Mock };
   knowledge: { search: jest.Mock };
   toolExecutor: { executeMany: jest.Mock };
+  usageMeter?: UsageMeterService;
 }
 
 function createHarness(
@@ -276,6 +387,9 @@ function createHarness(
     decision?: RouterDecision;
     retrieval?: RetrievalResult;
     executeMany?: jest.Mock;
+    logger?: AppLogger;
+    tools?: ToolDescriptor[];
+    usageMeter?: UsageMeterService;
   } = {},
 ): Harness {
   const config = options.config ?? createConfig();
@@ -296,6 +410,10 @@ function createHarness(
       ),
   };
   const provider = options.provider ?? new QueueProvider(config);
+  const toolRegistry =
+    options.tools === undefined
+      ? undefined
+      : ({ list: () => options.tools } as unknown as ToolRegistry);
   const orchestrator = new AiAgentOrchestrator(
     config,
     router as unknown as IntentRouter,
@@ -304,6 +422,9 @@ function createHarness(
     toolExecutor as unknown as ToolExecutor,
     quota,
     provider,
+    options.logger,
+    toolRegistry,
+    options.usageMeter,
   );
 
   return {
@@ -316,6 +437,9 @@ function createHarness(
     router,
     knowledge,
     toolExecutor,
+    ...(options.usageMeter !== undefined
+      ? { usageMeter: options.usageMeter }
+      : {}),
   };
 }
 
@@ -441,6 +565,41 @@ describe('AiAgentOrchestrator', () => {
     expect(frames.some((frame) => frame.event === 'sources')).toBe(false);
   });
 
+  it('logs a content-free event when the prompt budget is exceeded', async () => {
+    const logger = {
+      warn: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger;
+    const harness = createHarness({
+      config: createConfig({ limits: { maxInputTokens: 10 } }),
+      logger,
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'SECRET_PROMPT_TEXT',
+    );
+
+    expect(result.errorCode).toBe('AI_AGENT_INVALID_INPUT');
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(frames.map((frame) => frame.event)).toEqual(['status', 'error']);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+
+    const record = JSON.parse(
+      (logger.warn as jest.Mock).mock.calls[0][0] as string,
+    ) as Record<string, unknown>;
+    expect(record).toMatchObject({
+      event: 'ai_agent_prompt_budget_exceeded',
+      provider: 'mock',
+      model: expect.any(String),
+      toolCount: 0,
+      historyMessages: 0,
+      maxInputTokens: 10,
+    });
+    expect(record.estimatedRequiredTokens).toBeGreaterThan(10);
+    expect(JSON.stringify(record)).not.toContain('SECRET_PROMPT_TEXT');
+  });
+
   it('passes client history to the router and to the prompt', async () => {
     const harness = createHarness();
     const history: AiAgentChatMessage[] = [
@@ -466,12 +625,297 @@ describe('AiAgentOrchestrator', () => {
       'explain more',
       'en',
       history,
+      undefined,
     );
     const input = queueProvider(harness).requests[0]?.input;
     expect(typeof input).toBe('string');
     expect(input as string).toContain('How does verification work?');
     expect(input as string).toContain(
       'The organization reviews the evidence before verifying.',
+    );
+  });
+
+  it('answers a focused opportunity follow-up from linked slugs without the provider', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'اعطني فرص' },
+      {
+        role: 'assistant',
+        content:
+          'إليك الفرص: [تنظيف الشاطئ](/ar/opportunities/beach-cleanup) و[غرس الأشجار](/ar/opportunities/tree-planting).',
+      },
+    ];
+    const harness = createHarness({
+      decision: liveDataDecision({
+        language: 'ar',
+        reason: 'FOCUS_OPPORTUNITY_DETAIL',
+        focusOpportunitySlugs: ['beach-cleanup'],
+      }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              {
+                slug: 'beach-cleanup',
+                title: 'تنظيف الشاطئ',
+                status: 'published',
+                applicationDeadline: '2026-10-30T00:00:00.000Z',
+                openPositions: 2,
+                location: { wilaya: '16', municipality: '1601' },
+                locationNames: {
+                  wilaya: { ar: 'الجزائر', fr: 'Algiers' },
+                  municipality: {
+                    ar: 'باب الوادي',
+                    fr: 'Bab El Oued',
+                  },
+                },
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هي مفتوحة',
+      'normal',
+      new AbortController().signal,
+      history,
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_opportunities',
+        arguments: { slugs: ['beach-cleanup'], limit: 1 },
+      },
+    ]);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toContain('[تنظيف الشاطئ](/ar/opportunities/beach-cleanup)');
+    expect(answer).toContain('مفتوحة للتقديم');
+    expect(answer).toContain('آخر موعد 30 أكتوبر 2026');
+    expect(answer).toContain('المناصب المتاحة 2');
+    expect(answer).toContain('الموقع باب الوادي، الجزائر');
+  });
+
+  it('resolves an ordinal follow-up to the focused slug when the decision has none', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'show me opportunities' },
+      {
+        role: 'assistant',
+        content:
+          '[Beach cleanup](/en/opportunities/beach-cleanup) and [Tree planting](/en/opportunities/tree-planting)',
+      },
+    ];
+    const harness = createHarness({
+      decision: liveDataDecision({
+        reason: 'FOCUS_OPPORTUNITY_DETAIL',
+      }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              {
+                slug: 'tree-planting',
+                title: 'Tree planting',
+                status: 'published',
+                applicationDeadline: '2026-12-01T00:00:00.000Z',
+                openPositions: 0,
+                location: null,
+                locationNames: null,
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    await runOrchestrator(
+      harness,
+      'tell me about the second',
+      'normal',
+      new AbortController().signal,
+      history,
+      'en',
+    );
+
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_opportunities',
+        arguments: { slugs: ['tree-planting'], limit: 1 },
+      },
+    ]);
+  });
+
+  it('reruns a focused organization lookup for a lookup confirmation', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'هل تعرف جمعية نور' },
+      { role: 'assistant', content: 'سأتحقق من معلومات جمعية نور لك.' },
+    ];
+    const harness = createHarness({
+      decision: organizationDecision({
+        language: 'ar',
+        reason: 'FOCUS_ORGANIZATION_FOLLOW_UP',
+        focusOrganizationName: 'نور',
+      }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'هل تحققت',
+      'normal',
+      new AbortController().signal,
+      history,
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_organizations',
+        arguments: { name: 'نور', limit: 8 },
+      },
+    ]);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [جمعية نور للتضامن](/ar/orgs/dev-org-nour)؟',
+    );
+  });
+
+  it('replaces a promise with the deterministic organization lookup', async () => {
+    const harness = createHarness({
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+    queueProvider(harness).queueTurn({
+      text: ['سأتحقق من معلومات جمعية نور لك.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل تعرف جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(1);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_organizations',
+        arguments: { name: 'نور', limit: 8 },
+      },
+    ]);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [جمعية نور للتضامن](/ar/orgs/dev-org-nour)؟',
+    );
+    expect(answer).not.toContain('سأتحقق');
+  });
+
+  it('replaces a promise with not-found when no entity can be resolved', async () => {
+    const harness = createHarness({
+      decision: knowledgeOnlyDecision({ language: 'en' }),
+    });
+    queueProvider(harness).queueTurn({
+      text: ["I'll check and get back to you."],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'did you check',
+      'normal',
+    );
+
+    expect(result.refusal).toBe(true);
+    expect(harness.toolExecutor.executeMany).not.toHaveBeenCalled();
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('notFound', 'en'));
+    expect(answer).not.toContain("I'll check");
+  });
+
+  it('passes the derived focus to the router and the prompt', async () => {
+    const history: AiAgentChatMessage[] = [
+      { role: 'user', content: 'show me opportunities' },
+      {
+        role: 'assistant',
+        content: '[Beach cleanup](/en/opportunities/beach-cleanup)',
+      },
+    ];
+    const harness = createHarness({ decision: liveDataDecision() });
+    queueProvider(harness).queueTurn({
+      text: ['It is open for applications.'],
+    });
+
+    await runOrchestrator(
+      harness,
+      'are they still open',
+      'normal',
+      new AbortController().signal,
+      history,
+    );
+
+    const focus = (harness.router.route as jest.Mock).mock.calls[0]?.[3] as
+      { opportunities: Array<{ slug: string }>; topic: string } | undefined;
+    expect(focus?.topic).toBe('opportunity_search');
+    expect(focus?.opportunities.map((item) => item.slug)).toEqual([
+      'beach-cleanup',
+    ]);
+    const input = queueProvider(harness).requests[0]?.input;
+    expect(input as string).toContain('<conversation_focus>');
+    expect(input as string).toContain(
+      'Previously shown opportunities: Beach cleanup (beach-cleanup)',
     );
   });
 
@@ -512,6 +956,279 @@ describe('AiAgentOrchestrator', () => {
     expect((frames[0].data as { delta: string }).delta).toBe(
       'Hello! How can I help?',
     );
+  });
+
+  it('logs the router as a shadow signal and declares every tool on every model-first turn', async () => {
+    const logger = {
+      log: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger;
+    const harness = createHarness({
+      config: createConfig({
+        modelFirst: true,
+        limits: { maxInputTokens: 12_000 },
+      }),
+      decision: liveDataDecision(),
+      logger,
+      tools: MODEL_FIRST_DESCRIPTORS,
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [{ slug: 'beach-cleanup', title: 'Beach cleanup' }],
+          }),
+        ]),
+      ),
+    });
+    queueProvider(harness).queueTurn({
+      text: [],
+      toolCalls: [
+        {
+          callId: 'call-1',
+          name: 'search_opportunities',
+          arguments: { limit: 3 },
+        },
+      ],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Here is [Beach cleanup](/en/opportunities/beach-cleanup).'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'show me opportunities',
+    );
+
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+    expect(queueProvider(harness).calls).toBe(2);
+    const expectedNames = MODEL_FIRST_DESCRIPTORS.map(
+      (tool) => tool.name,
+    ).sort();
+    for (const request of queueProvider(harness).requests) {
+      expect((request.tools ?? []).map((tool) => tool.name).sort()).toEqual(
+        expectedNames,
+      );
+    }
+    expect(harness.router.route).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    const shadow = JSON.parse(
+      (logger.log as jest.Mock).mock.calls[0]?.[0] as string,
+    ) as Record<string, unknown>;
+    expect(shadow).toMatchObject({
+      event: 'ai_agent_router_shadow',
+      intent: 'live_data',
+      action: 'answer',
+      reason: 'TEST_LIVE',
+    });
+    expect(JSON.stringify(shadow)).not.toContain('show me opportunities');
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toContain(
+      '[Beach cleanup](/en/opportunities/beach-cleanup)',
+    );
+  });
+
+  it('short-circuits exact greetings but sends capability questions to the provider', async () => {
+    const greeting = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({
+        intent: 'greeting',
+        action: 'direct_reply',
+        directReply: 'Hello! How can I help?',
+        reason: 'GREETING',
+      }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+
+    const greetingResult = await runOrchestrator(greeting, 'Hello');
+
+    expect(queueProvider(greeting).calls).toBe(0);
+    expect(greeting.toolExecutor.executeMany).not.toHaveBeenCalled();
+    expect(greetingResult.frames).toEqual([
+      { event: 'token', data: { delta: 'Hello! How can I help?' } },
+    ]);
+
+    const capability = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({
+        intent: 'greeting',
+        action: 'direct_reply',
+        directReply: 'I can help with opportunities.',
+        reason: 'CAPABILITY',
+      }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(capability).queueTurn({
+      text: ['I can help you find opportunities and organizations.'],
+    });
+
+    const capabilityResult = await runOrchestrator(
+      capability,
+      'what can you do?',
+    );
+
+    expect(queueProvider(capability).calls).toBe(1);
+    expect(capabilityResult.result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+    });
+    expect(
+      capabilityResult.frames
+        .filter((frame) => frame.event === 'token')
+        .map((frame) => (frame.data as { delta: string }).delta)
+        .join(''),
+    ).toBe('I can help you find opportunities and organizations.');
+  });
+
+  it('retries once when the shadow router needs live data but the model calls no tool', async () => {
+    const harness = createHarness({
+      config: createConfig({
+        modelFirst: true,
+        limits: { maxInputTokens: 12_000 },
+      }),
+      decision: liveDataDecision(),
+      tools: MODEL_FIRST_DESCRIPTORS,
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [{ slug: 'beach-cleanup', title: 'Beach cleanup' }],
+          }),
+        ]),
+      ),
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Beach cleanup is available.'],
+    });
+    queueProvider(harness).queueTurn({
+      text: [],
+      toolCalls: [
+        {
+          callId: 'call-1',
+          name: 'search_opportunities',
+          arguments: { limit: 3 },
+        },
+      ],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Here is [Beach cleanup](/en/opportunities/beach-cleanup).'],
+    });
+
+    const { result } = await runOrchestrator(harness, 'show me opportunities');
+
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_opportunities'],
+    });
+    expect(queueProvider(harness).calls).toBe(3);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledTimes(1);
+    expect(queueProvider(harness).requests[1]?.input as string).toContain(
+      'This request needs current public platform data.',
+    );
+  });
+
+  it('retries an Arabic answer once and accepts the corrected language', async () => {
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a volunteering platform.'],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['بصمتك منصة للعمل التطوعي تربط المتطوعين بالفرص.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'ما هي بصمتك؟',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: false });
+    expect(queueProvider(harness).calls).toBe(2);
+    expect(queueProvider(harness).requests[1]?.systemInstruction).toContain(
+      'Strict language requirement',
+    );
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe('بصمتك منصة للعمل التطوعي تربط المتطوعين بالفرص.');
+  });
+
+  it('fails closed when the Arabic language retry is still not Arabic', async () => {
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a volunteering platform.'],
+    });
+    queueProvider(harness).queueTurn({
+      text: ['This answer is still English.'],
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'ما هي بصمتك؟',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: true });
+    expect(queueProvider(harness).calls).toBe(2);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('ungrounded', 'ar'));
+  });
+
+  it('flag-off ignores model-first tools and recent entity state', async () => {
+    const harness = createHarness({
+      config: createConfig({ modelFirst: false }),
+      decision: knowledgeOnlyDecision(),
+      tools: MODEL_FIRST_DESCRIPTORS,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+    });
+
+    const { result } = await runOrchestrator(
+      harness,
+      'What is Basmatak?',
+      'normal',
+      new AbortController().signal,
+      [
+        { role: 'user', content: 'Show me opportunities' },
+        {
+          role: 'assistant',
+          content: '[Beach cleanup](/en/opportunities/beach-cleanup)',
+        },
+      ],
+    );
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: false });
+    const request = queueProvider(harness).requests[0];
+    expect(request?.tools).toBeUndefined();
+    expect(request?.input as string).not.toContain('<recent_entities>');
+    expect(request?.systemInstruction).not.toContain('Choosing tools');
   });
 
   it('blocks private-data requests before routing or calling the provider', async () => {
@@ -687,6 +1404,7 @@ describe('AiAgentOrchestrator', () => {
           text: 'البرمجه',
           limit: 3,
           sort: 'newest',
+          compact: true,
         },
       },
     ]);
@@ -762,7 +1480,7 @@ describe('AiAgentOrchestrator', () => {
     expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
       {
         name: 'search_opportunities',
-        arguments: { limit: 3, sort: 'newest' },
+        arguments: { limit: 3, sort: 'newest', compact: true },
       },
     ]);
     expect(result).toMatchObject({
@@ -815,6 +1533,328 @@ describe('AiAgentOrchestrator', () => {
     );
   });
 
+  it('answers an Arabic browse in Arabic while links follow the English UI locale', async () => {
+    const harness = createHarness({
+      decision: liveDataDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_opportunities', {
+            items: [
+              { slug: 'alpha', title: 'Alpha' },
+              { slug: 'beta', title: 'Beta' },
+              { slug: 'gamma', title: 'Gamma' },
+              { slug: 'delta', title: 'Delta' },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'ما هي الفرص المتوفرة',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'إليك أحدث الفرص المنشورة: [Alpha](/en/opportunities/alpha)، [Beta](/en/opportunities/beta)، و[Gamma](/en/opportunities/gamma) — يمكنك تصفح المزيد في [صفحة الفرص](/en/opportunities).',
+    );
+    expect(answer).not.toContain('Delta');
+    expect(answer).not.toMatch(/https?:\/\//u);
+  });
+
+  it('looks up a full organization name deterministically in the message language', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور للتضامن',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
+      {
+        name: 'search_organizations',
+        arguments: { name: 'نور للتضامن', limit: 8 },
+      },
+    ]);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'وجدت هذه الجمعية: [جمعية نور للتضامن](/en/orgs/dev-org-nour).',
+    );
+    expect(answer).not.toMatch(/https?:\/\//u);
+  });
+
+  it('suggests the single close Arabic organization match instead of not-found', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'لم أجد جمعية بهذا الاسم تحديداً، هل تقصد [جمعية نور للتضامن](/en/orgs/dev-org-nour)؟',
+    );
+    expect(frames.some((frame) => frame.event === 'error')).toBe(false);
+  });
+
+  it('answers an English association-name question in English with Arabic UI links', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'en' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'green-earth',
+                nameAr: 'الأرض الخضراء',
+                nameFr: 'Green Earth',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { frames } = await runOrchestrator(
+      harness,
+      'Is there an association named Green Earth?',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      'I found this organization: [Green Earth](/ar/orgs/green-earth).',
+    );
+  });
+
+  it('suggests the single close English organization match instead of not-found', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'en' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'dev-org-nour',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'Is there an association named Nour?',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: false,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(
+      "I couldn't find that exact name. Did you mean [Association Nour de Solidarité](/en/orgs/dev-org-nour)?",
+    );
+    expect(frames.some((frame) => frame.event === 'error')).toBe(false);
+  });
+
+  it('keeps the exact Arabic organization-not-found text when no whole-word match exists', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'hope',
+                nameAr: 'جمعية الأمل',
+                nameFr: 'Association de l’Espoir',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result.refusal).toBe(true);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('organizationNotFound', 'ar'));
+  });
+
+  it('does not guess when more than one whole-word organization match exists', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () =>
+        batch([
+          toolSuccess('search_organizations', {
+            items: [
+              {
+                slug: 'nour-solidarity',
+                nameAr: 'جمعية نور للتضامن',
+                nameFr: 'Association Nour de Solidarité',
+              },
+              {
+                slug: 'nour-hope',
+                nameAr: 'جمعية نور للأمل',
+                nameFr: 'Association Nour de l’Espoir',
+              },
+            ],
+          }),
+        ]),
+      ),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result.refusal).toBe(true);
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('organizationNotFound', 'ar'));
+  });
+
+  it('answers an organization tool failure with the unavailable policy, not an internal error', async () => {
+    const harness = createHarness({
+      decision: organizationDecision({ language: 'ar' }),
+      executeMany: jest.fn(async () => {
+        throw new Error('organization query failed');
+      }),
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'هل هناك جمعية نور للتضامن',
+      'normal',
+      new AbortController().signal,
+      [],
+      'en',
+    );
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(result).toMatchObject({
+      finishReason: 'stop',
+      refusal: true,
+      toolCalls: 1,
+      toolNames: ['search_organizations'],
+    });
+    expect(result.errorCode).toBeUndefined();
+    const answer = frames
+      .filter((frame) => frame.event === 'token')
+      .map((frame) => (frame.data as { delta: string }).delta)
+      .join('');
+    expect(answer).toBe(policyMessage('toolUnavailable', 'ar'));
+    expect(frames.some((frame) => frame.event === 'error')).toBe(false);
+  });
+
   it.each([
     ['English', 'show me opportunities', 'en'],
     ['Arabic', 'ما هي الفرص المتوفرة', 'ar'],
@@ -841,7 +1881,7 @@ describe('AiAgentOrchestrator', () => {
       expect(harness.toolExecutor.executeMany).toHaveBeenCalledWith([
         {
           name: 'search_opportunities',
-          arguments: { limit: 3, sort: 'newest' },
+          arguments: { limit: 3, sort: 'newest', compact: true },
         },
       ]);
       expect(result).toMatchObject({
@@ -912,7 +1952,12 @@ describe('AiAgentOrchestrator', () => {
     expect(executeMany).toHaveBeenNthCalledWith(2, [
       {
         name: 'search_opportunities',
-        arguments: { text: 'programming', limit: 3, sort: 'newest' },
+        arguments: {
+          text: 'programming',
+          limit: 3,
+          sort: 'newest',
+          compact: true,
+        },
       },
     ]);
     expect(result).toMatchObject({
@@ -926,7 +1971,7 @@ describe('AiAgentOrchestrator', () => {
       .map((frame) => (frame.data as { delta: string }).delta)
       .join('');
     expect(answer).toBe(
-      'I found this opportunity for you: [Coding club](/en/opportunities/coding-club).',
+      'I found this opportunity for you: [Coding club](/en/opportunities/coding-club) — you can browse more on the [Opportunities page](/en/opportunities).',
     );
   });
 
@@ -1450,5 +2495,155 @@ describe('AiAgentOrchestrator', () => {
     expect((frames[frames.length - 1].data as { delta: string }).delta).toBe(
       policyMessage('knowledgeOnlyLive', 'en'),
     );
+  });
+});
+
+describe('model-first fallback counters', () => {
+  const BUDGET = {
+    dailyLimit: 150_000,
+    usedToday: 0,
+    remaining: 150_000,
+    mode: 'normal' as const,
+  };
+
+  function fallbackCounts(meter: UsageMeterService) {
+    return meter.getReport(BUDGET).fallbacks.today;
+  }
+
+  it('counts a quota fallback when the provider is disabled by mode', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision(),
+      usageMeter,
+    });
+
+    await runOrchestrator(harness, 'What is Basmatak?', 'retrieval_only');
+
+    expect(queueProvider(harness).calls).toBe(0);
+    expect(fallbackCounts(usageMeter)).toEqual({
+      quota: 1,
+      provider_error: 0,
+      no_tool_retry_failed: 0,
+      language_retry_failed: 0,
+      total: 1,
+    });
+  });
+
+  it('counts a provider error when the provider is unavailable', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision(),
+      usageMeter,
+    });
+
+    const { result } = await runOrchestrator(harness, 'What is Basmatak?');
+
+    expect(result.errorCode).toBe('AI_AGENT_PROVIDER_UNAVAILABLE');
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      provider_error: 1,
+      total: 1,
+    });
+  });
+
+  it('counts a zero-token provider turn as a provider error', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision(),
+      usageMeter,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+      usage: { inputTokens: 0, outputTokens: 0 },
+    });
+
+    const { result } = await runOrchestrator(harness, 'What is Basmatak?');
+
+    expect(result).toMatchObject({ finishReason: 'stop', inputTokens: 0 });
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      provider_error: 1,
+      total: 1,
+    });
+  });
+
+  it('counts an empty final answer as a failed tool retry', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({
+        modelFirst: true,
+        limits: { maxInputTokens: 12_000 },
+      }),
+      decision: liveDataDecision(),
+      tools: MODEL_FIRST_DESCRIPTORS,
+      usageMeter,
+    });
+    queueProvider(harness).queueTurn({ text: [] });
+    queueProvider(harness).queueTurn({ text: [] });
+
+    const { result } = await runOrchestrator(harness, 'Show me opportunities');
+
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: true });
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      no_tool_retry_failed: 1,
+      total: 1,
+    });
+  });
+
+  it('counts a failed language retry separately', async () => {
+    const usageMeter = new UsageMeterService({
+      warn: jest.fn(),
+      log: jest.fn(),
+      error: jest.fn(),
+    } as unknown as AppLogger);
+    const harness = createHarness({
+      config: createConfig({ modelFirst: true }),
+      decision: knowledgeOnlyDecision({ language: 'ar' }),
+      usageMeter,
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+      usage: { inputTokens: 10, outputTokens: 4 },
+    });
+    queueProvider(harness).queueTurn({
+      text: ['Basmatak is a platform.'],
+      usage: { inputTokens: 10, outputTokens: 4 },
+    });
+
+    const { result, frames } = await runOrchestrator(
+      harness,
+      'ما هو بصمتك؟',
+      'normal',
+      new AbortController().signal,
+      [],
+      'ar',
+    );
+
+    expect(queueProvider(harness).calls).toBe(2);
+    expect(result).toMatchObject({ finishReason: 'stop', refusal: true });
+    expect((frames[frames.length - 1].data as { delta: string }).delta).toBe(
+      policyMessage('ungrounded', 'ar'),
+    );
+    expect(fallbackCounts(usageMeter)).toMatchObject({
+      language_retry_failed: 1,
+      total: 1,
+    });
   });
 });

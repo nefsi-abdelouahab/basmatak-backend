@@ -270,9 +270,10 @@ describe('AiAgent configuration', () => {
     expect(config.model).toBe('gemini-3.8-flash');
     expect(config.knowledgeDir).toBe(path.resolve(process.cwd(), 'ai-agent'));
     expect(config.mode).toBe('normal');
+    expect(config.modelFirst).toBe(false);
     expect(config.heartbeatIntervalMs).toBe(15_000);
     expect(config.limits).toEqual({
-      maxInputTokens: 3000,
+      maxInputTokens: 10000,
       maxOutputTokens: 400,
       maxHistoryMessages: 6,
       maxHistoryChars: 4000,
@@ -313,6 +314,24 @@ describe('AiAgent configuration', () => {
     }
   });
 
+  it('keeps model-first disabled by default and enables it only with true', () => {
+    expect(loadAiAgentConfig(() => undefined).modelFirst).toBe(false);
+    for (const value of ['false', '1', 'yes', 'on', '']) {
+      expect(
+        loadAiAgentConfig((key) =>
+          key === 'AI_AGENT_MODEL_FIRST' ? value : undefined,
+        ).modelFirst,
+      ).toBe(false);
+    }
+    for (const value of ['true', ' true ', 'TRUE']) {
+      expect(
+        loadAiAgentConfig((key) =>
+          key === 'AI_AGENT_MODEL_FIRST' ? value : undefined,
+        ).modelFirst,
+      ).toBe(true);
+    }
+  });
+
   it('parses overrides, ignores invalid integers, and clamps hard caps', () => {
     const env: Record<string, string> = {
       AI_AGENT_PROVIDER: ' groq ',
@@ -335,7 +354,7 @@ describe('AiAgent configuration', () => {
       path.resolve(process.cwd(), 'custom-knowledge'),
     );
     expect(config.limits.maxOutputTokens).toBe(800);
-    expect(config.limits.maxInputTokens).toBe(3000);
+    expect(config.limits.maxInputTokens).toBe(10000);
     expect(config.limits.maxHistoryMessages).toBe(1);
     expect(config.limits.maxToolRounds).toBe(2);
     expect(config.limits.ipRequestsPerMinute).toBe(6);

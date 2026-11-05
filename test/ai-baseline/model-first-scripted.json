@@ -1,0 +1,5443 @@
+{
+  "change": "model-first-ai-intent-and-tools",
+  "corpus": "baseline",
+  "modelFirst": true,
+  "mode": "scripted",
+  "generatedAt": "2026-11-04T12:51:44.205Z",
+  "provider": "scripted",
+  "model": "scripted",
+  "maxInputTokens": 10000,
+  "runsPerDialogue": 1,
+  "totals": {
+    "families": 20,
+    "dialogues": 40,
+    "turns": 50,
+    "passedDialogues": 40,
+    "failedDialogues": 0,
+    "passedTurns": 50,
+    "failedTurns": 0,
+    "structuralFailures": 0
+  },
+  "metrics": {
+    "dialogues": 40,
+    "turns": 50,
+    "avgInputTokens": 4969.26,
+    "maxInputTokens": 6130,
+    "avgOutputTokens": 25.56,
+    "maxOutputTokens": 73,
+    "avgProviderCalls": 1.28,
+    "maxProviderCalls": 2,
+    "avgToolCalls": 0.4,
+    "maxToolCalls": 1,
+    "avgLatencyMs": 4.62,
+    "maxLatencyMs": 50
+  },
+  "dialogues": [
+    {
+      "id": "greeting-en",
+      "family": "greeting",
+      "title": "Greeting",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Hello",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "en",
+            "reason": "GREETING",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Hi, I'm Basma. How can I help?",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 0,
+          "latencyMs": 14,
+          "events": [
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 20,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "greeting-ar",
+      "family": "greeting",
+      "title": "Greeting",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "مرحبا",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "ar",
+            "reason": "GREETING",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "مرحباً، أنا بصمة. كيف أساعدك؟",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 0,
+          "latencyMs": 13,
+          "events": [
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 16,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "capability-en",
+      "family": "capability",
+      "title": "Capability",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "What can you do?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "en",
+            "reason": "CAPABILITY",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "I'm Basma. I can help you find opportunities and organizations and explain how the platform works.",
+          "inputTokens": 5200,
+          "outputTokens": 25,
+          "totalTokens": 5225,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 50,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 51,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "capability-ar",
+      "family": "capability",
+      "title": "Capability",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ما الذي يمكنك فعله؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "ar",
+            "reason": "CAPABILITY",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "أنا بصمة. أساعدك في العثور على الفرص والمنظمات وأشرح لك كيف تعمل المنصة.",
+          "inputTokens": 5662,
+          "outputTokens": 33,
+          "totalTokens": 5695,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 7,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 8,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "platform-overview-en",
+      "family": "platform-overview",
+      "title": "Platform overview",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "What is Basmatak?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 5.639768233105538
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Basmatak is a volunteering platform that connects volunteers with organizations and published opportunities.",
+          "inputTokens": 4948,
+          "outputTokens": 27,
+          "totalTokens": 4975,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 6,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 7,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "platform-overview-ar",
+      "family": "platform-overview",
+      "title": "Platform overview",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ما هو بصمتك؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 6.878677435565138
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "بصمتك منصة تطوعية تربط المتطوعين بالجمعيات والفرص المنشورة.",
+          "inputTokens": 5507,
+          "outputTokens": 28,
+          "totalTokens": 5535,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "verification-workflow-en",
+      "family": "verification-workflow",
+      "title": "Verification workflow",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How does verification work?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 9.43505152586174
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Organizations submit evidence and the platform reviews it before a contribution is verified.",
+          "inputTokens": 5130,
+          "outputTokens": 23,
+          "totalTokens": 5153,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 5,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "Who reviews the evidence?",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "How does verification work?"
+            },
+            {
+              "role": "assistant",
+              "content": "Organizations submit evidence and the platform reviews it before a contribution is verified."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 8.374695167921049
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "The organization reviews the evidence and the platform verifies the contribution.",
+          "inputTokens": 5291,
+          "outputTokens": 21,
+          "totalTokens": 5312,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 7,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 3,
+          "message": "Explain more",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "How does verification work?"
+            },
+            {
+              "role": "assistant",
+              "content": "Organizations submit evidence and the platform reviews it before a contribution is verified."
+            },
+            {
+              "role": "user",
+              "content": "Who reviews the evidence?"
+            },
+            {
+              "role": "assistant",
+              "content": "The organization reviews the evidence and the platform verifies the contribution."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "FOLLOW_UP_KNOWLEDGE",
+            "tools": [],
+            "topScore": 17.768308341565582
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Verification keeps volunteer contributions trustworthy for everyone.",
+          "inputTokens": 5382,
+          "outputTokens": 17,
+          "totalTokens": 5399,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 5,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 18,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "verification-workflow-ar",
+      "family": "verification-workflow",
+      "title": "Verification workflow",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كيف تعمل عملية التحقق؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 17.426141223685914
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "تقدم الجمعيات الأدلة وتراجعها المنصة قبل التحقق من المساهمة.",
+          "inputTokens": 5391,
+          "outputTokens": 28,
+          "totalTokens": 5419,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "من يراجع الأدلة؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "كيف تعمل عملية التحقق؟"
+            },
+            {
+              "role": "assistant",
+              "content": "تقدم الجمعيات الأدلة وتراجعها المنصة قبل التحقق من المساهمة."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 7.414876831566054
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "تراجع الجمعية الأدلة ثم تتحقق المنصة من المساهمة.",
+          "inputTokens": 5739,
+          "outputTokens": 23,
+          "totalTokens": 5762,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 7,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 3,
+          "message": "اشرح أكثر",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "كيف تعمل عملية التحقق؟"
+            },
+            {
+              "role": "assistant",
+              "content": "تقدم الجمعيات الأدلة وتراجعها المنصة قبل التحقق من المساهمة."
+            },
+            {
+              "role": "user",
+              "content": "من يراجع الأدلة؟"
+            },
+            {
+              "role": "assistant",
+              "content": "تراجع الجمعية الأدلة ثم تتحقق المنصة من المساهمة."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "FOLLOW_UP_KNOWLEDGE",
+            "tools": [],
+            "topScore": 12.654320142705592
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "يساعد التحقق في الحفاظ على موثوقية مساهمات المتطوعين.",
+          "inputTokens": 5726,
+          "outputTokens": 25,
+          "totalTokens": 5751,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 13,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "apply-workflow-en",
+      "family": "apply-workflow",
+      "title": "Apply workflow",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How do I apply to an opportunity?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 11.710706147552004
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Open the opportunity page, choose Apply, and submit the requested details before the deadline.",
+          "inputTokens": 5072,
+          "outputTokens": 24,
+          "totalTokens": 5096,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "What happens after I apply?",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "How do I apply to an opportunity?"
+            },
+            {
+              "role": "assistant",
+              "content": "Open the opportunity page, choose Apply, and submit the requested details before the deadline."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 13.811576764831841
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "The organization reviews your application and updates its status after the contribution is verified.",
+          "inputTokens": 5353,
+          "outputTokens": 25,
+          "totalTokens": 5378,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 7,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "apply-workflow-ar",
+      "family": "apply-workflow",
+      "title": "Apply workflow",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كيف أتقدم لفرصة؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 8.029118643213376
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "افتح صفحة الفرصة واختر التقديم ثم أرسل البيانات المطلوبة قبل الموعد النهائي.",
+          "inputTokens": 5859,
+          "outputTokens": 35,
+          "totalTokens": 5894,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 6,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "ماذا يحدث بعد التقديم؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "كيف أتقدم لفرصة؟"
+            },
+            {
+              "role": "assistant",
+              "content": "افتح صفحة الفرصة واختر التقديم ثم أرسل البيانات المطلوبة قبل الموعد النهائي."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 12.836858092743734
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "تراجع الجمعية طلبك وتحدث حالته بعد التحقق من المساهمة.",
+          "inputTokens": 6130,
+          "outputTokens": 25,
+          "totalTokens": 6155,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 8,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "privacy-policy-en",
+      "family": "privacy-policy",
+      "title": "Privacy policy",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "What does the privacy policy say?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 19.0814825131964
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "The privacy policy explains what data the platform collects, why it is used, and how users can request deletion.",
+          "inputTokens": 4940,
+          "outputTokens": 28,
+          "totalTokens": 4968,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "privacy-policy-ar",
+      "family": "privacy-policy",
+      "title": "Privacy policy",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ماذا تقول سياسة الخصوصية؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 19.877635415903452
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "توضح سياسة الخصوصية البيانات التي تجمعها المنصة وكيف يمكن للمستخدم طلب حذفها.",
+          "inputTokens": 5373,
+          "outputTokens": 36,
+          "totalTokens": 5409,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "account-deletion-en",
+      "family": "account-deletion",
+      "title": "Account deletion",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How can a user delete an account?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 13.423579651910394
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Open your account settings and choose Delete account. The platform removes your profile data after confirmation.",
+          "inputTokens": 5042,
+          "outputTokens": 28,
+          "totalTokens": 5070,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "account-deletion-ar",
+      "family": "account-deletion",
+      "title": "Account deletion",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كيف يمكن للمستخدم حذف حسابه؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 22.74358310742331
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "افتح إعدادات الحساب واختر حذف الحساب. تحذف المنصة بيانات ملفك بعد التأكيد.",
+          "inputTokens": 5485,
+          "outputTokens": 34,
+          "totalTokens": 5519,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "platform-stats-en",
+      "family": "platform-stats",
+      "title": "Platform statistics",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How many opportunities are there?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "mixed",
+            "language": "en",
+            "reason": "MIXED",
+            "tools": [
+              "platform_stats"
+            ],
+            "topScore": 5.623754369978266
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "finalText": "There are 42 published opportunities and 17 verified organizations on Basmatak.",
+          "inputTokens": 5063,
+          "outputTokens": 20,
+          "totalTokens": 5083,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 5,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 5,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "platform-stats-ar",
+      "family": "platform-stats",
+      "title": "Platform statistics",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كم عدد الفرص الموجودة؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_STATS",
+            "tools": [
+              "platform_stats"
+            ],
+            "topScore": 9.79391751558676
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "finalText": "تضم بصمتك 42 فرصة منشورة و17 جمعية موثقة.",
+          "inputTokens": 6038,
+          "outputTokens": 18,
+          "totalTokens": 6056,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 4,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-browse-en",
+      "family": "opportunity-browse",
+      "title": "Opportunity browse",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Show me opportunities",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 8.494599357486903
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "finalText": "Here are the latest published opportunities: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), and [Remote tutoring](/en/opportunities/remote-tutoring).",
+          "inputTokens": 5519,
+          "outputTokens": 51,
+          "totalTokens": 5570,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 4,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-browse-ar",
+      "family": "opportunity-browse",
+      "title": "Opportunity browse",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "اعرض لي الفرص",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 9.433740752347978
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "finalText": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
+          "inputTokens": 6008,
+          "outputTokens": 51,
+          "totalTokens": 6059,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 4,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-place-en",
+      "family": "opportunity-place",
+      "title": "Opportunity place filter",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Are there opportunities in Oran?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 5.623754369978266
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "oran"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "oran"
+              }
+            }
+          ],
+          "finalText": "Yes. [Beach cleanup](/en/opportunities/beach-cleanup) is published in Oran.",
+          "inputTokens": 5159,
+          "outputTokens": 19,
+          "totalTokens": 5178,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-place-ar",
+      "family": "opportunity-place",
+      "title": "Opportunity place filter",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "هل توجد فرص في وهران؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 7.678820183478363
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "وهران"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "وهران"
+              }
+            }
+          ],
+          "finalText": "نعم، [Beach cleanup](/ar/opportunities/beach-cleanup) منشورة في وهران.",
+          "inputTokens": 5723,
+          "outputTokens": 22,
+          "totalTokens": 5745,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-detail-en",
+      "family": "opportunity-detail",
+      "title": "Opportunity detail follow-up",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Show me opportunities",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 8.494599357486903
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "finalText": "Here are the latest published opportunities: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), and [Remote tutoring](/en/opportunities/remote-tutoring).",
+          "inputTokens": 5519,
+          "outputTokens": 51,
+          "totalTokens": 5570,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 4,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "Tell me about the first one",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "Show me opportunities"
+            },
+            {
+              "role": "assistant",
+              "content": "Here are the latest published opportunities: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), and [Remote tutoring](/en/opportunities/remote-tutoring)."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "FOCUS_OPPORTUNITY_DETAIL",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "finalText": "Beach cleanup is open for applications with five positions in Oran: [Beach cleanup](/en/opportunities/beach-cleanup).",
+          "inputTokens": 5474,
+          "outputTokens": 30,
+          "totalTokens": 5504,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 5,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 3,
+          "message": "When is the deadline?",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "Show me opportunities"
+            },
+            {
+              "role": "assistant",
+              "content": "Here are the latest published opportunities: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), and [Remote tutoring](/en/opportunities/remote-tutoring)."
+            },
+            {
+              "role": "user",
+              "content": "Tell me about the first one"
+            },
+            {
+              "role": "assistant",
+              "content": "Beach cleanup is open for applications with five positions in Oran: [Beach cleanup](/en/opportunities/beach-cleanup)."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "FOCUS_OPPORTUNITY_DETAIL",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "finalText": "The deadline for [Beach cleanup](/en/opportunities/beach-cleanup) is 31 December 2026.",
+          "inputTokens": 5448,
+          "outputTokens": 22,
+          "totalTokens": 5470,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 12,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "opportunity-detail-ar",
+      "family": "opportunity-detail",
+      "title": "Opportunity detail follow-up",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "اعرض لي الفرص",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 9.433740752347978
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "finalText": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
+          "inputTokens": 6008,
+          "outputTokens": 51,
+          "totalTokens": 6059,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "ما هي شروطها؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "اعرض لي الفرص"
+            },
+            {
+              "role": "assistant",
+              "content": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring)."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "FOCUS_OPPORTUNITY_DETAIL",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "slugs": [
+                  "beach-cleanup",
+                  "tree-planting",
+                  "remote-tutoring"
+                ]
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "slugs": [
+                  "beach-cleanup",
+                  "tree-planting",
+                  "remote-tutoring"
+                ]
+              }
+            }
+          ],
+          "finalText": "هذه الفرص الثلاث مفتوحة للتقديم، ويمكنك معرفة المناصب المتاحة في كل صفحة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
+          "inputTokens": 5622,
+          "outputTokens": 73,
+          "totalTokens": 5695,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 5,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 3,
+          "message": "هل هي مفتوحة؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "اعرض لي الفرص"
+            },
+            {
+              "role": "assistant",
+              "content": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring)."
+            },
+            {
+              "role": "user",
+              "content": "ما هي شروطها؟"
+            },
+            {
+              "role": "assistant",
+              "content": "هذه الفرص الثلاث مفتوحة للتقديم، ويمكنك معرفة المناصب المتاحة في كل صفحة: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring)."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "FOCUS_OPPORTUNITY_DETAIL",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "slugs": [
+                  "beach-cleanup",
+                  "tree-planting",
+                  "remote-tutoring"
+                ]
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "slugs": [
+                  "beach-cleanup",
+                  "tree-planting",
+                  "remote-tutoring"
+                ]
+              }
+            }
+          ],
+          "finalText": "نعم، الفرص الثلاث مفتوحة للتقديم: [Beach cleanup](/ar/opportunities/beach-cleanup) و[Tree planting](/ar/opportunities/tree-planting) و[Remote tutoring](/ar/opportunities/remote-tutoring).",
+          "inputTokens": 5962,
+          "outputTokens": 55,
+          "totalTokens": 6017,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 11,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "organization-lookup-en",
+      "family": "organization-lookup",
+      "title": "Organization exact lookup",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Do you know Nour association?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 10.505223784153825
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "Nour",
+                "limit": 8
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "Nour",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "I found this organization: [Nour](/en/orgs/nour-association).",
+          "inputTokens": 5084,
+          "outputTokens": 16,
+          "totalTokens": 5100,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "organization-lookup-ar",
+      "family": "organization-lookup",
+      "title": "Organization exact lookup",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "هل تعرف جمعية نور",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 7.315511797101854
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور",
+                "limit": 8
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association).",
+          "inputTokens": 5543,
+          "outputTokens": 17,
+          "totalTokens": 5560,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "reference-data-en",
+      "family": "reference-data",
+      "title": "Reference data lookup",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "List skills and wilayas",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "mixed",
+            "language": "en",
+            "reason": "MIXED",
+            "tools": [
+              "search_reference_data"
+            ],
+            "topScore": 12.810477686559876
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_reference_data",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_reference_data",
+              "arguments": {}
+            }
+          ],
+          "finalText": "Available skills include Teaching, and the listed wilaya is Oran.",
+          "inputTokens": 5272,
+          "outputTokens": 17,
+          "totalTokens": 5289,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "reference-data-ar",
+      "family": "reference-data",
+      "title": "Reference data lookup",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "اعرض المهارات والولايات",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_reference_data"
+            ],
+            "topScore": 8.493413252524297
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_reference_data",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_reference_data",
+              "arguments": {}
+            }
+          ],
+          "finalText": "تشمل المهارات المتاحة التعليم، والولاية المدرجة هي وهران.",
+          "inputTokens": 5633,
+          "outputTokens": 27,
+          "totalTokens": 5660,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "mixed-application-en",
+      "family": "mixed-application",
+      "title": "How-to plus current opportunities",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How do I apply for current opportunities?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "mixed",
+            "language": "en",
+            "reason": "MIXED",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 11.234178325517659
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "apply"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "apply"
+              }
+            }
+          ],
+          "finalText": "To apply, open a current opportunity and choose Apply before its deadline. For example, [Beach cleanup](/en/opportunities/beach-cleanup) is open.",
+          "inputTokens": 5329,
+          "outputTokens": 37,
+          "totalTokens": 5366,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 5,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 6,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "mixed-application-ar",
+      "family": "mixed-application",
+      "title": "How-to plus current opportunities",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كيف أتقدم للفرص المتاحة؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 8.374755814569811
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "اتقدم"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "اتقدم"
+              }
+            }
+          ],
+          "finalText": "للتقدم، افتح فرصة متاحة واختر التقديم قبل موعدها. مثال: [Beach cleanup](/ar/opportunities/beach-cleanup) مفتوحة.",
+          "inputTokens": 5793,
+          "outputTokens": 41,
+          "totalTokens": 5834,
+          "estimatedTokens": true,
+          "providerCalls": 2,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "private-data-en",
+      "family": "private-data",
+      "title": "Private data request",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Show me the phone number of Ahmed",
+          "locale": "en",
+          "historyBefore": [],
+          "declaredTools": [],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "I can't share any user's private details.",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 0,
+          "latencyMs": 0,
+          "events": [
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 0,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "private-data-ar",
+      "family": "private-data",
+      "title": "Private data request",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "أعطني رقم هاتف متطوعة",
+          "locale": "ar",
+          "historyBefore": [],
+          "declaredTools": [],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "لا أستطيع مشاركة بيانات خاصة بأي مستخدم.",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 0,
+          "latencyMs": 1,
+          "events": [
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 1,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "off-topic-en",
+      "family": "off-topic",
+      "title": "Off-topic request",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Who won the football match?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "off_topic",
+            "language": "en",
+            "reason": "OFF_TOPIC_KEYWORDS",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "That's outside what I can help with, but I'd be glad to help you find a volunteering opportunity.",
+          "inputTokens": 4668,
+          "outputTokens": 25,
+          "totalTokens": 4693,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 1,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 1,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "off-topic-ar",
+      "family": "off-topic",
+      "title": "Off-topic request",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "من فاز في مباراة كرة القدم؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "off_topic",
+            "language": "ar",
+            "reason": "OFF_TOPIC_KEYWORDS",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "هذا خارج ما أستطيع مساعدتك فيه، لكن يسعدني أن أساعدك في إيجاد فرصة تطوعية.",
+          "inputTokens": 4974,
+          "outputTokens": 34,
+          "totalTokens": 5008,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "ambiguous-en",
+      "family": "ambiguous",
+      "title": "Ambiguous request",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "asdfgh",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "clarify",
+            "language": "en",
+            "reason": "LOW_KNOWLEDGE_SCORE",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Could you tell me a bit more about what you need?",
+          "inputTokens": 4582,
+          "outputTokens": 13,
+          "totalTokens": 4595,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 1,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 1,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "ambiguous-ar",
+      "family": "ambiguous",
+      "title": "Ambiguous request",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "سسسس",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "clarify",
+            "language": "ar",
+            "reason": "LOW_KNOWLEDGE_SCORE",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "ممكن توضح لي أكثر ماذا تريد؟",
+          "inputTokens": 4963,
+          "outputTokens": 13,
+          "totalTokens": 4976,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "empty-opportunity-en",
+      "family": "empty-opportunity",
+      "title": "No opportunities in an area",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Are there opportunities in Tamanrasset?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 5.623754369978266
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "tamanrasset"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "tamanrasset"
+              }
+            }
+          ],
+          "finalText": "There are no published opportunities right now. You can check the Opportunities page later.",
+          "inputTokens": 4938,
+          "outputTokens": 0,
+          "totalTokens": 4938,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "empty-opportunity-ar",
+      "family": "empty-opportunity",
+      "title": "No opportunities in an area",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "هل توجد فرص في تمنراست؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 7.678820183478363
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "تمنراست"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "تمنراست"
+              }
+            }
+          ],
+          "finalText": "لا توجد فرص منشورة حالياً. يمكنك تصفح صفحة الفرص لاحقاً.",
+          "inputTokens": 5501,
+          "outputTokens": 0,
+          "totalTokens": 5501,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "promise-guard-en",
+      "family": "promise-guard",
+      "title": "Unbacked promise",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How does the review work?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 10.82810224520788
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
+          "inputTokens": 5040,
+          "outputTokens": 13,
+          "totalTokens": 5053,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "promise-guard-ar",
+      "family": "promise-guard",
+      "title": "Unbacked promise",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كيف تتم المراجعة؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 8.258035348533618
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "لا أملك معلومات مؤكدة عن هذا. يمكنك تصفح الفرص والمنظمات في المنصة.",
+          "inputTokens": 5769,
+          "outputTokens": 15,
+          "totalTokens": 5784,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "citation-strip-en",
+      "family": "citation-strip",
+      "title": "Citation and source stripping",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "What are the application statuses?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 11.045472702606217
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Applications move from submitted to under review, then accepted or rejected.",
+          "inputTokens": 5002,
+          "outputTokens": 26,
+          "totalTokens": 5028,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 2,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 2,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "citation-strip-ar",
+      "family": "citation-strip",
+      "title": "Citation and source stripping",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ما هي حالات الطلب؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 14.451567811944102
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "تنتقل الطلبات من مقدمة إلى قيد المراجعة ثم مقبولة أو مرفوضة.",
+          "inputTokens": 5599,
+          "outputTokens": 36,
+          "totalTokens": 5635,
+          "estimatedTokens": true,
+          "providerCalls": 1,
+          "latencyMs": 3,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 3,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    }
+  ]
+}

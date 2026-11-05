@@ -20,18 +20,29 @@ export const TOOL_INTENTS = [
   'organization_search',
   'reference_lookup',
   'platform_stats',
+  'knowledge_lookup',
+  'opportunity_details',
+  'organization_details',
 ] as const;
 
 export type ToolIntent = (typeof TOOL_INTENTS)[number];
 
 export interface ToolPropertySchema {
-  type: 'string' | 'integer' | 'boolean';
+  type: 'string' | 'integer' | 'boolean' | 'array';
   description: string;
   enum?: readonly string[];
   minimum?: number;
   maximum?: number;
   minLength?: number;
   maxLength?: number;
+  /** Item contract for `type: 'array'` (string lists only). */
+  items?: {
+    type: 'string';
+    minLength?: number;
+    maxLength?: number;
+  };
+  minItems?: number;
+  maxItems?: number;
   default?: string | number | boolean;
 }
 

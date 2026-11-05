@@ -373,6 +373,42 @@ export const EVAL_QUERIES: ReadonlyArray<EvalQuery> = [
     locale: 'ar',
     expectedSource: 'data/glossary.csv',
   },
+  {
+    id: 'new-opportunity-lifecycle',
+    query: 'What are the stages of the opportunity lifecycle?',
+    locale: 'en',
+    expectedSource: '04-workflow/opportunity-lifecycle/en.md',
+  },
+  {
+    id: 'new-review-selection',
+    query: 'How does the organization review and select applicants?',
+    locale: 'en',
+    expectedSource: '04-workflow/review-and-selection/en.md',
+  },
+  {
+    id: 'new-notifications-page',
+    query: 'Where can I see my notifications?',
+    locale: 'en',
+    expectedSource: '05-pages-and-features/notifications/en.md',
+  },
+  {
+    id: 'new-organization-role',
+    query: 'What is the organization role on the platform?',
+    locale: 'en',
+    expectedSource: '03-user-roles/organization-role/en.md',
+  },
+  {
+    id: 'new-publish-ar',
+    query: 'كيف أنشر فرصة تطوعية؟',
+    locale: 'ar',
+    expectedSource: '04-workflow/publish-opportunity/ar.md',
+  },
+  {
+    id: 'new-task-execution-ar',
+    query: 'كيف أنفذ المهمة بعد القبول؟',
+    locale: 'ar',
+    expectedSource: '04-workflow/task-execution/ar.md',
+  },
 ];
 
 function hitWithin(foundAt: number | null, depth: number): boolean {

@@ -1,7 +1,10 @@
 import type { AiAgentDataSource, AiAgentMode } from '../ai-agent.types';
 import type { AiAgentLimits } from '../config/ai-agent.config';
 import type { PromptLanguage } from '../prompt/prompt.types';
-import { AI_AGENT_SYSTEM_PROMPT } from '../prompt/system-prompt';
+import {
+  AI_AGENT_MODEL_FIRST_SYSTEM_PROMPT,
+  AI_AGENT_SYSTEM_PROMPT,
+} from '../prompt/system-prompt';
 
 /**
  * Deterministic answer policy for Session 9.
@@ -22,6 +25,7 @@ export const POLICY_MESSAGE_KEYS = [
   'knowledgeOnlyLive',
   'noOpportunities',
   'noOpportunitiesInArea',
+  'organizationNotFound',
   'notFound',
   'toolUnavailable',
   'ungrounded',
@@ -67,6 +71,10 @@ const MESSAGES: Readonly<
   noOpportunitiesInArea: Object.freeze({
     en: 'There are no published opportunities in that area right now. You can browse the Opportunities page for other areas.',
     ar: 'لا توجد فرص منشورة في هذه الولاية حالياً. يمكنك تصفح صفحة الفرص لرؤية بقية المناطق.',
+  }),
+  organizationNotFound: Object.freeze({
+    en: "I couldn't find an organization with that name on the platform.",
+    ar: 'لم أجد جمعية بهذا الاسم في المنصة.',
   }),
   notFound: Object.freeze({
     en: "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
@@ -288,9 +296,10 @@ function buildWindowSet(words: readonly string[]): ReadonlySet<string> {
   return windows;
 }
 
-const SYSTEM_PROMPT_WINDOWS = buildWindowSet(
-  normalizedWords(AI_AGENT_SYSTEM_PROMPT),
-);
+const SYSTEM_PROMPT_WINDOWS = new Set([
+  ...buildWindowSet(normalizedWords(AI_AGENT_SYSTEM_PROMPT)),
+  ...buildWindowSet(normalizedWords(AI_AGENT_MODEL_FIRST_SYSTEM_PROMPT)),
+]);
 
 /**
  * Deterministic system-instruction extraction guard.
@@ -388,6 +397,7 @@ export function hasUsableToolData(data: unknown): boolean {
   if (!isRecord(data)) return false;
 
   if (Array.isArray(data.items)) return data.items.length > 0;
+  if (isRecord(data.item)) return true;
 
   const hasReferenceLists =
     Array.isArray(data.skills) || Array.isArray(data.locations);

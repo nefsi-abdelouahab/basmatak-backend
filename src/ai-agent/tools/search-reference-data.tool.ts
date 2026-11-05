@@ -126,8 +126,7 @@ export class SearchReferenceDataTool implements ReadOnlyTool {
   ) {
     this.definition = defineReadOnlyTool({
       name: SEARCH_REFERENCE_DATA_TOOL_NAME,
-      description:
-        'Look up active Basmatak skills and locations (wilayas and municipalities) by text, category, or parent wilaya. Read-only; cached for 5 minutes.',
+      description: 'Search skills and locations.',
       allowedIntents: ['reference_lookup'],
       inputSchema: {
         type: 'object',
@@ -137,32 +136,13 @@ export class SearchReferenceDataTool implements ReadOnlyTool {
             type: 'string',
             enum: [...REFERENCE_KINDS],
             default: 'all',
-            description: 'Return skills, locations, or both.',
+            description: 'Kind.',
           },
           text: {
             type: 'string',
             minLength: 1,
             maxLength: 120,
-            description: 'Name, slug, or location code keyword.',
-          },
-          category: {
-            type: 'string',
-            minLength: 24,
-            maxLength: 24,
-            description: 'Skill category id (skills only).',
-          },
-          parent: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 40,
-            description: 'Parent wilaya code (locations only).',
-          },
-          limit: {
-            type: 'integer',
-            minimum: 1,
-            maximum: TOOL_MAX_ROWS,
-            default: TOOL_DEFAULT_ROWS,
-            description: 'Rows per list (1 to 8). Defaults to 5.',
+            description: 'Query.',
           },
         },
       },

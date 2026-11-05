@@ -59,8 +59,79 @@ describe('UsageMeterService', () => {
         rateLimited: 0,
         averageLatencyMs: 0,
       },
+      fallbacks: {
+        today: {
+          quota: 0,
+          provider_error: 0,
+          no_tool_retry_failed: 0,
+          language_retry_failed: 0,
+          total: 0,
+        },
+        last7Days: {
+          quota: 0,
+          provider_error: 0,
+          no_tool_retry_failed: 0,
+          language_retry_failed: 0,
+          total: 0,
+        },
+      },
       budget: BUDGET,
     });
+  });
+
+  it('counts silent fallbacks by reason and logs a structured warning', () => {
+    const logger = makeLogger();
+    const meter = new UsageMeterService(logger as unknown as AppLogger);
+
+    meter.recordFallback('quota');
+    meter.recordFallback('quota');
+    meter.recordFallback('provider_error');
+    meter.recordFallback('no_tool_retry_failed');
+    meter.recordFallback('language_retry_failed');
+
+    const report = usageReport(meter);
+    expect(report.fallbacks.today).toEqual({
+      quota: 2,
+      provider_error: 1,
+      no_tool_retry_failed: 1,
+      language_retry_failed: 1,
+      total: 5,
+    });
+    expect(report.fallbacks.last7Days).toEqual(report.fallbacks.today);
+
+    expect(logger.warn).toHaveBeenCalledTimes(5);
+    const first = JSON.parse(logger.warn.mock.calls[0][0] as string) as Record<
+      string,
+      unknown
+    >;
+    expect(first).toEqual({
+      event: 'ai_agent_fallback',
+      reason: 'quota',
+      count: 1,
+      day: '2026-01-03',
+    });
+    const second = JSON.parse(logger.warn.mock.calls[1][0] as string) as Record<
+      string,
+      unknown
+    >;
+    expect(second.count).toBe(2);
+    expect(JSON.stringify(report)).not.toContain('2026-01-03');
+  });
+
+  it('rolls fallback counts over the seven-day window and across reset', () => {
+    const meter = new UsageMeterService(makeLogger() as unknown as AppLogger);
+
+    jest.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+    meter.recordFallback('quota');
+    jest.setSystemTime(new Date('2026-01-03T12:00:00.000Z'));
+    meter.recordFallback('provider_error');
+
+    expect(usageReport(meter).fallbacks.today.total).toBe(1);
+    expect(usageReport(meter).fallbacks.last7Days.total).toBe(2);
+
+    meter.reset();
+    expect(usageReport(meter).fallbacks.today.total).toBe(0);
+    expect(usageReport(meter).fallbacks.last7Days.total).toBe(0);
   });
 
   it('rolls up requests, tokens, tool calls, refusals, 429s, and latency', () => {

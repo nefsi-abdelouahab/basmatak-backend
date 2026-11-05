@@ -3,6 +3,8 @@ import type {
   AiAgentLocale,
   AiAgentMode,
 } from '../ai-agent.types';
+import type { ConversationFocus } from '../conversation-focus';
+import type { RecentEntities } from '../recent-entities';
 import type { RetrievalResult } from '../knowledge/retriever';
 import type { RouterIntent } from '../router/intent-router';
 import type { ToolDescriptor, ToolExecutionResult } from '../tools/tool.types';
@@ -27,6 +29,8 @@ export type PromptSectionName =
   | 'tools'
   | 'knowledge'
   | 'tool_results'
+  | 'recent_entities'
+  | 'conversation_focus'
   | 'history'
   | 'examples'
   | 'user_message';
@@ -72,6 +76,16 @@ export interface PromptBuildInput {
   /** Language detected by the router or supplied by the caller. */
   responseLanguage: PromptLanguage;
   history?: AiAgentChatMessage[];
+  /** Server-derived entities and topic from the previous turns. */
+  focus?: ConversationFocus;
+  /**
+   * Phase 1 model-first state: recently shown entities plus the last question,
+   * last answer, pending confirmation, and resolved ordinal/pronoun/yes-no/slug
+   * reference. Rendered as required, non-trimmable untrusted data.
+   */
+  recentEntities?: RecentEntities;
+  /** Select the model-first system prompt and recent-entities section. */
+  modelFirst?: boolean;
   knowledge?: RetrievalResult;
   toolResults?: ToolExecutionResult[];
   /** Metadata-only descriptors. Handlers are never accepted or rendered. */
@@ -90,6 +104,11 @@ export interface BuiltPrompt {
   text: string;
   language: PromptLanguage;
   estimatedInputTokens: number;
+  /**
+   * Portion of `estimatedInputTokens` charged for provider tool declarations.
+   * Zero when the turn declares no tools.
+   */
+  estimatedToolDeclarationTokens: number;
   /** Configured output budget reserved alongside the input. */
   estimatedOutputTokens: number;
   estimatedTotalTokens: number;

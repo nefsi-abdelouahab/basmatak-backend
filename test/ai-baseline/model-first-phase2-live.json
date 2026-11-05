@@ -1,0 +1,4424 @@
+{
+  "change": "model-first-ai-intent-and-tools",
+  "corpus": "phase2",
+  "modelFirst": true,
+  "mode": "live",
+  "generatedAt": "2026-11-04T18:53:17.108Z",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "maxInputTokens": 10000,
+  "runsPerDialogue": 1,
+  "totals": {
+    "families": 18,
+    "dialogues": 24,
+    "turns": 38,
+    "passedDialogues": 3,
+    "failedDialogues": 21,
+    "passedTurns": 7,
+    "failedTurns": 31,
+    "structuralFailures": 18
+  },
+  "metrics": {
+    "dialogues": 24,
+    "turns": 38,
+    "avgInputTokens": 3472.184210526316,
+    "maxInputTokens": 6986,
+    "avgOutputTokens": 51.28947368421053,
+    "maxOutputTokens": 163,
+    "avgProviderCalls": 1.394736842105263,
+    "maxProviderCalls": 3,
+    "avgToolCalls": 0.7368421052631579,
+    "maxToolCalls": 2,
+    "avgLatencyMs": 1360.1842105263158,
+    "maxLatencyMs": 8686
+  },
+  "dialogues": [
+    {
+      "id": "greeting-en",
+      "family": "greeting",
+      "title": "Greeting",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Hello",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "en",
+            "reason": "GREETING",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Hi, I'm Basma. How can I help?",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 0,
+          "latencyMs": 8,
+          "events": [
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 13,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "greeting-ar",
+      "family": "greeting",
+      "title": "Greeting",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "مرحبا",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "direct_reply",
+            "intent": "greeting",
+            "language": "ar",
+            "reason": "GREETING",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "مرحباً، أنا بصمة. كيف أساعدك؟",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 0,
+          "latencyMs": 5,
+          "events": [
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 8,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "platform-overview-en",
+      "family": "platform-overview",
+      "title": "Platform overview",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "What is Basmatak?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 5.639768233105538
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Basmatak Tatatoua is a digital platform that connects young volunteers with associations and organizations needing specific skills for volunteering projects.",
+          "inputTokens": 2985,
+          "outputTokens": 27,
+          "totalTokens": 3012,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 789,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: volunteering platform"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 147026,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: volunteering platform"
+      ]
+    },
+    {
+      "id": "platform-overview-ar",
+      "family": "platform-overview",
+      "title": "Platform overview",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ما هو بصمتك؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 6.878677435565138
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "\"بصمتك\" هي منصة عربية تربط المتطوعين بالجمعيات والمنظمات التي تحتاج إلى مهاراتهم، وتوثّق كل مساهمة في ملف تطوعي مرتّب ومؤكد.",
+          "inputTokens": 3182,
+          "outputTokens": 43,
+          "totalTokens": 3225,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 798,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: منصة تطوعية"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 26386,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: منصة تطوعية"
+      ]
+    },
+    {
+      "id": "verification-workflow-en",
+      "family": "verification-workflow",
+      "title": "Verification workflow",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How does verification work?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 9.43505152586174
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "Verification confirms that a contribution was actually done. The responsible organization reviews the volunteer's description and evidence, confirms the work, and then the experience receives a verification code that anyone can check on the public verification page. This is separate from a review, which describes how well the work was done.",
+          "inputTokens": 3115,
+          "outputTokens": 59,
+          "totalTokens": 3174,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 1414,
+          "events": [
+            "status",
+            "token",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "Who reviews the evidence?",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "How does verification work?"
+            },
+            {
+              "role": "assistant",
+              "content": "Verification confirms that a contribution was actually done. The responsible organization reviews the volunteer's description and evidence, confirms the work, and then the experience receives a verification code that anyone can check on the public verification page. This is separate from a review, which describes how well the work was done."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 8.374695167921049
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "The organization that published the opportunity reviews the evidence and confirms the contribution.",
+          "inputTokens": 3185,
+          "outputTokens": 15,
+          "totalTokens": 3200,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 770,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: verifies"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        },
+        {
+          "index": 3,
+          "message": "Explain more",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "How does verification work?"
+            },
+            {
+              "role": "assistant",
+              "content": "Verification confirms that a contribution was actually done. The responsible organization reviews the volunteer's description and evidence, confirms the work, and then the experience receives a verification code that anyone can check on the public verification page. This is separate from a review, which describes how well the work was done."
+            },
+            {
+              "role": "user",
+              "content": "Who reviews the evidence?"
+            },
+            {
+              "role": "assistant",
+              "content": "The organization that published the opportunity reviews the evidence and confirms the contribution."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "FOLLOW_UP_KNOWLEDGE",
+            "tools": [],
+            "topScore": 19.83794078218794
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "The published organization checks the submitted material against the specific opportunity requirements. If it satisfies those requirements, the organization confirms the contribution, and the platform records it as a Verified Experience. For example, if an activity asks for photos and a short report, the organization reviews exactly those items before confirming the experience.",
+          "inputTokens": 3296,
+          "outputTokens": 61,
+          "totalTokens": 3357,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 946,
+          "events": [
+            "status",
+            "token",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: trustworthy"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 84430,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 2 key_facts: missing key fact: verifies",
+        "turn 3 key_facts: missing key fact: trustworthy"
+      ]
+    },
+    {
+      "id": "verification-workflow-ar",
+      "family": "verification-workflow",
+      "title": "Verification workflow",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كيف تعمل عملية التحقق؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 17.426141223685914
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "التحقق هو تأكيد المنظمة أن مساهمتك أُنجزت فعلاً، وهو أهم ميزة في بصمتك تطوع. بعد التحقق تحصل تجربتك على رمز تحقق يمكن لأي شخص الاطلاع عليه ومتابعته في صفحة التحقق العامة. كما يمكنك إنشاء شهادة إثبات بصيغة PDF عن تجربتك.",
+          "inputTokens": 3023,
+          "outputTokens": 63,
+          "totalTokens": 3086,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 641,
+          "events": [
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: الأدلة"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        },
+        {
+          "index": 2,
+          "message": "من يراجع الأدلة؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "كيف تعمل عملية التحقق؟"
+            },
+            {
+              "role": "assistant",
+              "content": "التحقق هو تأكيد المنظمة أن مساهمتك أُنجزت فعلاً، وهو أهم ميزة في بصمتك تطوع. بعد التحقق تحصل تجربتك على رمز تحقق يمكن لأي شخص الاطلاع عليه ومتابعته في صفحة التحقق العامة. كما يمكنك إنشاء شهادة إثبات بصيغة PDF عن تجربتك."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 7.414876831566054
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "المنظمة هي من تراجع أدلتك وتؤكد أن المساهمة أُنجزت فعلاً.",
+          "inputTokens": 3270,
+          "outputTokens": 23,
+          "totalTokens": 3293,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 1139,
+          "events": [
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: الجمعية"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        },
+        {
+          "index": 3,
+          "message": "اشرح أكثر",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "كيف تعمل عملية التحقق؟"
+            },
+            {
+              "role": "assistant",
+              "content": "التحقق هو تأكيد المنظمة أن مساهمتك أُنجزت فعلاً، وهو أهم ميزة في بصمتك تطوع. بعد التحقق تحصل تجربتك على رمز تحقق يمكن لأي شخص الاطلاع عليه ومتابعته في صفحة التحقق العامة. كما يمكنك إنشاء شهادة إثبات بصيغة PDF عن تجربتك."
+            },
+            {
+              "role": "user",
+              "content": "من يراجع الأدلة؟"
+            },
+            {
+              "role": "assistant",
+              "content": "المنظمة هي من تراجع أدلتك وتؤكد أن المساهمة أُنجزت فعلاً."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "FOLLOW_UP_KNOWLEDGE",
+            "tools": [],
+            "topScore": 32.0311346738929
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "تقدّم بأدلة تثبت عملك، ثم تفحصها المنظمة وتفحص مدى اكتمالها. عند قبولها تسجّل مساهمتك موثقة في ملفك وتجعل تجربتك موثوقة لدى غيرك. هذا الاعتراف الرسمي يجعل بصمتك مفيدة ومتاحة للعرض على الآخرين.",
+          "inputTokens": 3243,
+          "outputTokens": 70,
+          "totalTokens": 3313,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 1290,
+          "events": [
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: موثوقية"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 85290,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: الأدلة",
+        "turn 2 key_facts: missing key fact: الجمعية",
+        "turn 3 key_facts: missing key fact: موثوقية"
+      ]
+    },
+    {
+      "id": "platform-stats-en",
+      "family": "platform-stats",
+      "title": "Platform statistics",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "How many opportunities are there?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "mixed",
+            "language": "en",
+            "reason": "MIXED",
+            "tools": [
+              "platform_stats"
+            ],
+            "topScore": 5.623754369978266
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "finalText": "There are 42 published opportunities currently available on the platform.",
+          "inputTokens": 6048,
+          "outputTokens": 51,
+          "totalTokens": 6099,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 1990,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: 17"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 29794,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: 17"
+      ]
+    },
+    {
+      "id": "platform-stats-ar",
+      "family": "platform-stats",
+      "title": "Platform statistics",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "كم عدد الفرص الموجودة؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_STATS",
+            "tools": [
+              "platform_stats"
+            ],
+            "topScore": 9.79391751558676
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "finalText": "عدد الفرص المتاحة حالياً 42 فرصة.",
+          "inputTokens": 6935,
+          "outputTokens": 41,
+          "totalTokens": 6976,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 2157,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: 17"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 54003,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: 17"
+      ]
+    },
+    {
+      "id": "opportunity-detail-en",
+      "family": "opportunity-detail",
+      "title": "Opportunity detail follow-up",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Show me opportunities",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 8.494599357486903
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 5,
+                "sort": "newest"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 5,
+                "sort": "newest"
+              }
+            }
+          ],
+          "finalText": "Here are a few current openings: a beach cleanup in Oran, tree planting in Algiers, and remote tutoring in Constantine. Which one looks best to you?",
+          "inputTokens": 6734,
+          "outputTokens": 106,
+          "totalTokens": 6840,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 2550,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_opportunities arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": false,
+              "reason": "missing expected link: /en/opportunities/beach-cleanup"
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        },
+        {
+          "index": 2,
+          "message": "Tell me about the first one",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "Show me opportunities"
+            },
+            {
+              "role": "assistant",
+              "content": "Here are a few current openings: a beach cleanup in Oran, tree planting in Algiers, and remote tutoring in Constantine. Which one looks best to you?"
+            }
+          ],
+          "router": {
+            "action": "direct_reply",
+            "intent": "clarify",
+            "language": "en",
+            "reason": "FOCUS_OPPORTUNITY_MISSING",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "name": "beach cleanup in Oran"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "name": "beach cleanup in Oran"
+              }
+            }
+          ],
+          "finalText": "I don't have confirmed information on that. You can browse opportunities and organizations on the platform.",
+          "inputTokens": 3097,
+          "outputTokens": 57,
+          "totalTokens": 3154,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 1218,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool get_opportunity_details arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: Beach cleanup"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": false,
+              "reason": "missing expected link: /en/opportunities/beach-cleanup"
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        },
+        {
+          "index": 3,
+          "message": "When is the deadline?",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "Show me opportunities"
+            },
+            {
+              "role": "assistant",
+              "content": "Here are a few current openings: a beach cleanup in Oran, tree planting in Algiers, and remote tutoring in Constantine. Which one looks best to you?"
+            },
+            {
+              "role": "user",
+              "content": "Tell me about the first one"
+            },
+            {
+              "role": "assistant",
+              "content": "I don't have confirmed information on that. You can browse opportunities and organizations on the platform."
+            }
+          ],
+          "router": {
+            "action": "direct_reply",
+            "intent": "clarify",
+            "language": "en",
+            "reason": "FOCUS_OPPORTUNITY_MISSING",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "text": "beach cleanup in Oran"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "text": "beach cleanup in Oran"
+              }
+            }
+          ],
+          "finalText": "The [Beach cleanup](/en/opportunities/beach-cleanup) application deadline is December 31, 2026. It currently has open positions.",
+          "inputTokens": 6399,
+          "outputTokens": 97,
+          "totalTokens": 6496,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 2020,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"get_opportunity_details\"], got [\"search_opportunities\"]"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_opportunities arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 149524,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_args: tool search_opportunities arguments did not match the expected shape",
+        "turn 1 links: missing expected link: /en/opportunities/beach-cleanup",
+        "turn 2 tool_args: tool get_opportunity_details arguments did not match the expected shape",
+        "turn 2 key_facts: missing key fact: Beach cleanup",
+        "turn 2 links: missing expected link: /en/opportunities/beach-cleanup",
+        "turn 3 tool_choice: expected tools [\"get_opportunity_details\"], got [\"search_opportunities\"]",
+        "turn 3 tool_args: tool search_opportunities arguments did not match the expected shape"
+      ]
+    },
+    {
+      "id": "opportunity-detail-ar",
+      "family": "opportunity-detail",
+      "title": "Opportunity detail follow-up",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "اعرض لي الفرص",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 9.433740752347978
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 5,
+                "sort": "newest"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 5,
+                "sort": "newest"
+              }
+            }
+          ],
+          "finalText": "إليك ثلاث فرص منشورة حالياً: [Beach cleanup](/ar/opportunities/beach-cleanup) في وهران، و[Tree planting](/ar/opportunities/tree-planting) في باب الوادي بالجزائر، و[Remote tutoring](/ar/opportunities/remote-tutoring) في قسنطينة.\nيمكنك تصفح بقية الفرص من صفحة الفرص.",
+          "inputTokens": 6804,
+          "outputTokens": 137,
+          "totalTokens": 6941,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 1811,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_opportunities arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: أحدث الفرص المنشورة"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        },
+        {
+          "index": 2,
+          "message": "ما هي شروطها؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "اعرض لي الفرص"
+            },
+            {
+              "role": "assistant",
+              "content": "إليك ثلاث فرص منشورة حالياً: [Beach cleanup](/ar/opportunities/beach-cleanup) في وهران، و[Tree planting](/ar/opportunities/tree-planting) في باب الوادي بالجزائر، و[Remote tutoring](/ar/opportunities/remote-tutoring) في قسنطينة.\nيمكنك تصفح بقية الفرص من صفحة الفرص."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "FOCUS_OPPORTUNITY_DETAIL",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "finalText": "بالنسبة لـ Beach cleanup، لا تظهر شروط مذكورة في البيانات المتوفرة، لكن أحتاج إلى معرفة ما إذا كنت تقصد شروط مشاركة أخرى، أو إذا كان لديك سؤال مختلف تماماً.",
+          "inputTokens": 5933,
+          "outputTokens": 95,
+          "totalTokens": 6028,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 1499,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"search_opportunities\"], got [\"get_opportunity_details\"]"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool get_opportunity_details slugs were [] instead of [\"beach-cleanup\",\"tree-planting\",\"remote-tutoring\"]"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: مفتوحة للتقديم"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": false,
+              "reason": "missing expected link: /ar/opportunities/beach-cleanup"
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        },
+        {
+          "index": 3,
+          "message": "هل هي مفتوحة؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "اعرض لي الفرص"
+            },
+            {
+              "role": "assistant",
+              "content": "إليك ثلاث فرص منشورة حالياً: [Beach cleanup](/ar/opportunities/beach-cleanup) في وهران، و[Tree planting](/ar/opportunities/tree-planting) في باب الوادي بالجزائر، و[Remote tutoring](/ar/opportunities/remote-tutoring) في قسنطينة.\nيمكنك تصفح بقية الفرص من صفحة الفرص."
+            },
+            {
+              "role": "user",
+              "content": "ما هي شروطها؟"
+            },
+            {
+              "role": "assistant",
+              "content": "بالنسبة لـ Beach cleanup، لا تظهر شروط مذكورة في البيانات المتوفرة، لكن أحتاج إلى معرفة ما إذا كنت تقصد شروط مشاركة أخرى، أو إذا كان لديك سؤال مختلف تماماً."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "FOCUS_OPPORTUNITY_DETAIL",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "name": "Beach cleanup"
+              }
+            },
+            {
+              "name": "search_knowledge",
+              "arguments": {
+                "query": "هل الفرصة مفتوحة"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "name": "Beach cleanup"
+              }
+            },
+            {
+              "name": "search_knowledge",
+              "arguments": {
+                "query": "هل الفرصة مفتوحة"
+              }
+            }
+          ],
+          "finalText": "لا أملك معلومات مؤكدة عن هذا. يمكنك تصفح الفرص والمنظمات في المنصة.",
+          "inputTokens": 3093,
+          "outputTokens": 93,
+          "totalTokens": 3186,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 934,
+          "events": [
+            "status",
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": true,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"search_opportunities\"], got [\"get_opportunity_details\",\"search_knowledge\"]"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool get_opportunity_details slugs were [] instead of [\"beach-cleanup\",\"tree-planting\",\"remote-tutoring\"]"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: مفتوحة للتقديم"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": false,
+              "reason": "missing expected link: /ar/opportunities/beach-cleanup"
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 168299,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_args: tool search_opportunities arguments did not match the expected shape",
+        "turn 1 key_facts: missing key fact: أحدث الفرص المنشورة",
+        "turn 2 tool_choice: expected tools [\"search_opportunities\"], got [\"get_opportunity_details\"]",
+        "turn 2 tool_args: tool get_opportunity_details slugs were [] instead of [\"beach-cleanup\",\"tree-planting\",\"remote-tutoring\"]",
+        "turn 2 key_facts: missing key fact: مفتوحة للتقديم",
+        "turn 2 links: missing expected link: /ar/opportunities/beach-cleanup",
+        "turn 3 tool_choice: expected tools [\"search_opportunities\"], got [\"get_opportunity_details\",\"search_knowledge\"]",
+        "turn 3 tool_args: tool get_opportunity_details slugs were [] instead of [\"beach-cleanup\",\"tree-planting\",\"remote-tutoring\"]",
+        "turn 3 key_facts: missing key fact: مفتوحة للتقديم",
+        "turn 3 links: missing expected link: /ar/opportunities/beach-cleanup"
+      ]
+    },
+    {
+      "id": "organization-lookup-en",
+      "family": "organization-lookup",
+      "title": "Organization exact lookup",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "Do you know Nour association?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 10.505223784153825
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "limit": 5,
+                "name": "Nour Association"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "limit": 5,
+                "name": "Nour Association"
+              }
+            }
+          ],
+          "finalText": "Yes, Nour Association is listed as a verified organization on the platform. You can view its public profile [here](/en/orgs/nour-association).",
+          "inputTokens": 6108,
+          "outputTokens": 91,
+          "totalTokens": 6199,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 1565,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_organizations name was \"Nour Association\" instead of [\"Nour\"]"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: I found this organization"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 28077,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_args: tool search_organizations name was \"Nour Association\" instead of [\"Nour\"]",
+        "turn 1 key_facts: missing key fact: I found this organization"
+      ]
+    },
+    {
+      "id": "organization-lookup-ar",
+      "family": "organization-lookup",
+      "title": "Organization exact lookup",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "هل تعرف جمعية نور",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 7.315511797101854
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "limit": 3,
+                "name": "جمعية نور"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "limit": 3,
+                "name": "جمعية نور"
+              }
+            }
+          ],
+          "finalText": "نعم، توجد جمعية باسم نور على المنصة، ويمكنك الاطلاع على ملفها العام من هنا: [نور](/ar/orgs/nour-association).",
+          "inputTokens": 6253,
+          "outputTokens": 98,
+          "totalTokens": 6351,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 2095,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_organizations name was \"جمعية نور\" instead of [\"نور\"]"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: وجدت هذه الجمعية"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 54459,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_args: tool search_organizations name was \"جمعية نور\" instead of [\"نور\"]",
+        "turn 1 key_facts: missing key fact: وجدت هذه الجمعية"
+      ]
+    },
+    {
+      "id": "gen-browse-dialect-en",
+      "family": "gen-browse-dialect",
+      "title": "Browse with dialect and synonyms",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "any volunteer gigs happening around me?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 6.9344773371386355
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "compact": false,
+                "limit": 8,
+                "sort": "newest"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "compact": false,
+                "limit": 8,
+                "sort": "newest"
+              }
+            },
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "gigs happening around",
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "finalText": "I found these opportunities for you: [Beach cleanup](/en/opportunities/beach-cleanup), [Tree planting](/en/opportunities/tree-planting), [Remote tutoring](/en/opportunities/remote-tutoring) — you can browse more on the [Opportunities page](/en/opportunities).",
+          "inputTokens": 6986,
+          "outputTokens": 122,
+          "totalTokens": 7108,
+          "estimatedTokens": false,
+          "providerCalls": 3,
+          "latencyMs": 8686,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_opportunities arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 62303,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_args: tool search_opportunities arguments did not match the expected shape"
+      ]
+    },
+    {
+      "id": "gen-stats-typo-en",
+      "family": "gen-stats-typo",
+      "title": "Statistics with a typo",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "how many oportunities r listed?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_STATS",
+            "tools": [
+              "platform_stats"
+            ],
+            "topScore": 8.335934025891138
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "platform_stats",
+              "arguments": {}
+            }
+          ],
+          "finalText": "There are 42 published opportunities listed on the platform.",
+          "inputTokens": 6154,
+          "outputTokens": 28,
+          "totalTokens": 6182,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 1456,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: 17"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 61346,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: 17"
+      ]
+    },
+    {
+      "id": "gen-org-dialect-en",
+      "family": "gen-org-dialect",
+      "title": "Organization lookup with dialect",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "know any charity called Nour?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 10.505223784153825
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "limit": 5,
+                "name": "Nour"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "limit": 5,
+                "name": "Nour"
+              }
+            },
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "Nour",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "I found this organization: [Nour](/en/orgs/nour-association).",
+          "inputTokens": 6840,
+          "outputTokens": 76,
+          "totalTokens": 6916,
+          "estimatedTokens": false,
+          "providerCalls": 3,
+          "latencyMs": 2345,
+          "events": [
+            "status",
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        }
+      ],
+      "durationMs": 55109,
+      "structuralPass": true,
+      "qualityPass": true,
+      "failedChecks": []
+    },
+    {
+      "id": "gen-reference-synonyms-en",
+      "family": "gen-reference-synonyms",
+      "title": "Reference lookup with synonyms",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "what skills and regions can I choose from?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 8.672792811728634
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_reference_data",
+              "arguments": {
+                "kind": "all",
+                "text": "all available skills and locations"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_reference_data",
+              "arguments": {
+                "kind": "all",
+                "text": "all available skills and locations"
+              }
+            }
+          ],
+          "finalText": "I can only confirm one skill and one region from the current public reference data: Teaching and Oran. For the complete selection, check the reference areas on the platform.",
+          "inputTokens": 6470,
+          "outputTokens": 111,
+          "totalTokens": 6581,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 1903,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_reference_data expected empty arguments"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 60542,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_args: tool search_reference_data expected empty arguments"
+      ]
+    },
+    {
+      "id": "gen-knowledge-followup-en",
+      "family": "gen-knowledge-followup",
+      "title": "Knowledge follow-up with unseen wording",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "how does verification work?",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 9.43505152586174
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "A verified experience becomes trustworthy when the contribution is linked to a real published opportunity, the volunteer was selected to participate, the responsible organization reviewed the evidence and confirmed the work, and a verification code lets anyone check the public summary. The organization alone can verify a contribution, while a separate review only describes how well the work was done.",
+          "inputTokens": 3115,
+          "outputTokens": 67,
+          "totalTokens": 3182,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 1009,
+          "events": [
+            "status",
+            "token",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: platform"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        },
+        {
+          "index": 2,
+          "message": "and who checks it?",
+          "locale": "en",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "how does verification work?"
+            },
+            {
+              "role": "assistant",
+              "content": "A verified experience becomes trustworthy when the contribution is linked to a real published opportunity, the volunteer was selected to participate, the responsible organization reviewed the evidence and confirmed the work, and a verification code lets anyone check the public summary. The organization alone can verify a contribution, while a separate review only describes how well the work was done."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "en",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 6.330360918501401
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "The responsible organization reviews the evidence and confirms the completed contribution. A verification code is then issued so anyone can check the public summary of that experience.",
+          "inputTokens": 2941,
+          "outputTokens": 30,
+          "totalTokens": 2971,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 967,
+          "events": [
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: platform"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 84153,
+      "structuralPass": true,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: platform",
+        "turn 2 key_facts: missing key fact: platform"
+      ]
+    },
+    {
+      "id": "gen-ordinal-first-ar",
+      "family": "gen-ordinal-first",
+      "title": "Ordinal first item",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "اعرض لي الفرص",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 9.433740752347978
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 5,
+                "sort": "newest"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 5,
+                "sort": "newest"
+              }
+            }
+          ],
+          "finalText": "تجد حالياً ثلاث فرص منشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) في وهران، و[Tree planting](/ar/opportunities/tree-planting) في باب الوادي، و[Remote tutoring](/ar/opportunities/remote-tutoring) في قسنطينة.\nمواعيد التقديم هي 31 ديسمبر 2026 و30 نوفمبر 2026 و15 أكتوبر 2026 على التوالي. إن أردت، أدلك على كيفية التقديم أو تفاصيل فرصة بعينها.",
+          "inputTokens": 6804,
+          "outputTokens": 163,
+          "totalTokens": 6967,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 2930,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_opportunities arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        },
+        {
+          "index": 2,
+          "message": "أخبرني عن الأولى",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "اعرض لي الفرص"
+            },
+            {
+              "role": "assistant",
+              "content": "تجد حالياً ثلاث فرص منشورة: [Beach cleanup](/ar/opportunities/beach-cleanup) في وهران، و[Tree planting](/ar/opportunities/tree-planting) في باب الوادي، و[Remote tutoring](/ar/opportunities/remote-tutoring) في قسنطينة.\nمواعيد التقديم هي 31 ديسمبر 2026 و30 نوفمبر 2026 و15 أكتوبر 2026 على التوالي. إن أردت، أدلك على كيفية التقديم أو تفاصيل فرصة بعينها."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 8.97879853391036
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "get_opportunity_details",
+              "arguments": {
+                "slug": "beach-cleanup"
+              }
+            }
+          ],
+          "finalText": "الفرصة الأولى هي [Beach cleanup](/ar/opportunities/beach-cleanup) في وهران، وهي متاحة حالياً مع خمسة مقاعد. آخر أجل للتقديم هو 31 ديسمبر 2026.",
+          "inputTokens": 6917,
+          "outputTokens": 82,
+          "totalTokens": 6999,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 2316,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: مفتوحة"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 88788,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_args: tool search_opportunities arguments did not match the expected shape",
+        "turn 2 key_facts: missing key fact: مفتوحة"
+      ]
+    },
+    {
+      "id": "gen-pronoun-summary-ar",
+      "family": "gen-pronoun-summary",
+      "title": "Pronoun summary",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "اعرض لي الفرص",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 9.433740752347978
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "finalText": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup)، [Tree planting](/ar/opportunities/tree-planting)، و[Remote tutoring](/ar/opportunities/remote-tutoring) — يمكنك تصفح المزيد في [صفحة الفرص](/ar/opportunities).",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 357,
+          "events": [
+            "status",
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "قدم لي نبذة عنها",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "اعرض لي الفرص"
+            },
+            {
+              "role": "assistant",
+              "content": "إليك أحدث الفرص المنشورة: [Beach cleanup](/ar/opportunities/beach-cleanup)، [Tree planting](/ar/opportunities/tree-planting)، و[Remote tutoring](/ar/opportunities/remote-tutoring) — يمكنك تصفح المزيد في [صفحة الفرص](/ar/opportunities)."
+            }
+          ],
+          "router": {
+            "action": "direct_reply",
+            "intent": "off_topic",
+            "language": "ar",
+            "reason": "OFF_TOPIC_KEYWORDS",
+            "tools": [],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "slugs": [
+                  "beach-cleanup"
+                ],
+                "limit": 1
+              }
+            }
+          ],
+          "finalText": "حالة الفرص التي ذكرتها: [Beach cleanup](/ar/opportunities/beach-cleanup) — مفتوحة للتقديم، آخر موعد 31 ديسمبر 2026، المناصب المتاحة 5، الموقع وهران.",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 453,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"get_opportunity_details\"], got [\"search_opportunities\"]"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_opportunities arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 595137,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 2 tool_choice: expected tools [\"get_opportunity_details\"], got [\"search_opportunities\"]",
+        "turn 2 tool_args: tool search_opportunities arguments did not match the expected shape"
+      ]
+    },
+    {
+      "id": "gen-yesno-confirm-ar",
+      "family": "gen-yesno-confirm",
+      "title": "Yes/no pending confirmation",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "تعرف جمعية نور؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 7.315511797101854
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور"
+              }
+            }
+          ],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور"
+              }
+            },
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association).",
+          "inputTokens": 3013,
+          "outputTokens": 43,
+          "totalTokens": 3056,
+          "estimatedTokens": false,
+          "providerCalls": 2,
+          "latencyMs": 1158,
+          "events": [
+            "status",
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "نعم",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "تعرف جمعية نور؟"
+            },
+            {
+              "role": "assistant",
+              "content": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association)."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 7.129872561529235
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association).",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 357,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"get_organization_details\"], got [\"search_organizations\"]"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_organizations arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 309536,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 2 tool_choice: expected tools [\"get_organization_details\"], got [\"search_organizations\"]",
+        "turn 2 tool_args: tool search_organizations arguments did not match the expected shape"
+      ]
+    },
+    {
+      "id": "gen-lookup-confirm-ar",
+      "family": "gen-lookup-confirm",
+      "title": "Lookup confirmation",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "وماذا عن جمعية نور؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 7.315511797101854
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association).",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 298,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": true,
+          "qualityPass": true
+        },
+        {
+          "index": 2,
+          "message": "هل تحققت",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "وماذا عن جمعية نور؟"
+            },
+            {
+              "role": "assistant",
+              "content": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association)."
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "ar",
+            "reason": "FOCUS_ORGANIZATION_FOLLOW_UP",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 0
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "نور",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "وجدت هذه الجمعية: [نور](/ar/orgs/nour-association).",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 344,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"get_organization_details\"], got [\"search_organizations\"]"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_organizations arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 260179,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 2 tool_choice: expected tools [\"get_organization_details\"], got [\"search_organizations\"]",
+        "turn 2 tool_args: tool search_organizations arguments did not match the expected shape"
+      ]
+    },
+    {
+      "id": "gen-slug-reference-ar",
+      "family": "gen-slug-reference",
+      "title": "Raw slug reference",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "أعطني تفاصيل beach-cleanup",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 10.215352639666223
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 410,
+          "events": [
+            "status",
+            "error"
+          ],
+          "mode": "normal",
+          "finishReason": "error",
+          "refusal": false,
+          "truncated": false,
+          "errorCode": "AI_AGENT_QUOTA_EXHAUSTED",
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"get_opportunity_details\"], got []"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: Beach cleanup"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": false,
+              "reason": "final answer was empty"
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": false,
+              "reason": "missing expected link: /ar/opportunities/beach-cleanup"
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": false,
+              "reason": "error event emitted"
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 130247,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_choice: expected tools [\"get_opportunity_details\"], got []",
+        "turn 1 key_facts: missing key fact: Beach cleanup",
+        "turn 1 language: final answer was empty",
+        "turn 1 links: missing expected link: /ar/opportunities/beach-cleanup",
+        "turn 1 events: error event emitted"
+      ]
+    },
+    {
+      "id": "gen-topic-switch-ar",
+      "family": "gen-topic-switch",
+      "title": "Topic switch",
+      "locale": "ar",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "ما هي حالات الطلب؟",
+          "locale": "ar",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "knowledge_only",
+            "language": "ar",
+            "reason": "KNOWLEDGE_MATCH",
+            "tools": [],
+            "topScore": 14.451567811944102
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [],
+          "finalText": "",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 341,
+          "events": [
+            "status",
+            "error"
+          ],
+          "mode": "normal",
+          "finishReason": "error",
+          "refusal": false,
+          "truncated": false,
+          "errorCode": "AI_AGENT_QUOTA_EXHAUSTED",
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: قيد المراجعة"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": false,
+              "reason": "final answer was empty"
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": false,
+              "reason": "error event emitted"
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        },
+        {
+          "index": 2,
+          "message": "والآن ما هي الفرص المفتوحة؟",
+          "locale": "ar",
+          "historyBefore": [
+            {
+              "role": "user",
+              "content": "ما هي حالات الطلب؟"
+            },
+            {
+              "role": "assistant",
+              "content": ""
+            }
+          ],
+          "router": {
+            "action": "answer",
+            "intent": "mixed",
+            "language": "ar",
+            "reason": "MIXED",
+            "tools": [
+              "search_opportunities"
+            ],
+            "topScore": 13.442829172223766
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [
+            {
+              "name": "search_opportunities",
+              "arguments": {
+                "text": "المفتوحه",
+                "limit": 3,
+                "sort": "newest",
+                "compact": true
+              }
+            }
+          ],
+          "finalText": "وجدت لك هذه الفرص: [Beach cleanup](/ar/opportunities/beach-cleanup)، [Tree planting](/ar/opportunities/tree-planting)، [Remote tutoring](/ar/opportunities/remote-tutoring) — يمكنك تصفح المزيد في [صفحة الفرص](/ar/opportunities).",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 423,
+          "events": [
+            "status",
+            "token",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_opportunities arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 260871,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 key_facts: missing key fact: قيد المراجعة",
+        "turn 1 language: final answer was empty",
+        "turn 1 events: error event emitted",
+        "turn 2 tool_args: tool search_opportunities arguments did not match the expected shape"
+      ]
+    },
+    {
+      "id": "gen-detail-org-en",
+      "family": "gen-detail-org",
+      "title": "Organization detail tool",
+      "locale": "en",
+      "run": 1,
+      "turns": [
+        {
+          "index": 1,
+          "message": "tell me more about Nour association",
+          "locale": "en",
+          "historyBefore": [],
+          "router": {
+            "action": "answer",
+            "intent": "live_data",
+            "language": "en",
+            "reason": "LIVE_TOPIC",
+            "tools": [
+              "search_organizations"
+            ],
+            "topScore": 7.804565062857653
+          },
+          "declaredTools": [
+            "get_opportunity_details",
+            "get_organization_details",
+            "platform_stats",
+            "search_knowledge",
+            "search_opportunities",
+            "search_organizations",
+            "search_reference_data"
+          ],
+          "providerToolCalls": [],
+          "executedToolCalls": [
+            {
+              "name": "search_organizations",
+              "arguments": {
+                "name": "Nour",
+                "limit": 8
+              }
+            }
+          ],
+          "finalText": "I found this organization: [Nour](/en/orgs/nour-association).",
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0,
+          "estimatedTokens": false,
+          "providerCalls": 1,
+          "latencyMs": 295,
+          "events": [
+            "status",
+            "status",
+            "token"
+          ],
+          "mode": "normal",
+          "finishReason": "stop",
+          "refusal": false,
+          "truncated": false,
+          "checks": [
+            {
+              "name": "tool_choice",
+              "structural": false,
+              "pass": false,
+              "reason": "expected tools [\"get_organization_details\"], got [\"search_organizations\"]"
+            },
+            {
+              "name": "tool_args",
+              "structural": true,
+              "pass": false,
+              "reason": "tool search_organizations arguments did not match the expected shape"
+            },
+            {
+              "name": "key_facts",
+              "structural": false,
+              "pass": false,
+              "reason": "missing key fact: verified"
+            },
+            {
+              "name": "refusal",
+              "structural": false,
+              "pass": true
+            },
+            {
+              "name": "language",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "safety",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "promise",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "links",
+              "structural": true,
+              "pass": true
+            },
+            {
+              "name": "events",
+              "structural": true,
+              "pass": true
+            }
+          ],
+          "structuralPass": false,
+          "qualityPass": false
+        }
+      ],
+      "durationMs": 130065,
+      "structuralPass": false,
+      "qualityPass": false,
+      "failedChecks": [
+        "turn 1 tool_choice: expected tools [\"get_organization_details\"], got [\"search_organizations\"]",
+        "turn 1 tool_args: tool search_organizations arguments did not match the expected shape",
+        "turn 1 key_facts: missing key fact: verified"
+      ]
+    }
+  ]
+}

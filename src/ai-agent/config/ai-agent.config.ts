@@ -58,6 +58,13 @@ export interface AiAgentConfig {
   knowledgeDir: string;
   mode: AiAgentMode;
   /**
+   * Phase 1 rollout flag. When `false` (the default) every routing, prompt, and
+   * answer byte is identical to the router-first implementation. When `true`
+   * the model chooses tools from the complete read-only registry and the
+   * deterministic router is shadow-only.
+   */
+  modelFirst: boolean;
+  /**
    * Production default is 15 s. Tests may override the config object (or the
    * `AI_AGENT_CONFIG` provider) to make the heartbeat observable without a
    * long-running test. Not exposed as an environment variable in Session 2.
@@ -73,7 +80,7 @@ export interface AiAgentConfig {
 
 export function defaultAiAgentLimits(): AiAgentLimits {
   return {
-    maxInputTokens: 3000,
+    maxInputTokens: 10000,
     maxOutputTokens: 400,
     maxHistoryMessages: 6,
     maxHistoryChars: 4000,
@@ -107,6 +114,7 @@ export function defaultAiAgentConfig(): AiAgentConfig {
     model: DEFAULT_AI_AGENT_MODEL,
     knowledgeDir: path.resolve(process.cwd(), 'ai-agent'),
     mode: 'normal',
+    modelFirst: false,
     heartbeatIntervalMs: DEFAULT_HEARTBEAT_INTERVAL_MS,
     mockDelayMs: 0,
     limits: defaultAiAgentLimits(),
@@ -192,7 +200,7 @@ export function loadAiAgentConfig(
     maxInputTokens: readInteger(
       read,
       'AI_AGENT_MAX_INPUT_TOKENS',
-      3000,
+      10000,
       1,
       100_000,
     ),
@@ -278,6 +286,7 @@ export function loadAiAgentConfig(
     model: readString(read, 'AI_AGENT_MODEL') ?? DEFAULT_AI_AGENT_MODEL,
     knowledgeDir: resolveKnowledgeDir(read),
     mode: 'normal',
+    modelFirst: readBoolean(read, 'AI_AGENT_MODEL_FIRST', false),
     heartbeatIntervalMs: DEFAULT_HEARTBEAT_INTERVAL_MS,
     mockDelayMs: 0,
     limits,

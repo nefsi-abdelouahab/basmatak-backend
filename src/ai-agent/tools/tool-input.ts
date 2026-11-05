@@ -95,6 +95,69 @@ export function readOptionalObjectId(
   return value.trim();
 }
 
+export function readOptionalBoolean(
+  input: Record<string, unknown>,
+  key: string,
+): boolean | undefined {
+  const value = input[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw new ToolInputError(`${key} must be a boolean.`);
+  }
+  return value;
+}
+
+export function readOptionalStringList(
+  input: Record<string, unknown>,
+  key: string,
+  options: {
+    maxItems?: number;
+    maxChars?: number;
+    pattern?: RegExp;
+  } = {},
+): string[] | undefined {
+  const value = input[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    throw new ToolInputError(`${key} must be an array of strings.`);
+  }
+
+  const maxItems = options.maxItems ?? 8;
+  const maxChars = options.maxChars ?? TOOL_TEXT_FILTER_MAX_CHARS;
+  if (value.length === 0) {
+    return undefined;
+  }
+  if (value.length > maxItems) {
+    throw new ToolInputError(`${key} must have at most ${maxItems} items.`);
+  }
+
+  const seen = new Set<string>();
+  const list: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') {
+      throw new ToolInputError(`${key} must be an array of strings.`);
+    }
+    const text = item.trim();
+    if (text === '' || text.length > maxChars) {
+      throw new ToolInputError(
+        `${key} items must be 1 to ${maxChars} characters.`,
+      );
+    }
+    if (options.pattern !== undefined && !options.pattern.test(text)) {
+      throw new ToolInputError(`${key} contains an invalid item.`);
+    }
+    if (seen.has(text)) continue;
+    seen.add(text);
+    list.push(text);
+  }
+
+  return list.length > 0 ? list : undefined;
+}
+
 export function readOptionalEnum<T extends string>(
   input: Record<string, unknown>,
   key: string,

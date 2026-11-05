@@ -34,20 +34,26 @@ import {
   resolvePlaceMention,
 } from '../opportunity-place';
 import {
+  PublicLocationNamePair,
   PublicOpportunityCard,
+  PublicOpportunityFocusCard,
   PublicOpportunitySource,
   mapPublicOpportunity,
+  mapPublicOpportunityFocus,
 } from './mappers/public-opportunity.mapper';
 import { buildOpportunitySearchText } from '../opportunity-query';
+import { toText } from './mappers/mapper.util';
 import { mapPublicOrganizationRef } from './mappers/public-organization.mapper';
 import { mapPublicSkillRef } from './mappers/public-reference.mapper';
 import {
   assertAllowedKeys,
   escapeRegex,
   readLimit,
+  readOptionalBoolean,
   readOptionalCode,
   readOptionalEnum,
   readOptionalObjectId,
+  readOptionalStringList,
   readOptionalText,
 } from './tool-input';
 import {
@@ -72,6 +78,7 @@ export type OpportunitySort = (typeof OPPORTUNITY_SORTS)[number];
 const OPPORTUNITY_MODES = ['onsite', 'remote', 'hybrid'] as const;
 const ALLOWED_ARGUMENTS = [
   'text',
+  'slugs',
   'wilaya',
   'municipality',
   'mode',
@@ -79,6 +86,7 @@ const ALLOWED_ARGUMENTS = [
   'category',
   'sort',
   'limit',
+  'compact',
 ] as const;
 
 /**
@@ -91,6 +99,7 @@ export const OPPORTUNITY_TOOL_SELECT = [
   'slug',
   'title',
   'description',
+  'status',
   'mode',
   'startDate',
   'endDate',
@@ -253,6 +262,21 @@ function rowCategoryId(row: PublicOpportunitySource): string | null {
   return id === null ? null : id.toHexString();
 }
 
+function orderRowsBySlugs(
+  rows: readonly PublicOpportunitySource[],
+  slugs: readonly string[],
+): PublicOpportunitySource[] {
+  const bySlug = new Map<string, PublicOpportunitySource>();
+  for (const row of rows) {
+    const slug = toText(row.slug);
+    if (slug !== null) bySlug.set(slug, row);
+  }
+  return slugs.flatMap((slug) => {
+    const row = bySlug.get(slug);
+    return row === undefined ? [] : [row];
+  });
+}
+
 function scoreRow(
   row: PublicOpportunitySource,
   matchedSkillIds: ReadonlySet<string>,
@@ -270,6 +294,7 @@ function scoreRow(
 
 interface ParsedSearchOpportunitiesInput {
   text?: string;
+  slugs?: string[];
   wilaya?: string;
   municipality?: string;
   mode?: (typeof OPPORTUNITY_MODES)[number];
@@ -277,6 +302,13 @@ interface ParsedSearchOpportunitiesInput {
   category?: string;
   sort: OpportunitySort;
   limit: number;
+  compact: boolean;
+}
+
+/** Minimal browse row: enough to build one link without the full card. */
+export interface PublicOpportunitySummary {
+  slug: string;
+  title: string;
 }
 
 export interface SearchOpportunitiesPayload {
@@ -289,10 +321,31 @@ export interface SearchOpportunitiesPayload {
   resolvedPlace?: ResolvedPlace;
 }
 
+/** Browse-only payload: one link per row with no card fields. */
+export interface CompactSearchOpportunitiesPayload {
+  items: PublicOpportunitySummary[];
+  resolvedPlace?: ResolvedPlace;
+}
+
+/** Exact-slug payload: slim details for the items the user referred to. */
+export interface FocusSearchOpportunitiesPayload {
+  items: PublicOpportunityFocusCard[];
+}
+
+export type SearchOpportunitiesResult =
+  | SearchOpportunitiesPayload
+  | CompactSearchOpportunitiesPayload
+  | FocusSearchOpportunitiesPayload;
+
 function parseInput(input: unknown): ParsedSearchOpportunitiesInput {
   const record = assertAllowedKeys(input, ALLOWED_ARGUMENTS);
   return {
     text: readOptionalText(record, 'text'),
+    slugs: readOptionalStringList(record, 'slugs', {
+      maxItems: TOOL_MAX_ROWS,
+      maxChars: 200,
+      pattern: /^[^\s/\\?#\u0000-\u001f]+$/u,
+    }),
     wilaya: readOptionalCode(record, 'wilaya'),
     municipality: readOptionalCode(record, 'municipality'),
     mode: readOptionalEnum(record, 'mode', OPPORTUNITY_MODES),
@@ -300,6 +353,7 @@ function parseInput(input: unknown): ParsedSearchOpportunitiesInput {
     category: readOptionalObjectId(record, 'category'),
     sort: readOptionalEnum(record, 'sort', OPPORTUNITY_SORTS) ?? 'newest',
     limit: readLimit(record, TOOL_DEFAULT_ROWS, TOOL_MAX_ROWS),
+    compact: readOptionalBoolean(record, 'compact') ?? false,
   };
 }
 
@@ -350,8 +404,7 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
     }
     this.definition = defineReadOnlyTool({
       name: SEARCH_OPPORTUNITIES_TOOL_NAME,
-      description:
-        'Search published Basmatak volunteering opportunities by text, wilaya, municipality, mode, skill, category, and sort. Text accepts Arabic, French, or English terms and matches titles, descriptions, skill names, and category names; place names such as "وهران", "Oran", or "الجزائر العاصمة" are resolved to stored wilaya/municipality codes. Read-only; returns at most 8 public cards (default 5).',
+      description: 'Search published opportunities.',
       allowedIntents: ['opportunity_search'],
       inputSchema: {
         type: 'object',
@@ -361,50 +414,32 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
             type: 'string',
             minLength: 1,
             maxLength: 120,
-            description:
-              'Keyword, skill/category name, or place name in Arabic, French, or English. Place names resolve to wilaya/municipality filters; other terms match the opportunity title, description, skill names, and category names.',
+            description: 'Query.',
           },
-          wilaya: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 40,
-            description: 'Wilaya code, for example "16".',
-          },
-          municipality: {
-            type: 'string',
-            minLength: 1,
-            maxLength: 40,
-            description: 'Municipality code, for example "1601".',
-          },
-          mode: {
-            type: 'string',
-            enum: [...OPPORTUNITY_MODES],
-            description: 'Participation mode.',
-          },
-          skill: {
-            type: 'string',
-            minLength: 24,
-            maxLength: 24,
-            description: 'Required skill id from search_reference_data.',
-          },
-          category: {
-            type: 'string',
-            minLength: 24,
-            maxLength: 24,
-            description: 'Skill category id.',
+          slugs: {
+            type: 'array',
+            description: 'Slugs.',
+            items: { type: 'string', minLength: 1, maxLength: 200 },
+            minItems: 1,
+            maxItems: TOOL_MAX_ROWS,
           },
           sort: {
             type: 'string',
             enum: [...OPPORTUNITY_SORTS],
             default: 'newest',
-            description: 'Server-defined sort order.',
+            description: 'Order.',
           },
           limit: {
             type: 'integer',
             minimum: 1,
             maximum: TOOL_MAX_ROWS,
             default: TOOL_DEFAULT_ROWS,
-            description: 'Rows to return (1 to 8). Defaults to 5.',
+            description: 'Rows.',
+          },
+          compact: {
+            type: 'boolean',
+            default: false,
+            description: 'Titles only.',
           },
         },
       },
@@ -443,23 +478,57 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
     }
   }
 
-  private async execute(input: unknown): Promise<SearchOpportunitiesPayload> {
+  private async loadLocationNames(
+    codes: readonly string[],
+  ): Promise<Map<string, PublicLocationNamePair>> {
+    const names = new Map<string, PublicLocationNamePair>();
+    const locationModel = this.getLocationModel();
+    if (!locationModel || codes.length === 0) return names;
+
+    try {
+      const rows = (await locationModel
+        .find({ code: { $in: [...codes] } })
+        .select('code nameAr nameFr')
+        .lean()
+        .exec()) as unknown as LocationSource[];
+      for (const row of rows) {
+        const code = toText(row.code);
+        if (code === null) continue;
+        names.set(code, {
+          ar: toText(row.nameAr),
+          fr: toText(row.nameFr),
+        });
+      }
+    } catch {
+      // Location labels are an enrichment; the codes still answer location
+      // questions when reference data is unavailable.
+    }
+    return names;
+  }
+
+  private async execute(input: unknown): Promise<SearchOpportunitiesResult> {
     const parsed = parseInput(input);
-    const placeMatch = parsed.text
-      ? await this.resolvePlace(parsed.text)
-      : null;
+    const hasSlugs = (parsed.slugs?.length ?? 0) > 0;
+    // A slug lookup is exact and must ignore the sentence text entirely. This
+    // is what keeps "هل هي مفتوحة" from being sent to Mongo as a keyword.
+    const placeMatch =
+      !hasSlugs && parsed.text ? await this.resolvePlace(parsed.text) : null;
     const resolvedPlace = placeMatch?.place;
     // When a place resolves, its words are removed before the topic filter is
     // built. The location code filter replaces the text match; any remaining
     // topic (for example "برمجة") still filters normally.
-    const textForSearch = placeMatch?.remainingText ?? parsed.text;
+    const textForSearch = hasSlugs
+      ? undefined
+      : (placeMatch?.remainingText ?? parsed.text);
     // A sentence made only of stopwords and browse words carries no search
     // topic. Removing them here keeps even a model-supplied generic phrase
     // from filtering out every published opportunity.
     const searchText = textForSearch
       ? buildOpportunitySearchText(textForSearch)
       : undefined;
-    const filter: FilterQuery<OpportunityModel> = { status: 'published' };
+    const filter: FilterQuery<OpportunityModel> = hasSlugs
+      ? { slug: { $in: parsed.slugs }, status: { $ne: 'draft' } }
+      : { status: 'published' };
 
     let textVariants = new Set<string>();
     const matchedSkillIds = new Set<string>();
@@ -538,9 +607,14 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
       filter.categoryId = new Types.ObjectId(parsed.category);
     }
 
-    const fetchLimit = searchText
-      ? Math.min(TOOL_MAX_ROWS * TEXT_FETCH_MULTIPLIER, TEXT_FETCH_MAX_ROWS)
-      : parsed.limit;
+    const fetchLimit = hasSlugs
+      ? Math.min(
+          TOOL_MAX_ROWS,
+          Math.max(parsed.limit, parsed.slugs?.length ?? parsed.limit),
+        )
+      : searchText
+        ? Math.min(TOOL_MAX_ROWS * TEXT_FETCH_MULTIPLIER, TEXT_FETCH_MAX_ROWS)
+        : parsed.limit;
 
     const rows = (await this.opportunityModel
       .find(filter)
@@ -551,9 +625,11 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
       .exec()) as unknown as PublicOpportunitySource[];
 
     // Relevance first (skill/category/title/description), then the requested
-    // server sort as the stable tie-breaker.
-    const selectedRows =
-      searchText && textVariants.size > 0
+    // server sort as the stable tie-breaker. Slug lookups keep the caller's
+    // order so "the second one" always maps to the second listed item.
+    const selectedRows = hasSlugs
+      ? orderRowsBySlugs(rows, parsed.slugs ?? [])
+      : searchText && textVariants.size > 0
         ? [...rows]
             .sort(
               (left, right) =>
@@ -572,6 +648,37 @@ export class SearchOpportunitiesTool implements ReadOnlyTool {
             )
             .slice(0, parsed.limit)
         : rows;
+
+    if (parsed.compact) {
+      return {
+        items: selectedRows.flatMap((row) => {
+          const slug = toText(row.slug);
+          const title = toText(row.title);
+          return slug === null || title === null ? [] : [{ slug, title }];
+        }),
+        ...(resolvedPlace ? { resolvedPlace } : {}),
+      };
+    }
+
+    if (hasSlugs) {
+      const locationCodes = [
+        ...new Set(
+          selectedRows.flatMap((row) => {
+            if (!isRecord(row.location)) return [];
+            return [
+              toText(row.location.wilayaId),
+              toText(row.location.municipalityId),
+            ].filter((code): code is string => code !== null);
+          }),
+        ),
+      ];
+      const locationNames = await this.loadLocationNames(locationCodes);
+      return {
+        items: selectedRows.map((row) =>
+          mapPublicOpportunityFocus(row, locationNames),
+        ),
+      };
+    }
 
     const organizationIds = uniqueObjectIds(
       selectedRows.map((row) => {

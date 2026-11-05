@@ -1,4 +1,5 @@
 import type { AiAgentLocale } from '../ai-agent.types';
+import type { PromptLanguage } from '../prompt/prompt.types';
 import type { ToolExecutionResult } from '../tools/tool.types';
 import type { CitableToolResult } from './citations';
 
@@ -44,8 +45,9 @@ function safeSegment(value: unknown): string | undefined {
 function itemRows(result: ToolExecutionResult): Record<string, unknown>[] {
   if (!result.ok || !isRecord(result.data)) return [];
   const items = result.data.items;
-  if (!Array.isArray(items)) return [];
-  return items.filter(isRecord);
+  if (Array.isArray(items)) return items.filter(isRecord);
+  const item = result.data.item;
+  return isRecord(item) ? [item] : [];
 }
 
 function rowTitle(
@@ -85,15 +87,20 @@ function opportunityLinks(
 function organizationLinks(
   result: ToolExecutionResult,
   locale: AiAgentLocale,
+  language: PromptLanguage,
   links: AnswerLink[],
 ): void {
+  const titleFields =
+    language === 'ar'
+      ? ['nameAr', 'nameFr', 'name', 'slug']
+      : ['nameFr', 'nameAr', 'name', 'slug'];
   for (const row of itemRows(result)) {
     const slug = safeSegment(row.slug);
     if (slug === undefined) continue;
     pushLink(links, {
       kind: 'organization',
       href: `/${locale}/orgs/${slug}`,
-      title: rowTitle(row, ['nameFr', 'nameAr', 'name', 'slug'], slug),
+      title: rowTitle(row, titleFields, slug),
     });
   }
 }
@@ -121,15 +128,18 @@ function volunteerLinks(
 export function buildAnswerLinks(
   results: readonly CitableToolResult[],
   locale: AiAgentLocale,
+  language: PromptLanguage = 'en',
 ): AnswerLink[] {
   const links: AnswerLink[] = [];
   for (const item of results) {
     switch (item.result.tool) {
       case 'search_opportunities':
+      case 'get_opportunity_details':
         opportunityLinks(item.result, locale, links);
         break;
       case 'search_organizations':
-        organizationLinks(item.result, locale, links);
+      case 'get_organization_details':
+        organizationLinks(item.result, locale, language, links);
         break;
       default:
         if (/(?:volunteer|talent)/i.test(item.result.tool) && item.result.ok) {
